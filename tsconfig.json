@@ -1,0 +1,22 @@
+{
+    "compilerOptions": {
+      "target": "ES6",
+      "module": "commonjs",
+      "outDir": "./dist",
+      "rootDir": "./",   // Root directory is now the root of your project
+      "strict": true,
+      "esModuleInterop": true,
+      "skipLibCheck": true,
+      "forceConsistentCasingInFileNames": true
+    },
+    "include": [
+      "server.ts",       // Explicitly include server.ts
+      "src/**/*",         // Include all files from src folder
+      "src/**/*.d.ts"
+    ],
+    "exclude": [
+      "node_modules",
+      "dist"
+    ]
+  }
+  
