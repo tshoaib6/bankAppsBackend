@@ -9,7 +9,8 @@ export interface IUser extends Document {
   points: number;
   scanned_qr_codes: string[];
   created_at: Date;
-  password: string;  // Add the password field
+  password: string;
+  isActive: boolean; // Add isActive field to indicate if the user is active
 }
 
 // Define the schema for the User model
@@ -22,7 +23,8 @@ const UserSchema: Schema<IUser> = new Schema(
     points: { type: Number, default: 0 },
     scanned_qr_codes: { type: [String], default: [] },
     created_at: { type: Date, default: Date.now },
-    password: { type: String, required: true }, // Add password to schema
+    password: { type: String, required: true },
+    isActive: { type: Boolean, default: true },  // isActive field, default to true (active)
   },
   { timestamps: true } // Automatically adds `createdAt` and `updatedAt` fields
 );

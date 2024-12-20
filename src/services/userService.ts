@@ -50,33 +50,38 @@ export const registerUser = async (
 
 // Login user
 export const loginUserService = async (email: string, password: string): Promise<IUser & { token: string }> => {
-  try {
-    // Find user by email with lean() for a plain object response
-    const user = await User.findOne({ email }).lean<IUser>(); // Leaning the result to get a plain object
-
-    if (!user) {
-      throw new Error('User not found');
+    try {
+      // Find user by email with lean() for a plain object response
+      const user = await User.findOne({ email }).lean<IUser>(); // Leaning the result to get a plain object
+  
+      if (!user) {
+        throw new Error('User not found');
+      }
+  
+      // Check if the user is active (not blocked)
+      if (!user.isActive) {
+        throw new Error('This user has been blocked and cannot log in');
+      }
+  
+      // Compare the password with the stored hashed password
+      const isMatch = await bcrypt.compare(password, user.password);
+  
+      if (!isMatch) {
+        throw new Error('Invalid credentials');
+      }
+  
+      // Generate a JWT token
+      const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET!, { expiresIn: '1h' });
+  
+      // Clean response by ensuring no internal Mongoose properties
+      const userResponse = { ...user, token };  // Add token to the plain object response
+  
+      // Manually cast the response to the expected type
+      return userResponse as IUser & { token: string };  // Casting the response to IUser type with token
+    } catch (error: any) {
+      throw new Error('Login failed: ' + error.message);
     }
-
-    // Compare the password with the stored hashed password
-    const isMatch = await bcrypt.compare(password, user.password);
-    
-    if (!isMatch) {
-      throw new Error('Invalid credentials');
-    }
-
-    // Generate a JWT token
-    const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET!, { expiresIn: '1h' });
-
-    // Clean response by ensuring no internal Mongoose properties
-    const userResponse = { ...user, token };  // Add token to the plain object response
-
-    // Manually cast the response to the expected type
-    return userResponse as IUser & { token: string };  // Casting the response to IUser type with token
-  } catch (error: any) {
-    throw new Error('Login failed: ' + error.message);
-  }
-};
+  };
 
 export const getAllUsers = async (): Promise<IUser[]> => {
     try {

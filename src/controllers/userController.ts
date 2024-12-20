@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { registerUser, loginUserService,getAllUsers } from '../services/userService';
 import { validateEmail, validateName, validatePassword } from '../utils/validators';
 import jwt from 'jsonwebtoken';
+import User from '../models/user.model';
 
 // Register route handler
 export const register = async (req: Request, res: Response): Promise<any> => {
@@ -87,5 +88,65 @@ export const getUsers = async (req: Request, res: Response): Promise<any> => {
     } catch (error) {
       console.error('Error fetching users:', error);
       res.status(500).json({ message: 'Server error, please try again' });
+    }
+  };
+
+
+  export const updateUserStatus = async (req: Request, res: Response): Promise<any> => {
+    try {
+      const { userId } = req.params;  // Get userId from URL params
+      const { isActive } = req.body;  // Get isActive value from request body
+  
+      // Validate if isActive is a boolean
+      if (typeof isActive !== 'boolean') {
+        return res.status(400).json({ message: 'Invalid status value. It must be a boolean.' });
+      }
+  
+      // Find and update user status
+      const updatedUser = await User.findByIdAndUpdate(
+        userId,
+        { isActive },
+        { new: true, runValidators: true }
+      ).select('name email isActive');
+  
+      // If the user is not found, return a 404 error
+      if (!updatedUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+  
+      return res.status(200).json({
+        message: isActive ? 'User has been unblocked successfully' : 'User has been blocked successfully',
+        user: updatedUser,
+      });
+      
+    } catch (error) {
+      console.error('Error updating user status:', error);
+      return res.status(500).json({
+        message: 'Failed to update user status. Please try again later.',
+      });
+    }
+  };
+  
+  // Delete user
+  export const deleteUser = async (req: Request, res: Response): Promise<any> => {
+    try {
+      const { userId } = req.params; // Extract userId from URL params
+  
+      // Find and delete the user
+      const deletedUser = await User.findByIdAndDelete(userId);
+  
+      if (!deletedUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+  
+      return res.status(200).json({
+        message: 'User deleted successfully',
+        user: deletedUser,
+      });
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      return res.status(500).json({
+        message: 'Failed to delete user. Please try again later.',
+      });
     }
   };
