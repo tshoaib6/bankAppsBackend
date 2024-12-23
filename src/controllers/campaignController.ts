@@ -114,3 +114,22 @@ export const getAllCampaigns = async (req: Request, res: Response): Promise<any>
     return res.status(500).json({ message: 'Server error while fetching campaigns' });
   }
 };
+export const getCampaignById = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { campaignId } = req.params;
+
+    // Fetch the campaign by its ID
+    const campaign = await CampaignService.getCampaignById(campaignId);
+
+    // If campaign is not found, return a 404 error
+    if (!campaign) {
+      return res.status(404).json({ message: 'Campaign not found' });
+    }
+
+    // Return the campaign
+    return res.status(200).json({ campaign });
+  } catch (error) {
+    console.error('Error fetching campaign:', error);
+    return res.status(500).json({ message: 'Server error while fetching campaign' });
+  }
+};

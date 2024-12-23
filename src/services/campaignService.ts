@@ -42,6 +42,8 @@ export const getAllCampaigns = async (): Promise<any> => {
     throw new Error('Error fetching campaigns');
   }
 };
+
+
 export default {
   createCampaign,
   updateCampaign,
