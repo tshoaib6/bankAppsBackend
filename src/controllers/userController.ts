@@ -11,9 +11,7 @@ import { validateEmail, validateName, validatePassword } from '../utils/validato
 import jwt from 'jsonwebtoken';
 import User from '../models/user.model';
 
-// ===============================
-// REGISTER USER
-// ===============================
+
 export const register = async (req: Request, res: Response): Promise<any> => {
   try {
     const { name, email, password, date_of_birth, is_over_18 } = req.body;
@@ -36,9 +34,7 @@ export const register = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
-// ===============================
-// LOGIN USER
-// ===============================
+
 export const login = async (req: Request, res: Response): Promise<any> => {
   try {
     const { email, password } = req.body;
@@ -66,9 +62,7 @@ export const login = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
-// ===============================
-// GET ALL USERS
-// ===============================
+
 export const getUsers = async (req: Request, res: Response): Promise<any> => {
   try {
     const users = await getAllUsers();
@@ -81,9 +75,7 @@ export const getUsers = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
-// ===============================
-// UPDATE USER STATUS (Block/Unblock)
-// ===============================
+
 export const updateUserStatus = async (req: Request, res: Response): Promise<any> => {
   try {
     const { userId } = req.params; 
@@ -104,9 +96,7 @@ export const updateUserStatus = async (req: Request, res: Response): Promise<any
   }
 };
 
-// ===============================
-// DELETE USER
-// ===============================
+
 export const deleteUser = async (req: Request, res: Response): Promise<any> => {
   try {
     const { userId } = req.params; 
@@ -121,9 +111,7 @@ export const deleteUser = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
-// ===============================
-// VERIFY EMAIL
-// ===============================
+
 export const verifyEmail = async (req: Request, res: Response): Promise<any> => {
   try {
     const { token } = req.params; // Token from URL params
