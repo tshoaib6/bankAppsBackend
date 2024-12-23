@@ -15,8 +15,8 @@ interface IHistory extends Document {
 const HistorySchema: Schema<IHistory> = new Schema(
   {
     user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // Reference to User
-    date: { type: Date, required: true },
-    description: { type: String, required: true },
+    date: { type: Date, required: false },
+    description: { type: String, required: false },
     points_earned: { type: Number, default: 0 },
     points_used: { type: String, default: '0' },
     type: { type: String, required: true },
@@ -26,6 +26,6 @@ const HistorySchema: Schema<IHistory> = new Schema(
 );
 
 // Create the History model
-const History = mongoose.model<IHistory>('History', HistorySchema);
+const History = mongoose.model<IHistory>('userHistory', HistorySchema);
 
 export default History;

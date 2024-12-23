@@ -1,94 +1,184 @@
 import bcrypt from 'bcryptjs';
-import User from '../models/user.model';
-import { validateEmail, validateName, validatePassword } from '../utils/validators';
-import { IUser } from '../models/user.model';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
+import User, { IUser } from '../models/user.model';
+import { sendVerificationEmail } from '../utils/emailService'; 
+import { logUserActivity } from '../services/userHistory';
 
-// Register user
+
+// export const registerUser = async (
+//     name: string, 
+//     email: string, 
+//     password: string, 
+//     date_of_birth: Date, 
+//     is_over_18: boolean
+//   ): Promise<IUser | null> => {
+//     try {
+//       // Check if the user with the provided email already exists
+//       const existingUser = await User.findOne({ email });
+//       if (existingUser) throw new Error('Email already exists');
+  
+//       // Hash the password before saving it
+//       const hashedPassword = await bcrypt.hash(password, 10);
+  
+//       // Generate a unique email verification token
+//       const verificationToken = crypto.randomBytes(32).toString('hex');
+//       const verificationTokenExpiry = new Date(Date.now() + 1000 * 60 * 60 * 24); // Token valid for 24 hours
+  
+//       // Create a new user instance
+//       const newUser = new User({
+//         name,
+//         email,
+//         date_of_birth,
+//         is_over_18,
+//         password: hashedPassword,
+//         verificationToken,
+//         verificationTokenExpiry,
+//       });
+  
+//       // Save the user to the database
+//       await newUser.save();
+  
+//       // Send verification email
+//       await sendVerificationEmail(email, verificationToken); // Send the email after saving the user
+  
+//       return newUser;
+//     } catch (error) {
+//       console.error('Error in registerUser service:', error);
+//       throw new Error('Error registering user');
+//     }
+//   };
+
+
+
+
 export const registerUser = async (
-  name: string, 
-  email: string, 
-  password: string, 
-  date_of_birth: Date, 
-  is_over_18: boolean
-): Promise<IUser> => {
-  // Validate user input
-  if (!validateEmail(email)) {
-    throw new Error('Invalid email format');
-  }
+    name: string,
+    email: string,
+    password: string,
+    date_of_birth: Date,
+    is_over_18: boolean
+  ): Promise<IUser | null> => {
+    try {
+      // Check if the user with the provided email already exists
+      const existingUser = await User.findOne({ email });
+      if (existingUser) throw new Error('Email already exists');
+  
+      // Hash the password before saving it
+      const hashedPassword = await bcrypt.hash(password, 10);
+  
+      // Generate a unique email verification token
+      const verificationToken = crypto.randomBytes(32).toString('hex');
+      const verificationTokenExpiry = new Date(Date.now() + 1000 * 60 * 60 * 24); // Token valid for 24 hours
+  
+      // Create a new user instance
+      const newUser: IUser = new User({
+        name,
+        email,
+        date_of_birth,
+        is_over_18,
+        password: hashedPassword,
+        verificationToken,
+        verificationTokenExpiry,
+      });
+  
+      // Save the user to the database
+      await newUser.save();
+  
+      // Send verification email
+      await sendVerificationEmail(email, verificationToken);
+  
+      // Log the signup activity
+      await logUserActivity(
+        newUser._id.toString(), // Convert _id to a string
+        'User signed up successfully.', // Description
+        'signup', // Type
+        0, // Points earned
+        0 // Points used
+      );
+  
+      return newUser;
+    } catch (error) {
+      console.error('Error in registerUser service:', error);
+      throw new Error('Error registering user');
+    }
+  };
 
-  if (!validateName(name)) {
-    throw new Error('Invalid name format. Name must only contain letters and spaces.');
-  }
-
-  if (!validatePassword(password)) {
-    throw new Error('Password must be at least 8 characters long, contain a number, and a special character.');
-  }
-
-  // Hash the password before saving
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  const user = new User({
-    name,
-    email,
-    password: hashedPassword,
-    date_of_birth,
-    is_over_18,
-  });
-
+export const loginUserService = async (email: string, password: string): Promise<IUser | null> => {
   try {
-    const savedUser = await user.save();
-    // Return plain object by using toObject() to avoid Mongoose methods
-    const userResponse = savedUser.toObject();
+    const user = await User.findOne({ email });
+    if (!user) throw new Error('User not found');
 
-    // Cast userResponse to IUser type
-    return userResponse as IUser;  // Casting to IUser type
-  } catch (error: any) {
-    throw new Error('Error registering user: ' + error.message);
+    // Check if the user's email is verified
+    if (!user.isVerified) throw new Error('Email is not verified');
+
+    // Compare the provided password with the stored hashed password
+    const isPasswordMatch = await bcrypt.compare(password, user.password);
+    if (!isPasswordMatch) throw new Error('Invalid email or password');
+
+    return user;
+  } catch (error) {
+    console.error('Error in loginUserService:', error);
+    throw new Error('Error logging in');
   }
 };
 
-// Login user
-export const loginUserService = async (email: string, password: string): Promise<IUser & { token: string }> => {
-    try {
-      // Find user by email with lean() for a plain object response
-      const user = await User.findOne({ email }).lean<IUser>(); // Leaning the result to get a plain object
-  
-      if (!user) {
-        throw new Error('User not found');
-      }
-  
-      // Check if the user is active (not blocked)
-      if (!user.isActive) {
-        throw new Error('This user has been blocked and cannot log in');
-      }
-  
-      // Compare the password with the stored hashed password
-      const isMatch = await bcrypt.compare(password, user.password);
-  
-      if (!isMatch) {
-        throw new Error('Invalid credentials');
-      }
-  
-      // Generate a JWT token
-      const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET!, { expiresIn: '1h' });
-  
-      // Clean response by ensuring no internal Mongoose properties
-      const userResponse = { ...user, token };  // Add token to the plain object response
-  
-      // Manually cast the response to the expected type
-      return userResponse as IUser & { token: string };  // Casting the response to IUser type with token
-    } catch (error: any) {
-      throw new Error('Login failed: ' + error.message);
-    }
-  };
 
 export const getAllUsers = async (): Promise<IUser[]> => {
-    try {
-      // Fetch all users from the database using the lean() method for plain objects
-      const users = await User.find().lean<IUser[]>(); // This will return a plain array of IUser objects
-      return users;
-    } catch (error: any) {
-      throw new Error('Error fetching users: ' + error.message);
+  try {
+    const users = await User.find({});
+    return users;
+  } catch (error) {
+    console.error('Error in getAllUsers service:', error);
+    throw new Error('Error fetching users');
+  }
+};
+
+
+export const updateUserStatusService = async (userId: string, isActive: boolean): Promise<IUser | null> => {
+  try {
+    const updatedUser = await User.findByIdAndUpdate(
+      userId, 
+      { isActive }, 
+      { new: true } // Return the updated document
+    );
+    return updatedUser;
+  } catch (error) {
+    console.error('Error in updateUserStatusService:', error);
+    throw new Error('Error updating user status');
+  }
+};
+
+export const deleteUserService = async (userId: string): Promise<IUser | null> => {
+  try {
+    const deletedUser = await User.findByIdAndDelete(userId);
+    return deletedUser;
+  } catch (error) {
+    console.error('Error in deleteUserService:', error);
+    throw new Error('Error deleting user');
+  }
+};
+
+export const verifyEmailService = async (token: string): Promise<IUser | null> => {
+  try {
+    // Find the user with the provided token
+    const user = await User.findOne({ verificationToken: token });
+    if (!user) throw new Error('Invalid token');
+
+    // Check if the token has expired
+    if (user.verificationTokenExpiry && user.verificationTokenExpiry < new Date()) {
+      throw new Error('Token has expired');
     }
-  };
+
+    // Update the user's status to verified
+    user.isVerified = true;
+    user.verificationToken = ''; // Clear the token after successful verification
+    user.verificationTokenExpiry = null; // Clear expiry date, set to null instead of undefined
+    await user.save();
+
+    return user;
+  } catch (error) {
+    console.error('Error in verifyEmailService:', error);
+    throw new Error('Error verifying email');
+  }
+};
