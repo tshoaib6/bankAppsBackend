@@ -45,7 +45,6 @@ export const updateCampaign = async (req: Request, res: Response): Promise<any> 
     const { campaignId } = req.params;
     const updates = req.body;
 
-    // Extract the userId from the authorization token
     const token = req.header('Authorization')?.replace('Bearer ', '');
     if (!token) {
       return res.status(401).json({ message: 'Authorization token required' });
@@ -54,23 +53,19 @@ export const updateCampaign = async (req: Request, res: Response): Promise<any> 
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
     const userId = decoded.userId;
 
-    // Fetch the existing campaign details using the new service method
     const existingCampaign = await CampaignService.getCampaignById(campaignId);
 
-    // Check if the logged-in user is the creator of the campaign
     if (existingCampaign.enrolled_users[0].toString() !== userId) {
       return res.status(403).json({ message: 'You are not authorized to update this campaign' });
     }
 
-    // If a new image file is uploaded, upload it to Cloudinary and update the image URL
     if (req.file) {
-      const imageUrl = await uploadToCloudinary(req.file.path, 'campaign_images');
+      // Ensure req.file.buffer exists before uploading
+      const imageUrl = await uploadToCloudinary(req.file.buffer, 'campaign_images');
       updates.image_url = imageUrl;
     }
 
-    // Update the campaign
     const updatedCampaign = await CampaignService.updateCampaign(campaignId, updates, userId);
-
     return res.status(200).json({ campaign: updatedCampaign });
   } catch (error) {
     console.error('Error updating campaign:', error);
