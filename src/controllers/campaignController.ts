@@ -38,7 +38,7 @@ export const createCampaign = async (req: Request, res: Response): Promise<any> 
 };
 
 
-// Update a campaign
+
 // Update a campaign
 export const updateCampaign = async (req: Request, res: Response): Promise<any> => {
   try {
