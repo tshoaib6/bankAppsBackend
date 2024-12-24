@@ -70,10 +70,13 @@ const deleteStore = async (storeId: string): Promise<IStore | null> => {
   }
 };
 
+
+
 export default {
   createStore,
   getStores,
   getStoreById,
   updateStore,
   deleteStore,
+  
 };
