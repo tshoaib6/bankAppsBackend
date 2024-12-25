@@ -73,6 +73,8 @@ export const updateCampaign = async (req: Request, res: Response): Promise<any> 
   }
 };
 
+
+
 // Delete a campaign
 export const deleteCampaign = async (req: Request, res: Response): Promise<any> => {
   try {
@@ -97,6 +99,9 @@ export const deleteCampaign = async (req: Request, res: Response): Promise<any> 
   }
 };
 
+
+
+
 export const getAllCampaigns = async (req: Request, res: Response): Promise<any> => {
   try {
     // Fetch all campaigns from the database
@@ -109,6 +114,9 @@ export const getAllCampaigns = async (req: Request, res: Response): Promise<any>
     return res.status(500).json({ message: 'Server error while fetching campaigns' });
   }
 };
+
+
+
 export const getCampaignById = async (req: Request, res: Response): Promise<any> => {
   try {
     const { campaignId } = req.params;
