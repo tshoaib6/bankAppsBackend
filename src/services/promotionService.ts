@@ -28,16 +28,15 @@ export const getPromotionById = async (promotionId: string): Promise<IPromotion 
     throw new Error('Error fetching promotion by ID');
   }
 };
-
-// Update a promotion
 export const updatePromotion = async (promotionId: string, data: any): Promise<IPromotion | null> => {
-  try {
-    return await Promotion.findByIdAndUpdate(promotionId, data, { new: true });
-  } catch (error) {
-    throw new Error('Error updating promotion');
-  }
-};
-
+    try {
+      // Find the promotion by ID and update with new data
+      return await Promotion.findByIdAndUpdate(promotionId, data, { new: true });
+    } catch (error) {
+      console.error('Error updating promotion:', error);
+      throw new Error('Error updating promotion');
+    }
+  };
 // Delete a promotion
 export const deletePromotion = async (promotionId: string): Promise<IPromotion | null> => {
   try {

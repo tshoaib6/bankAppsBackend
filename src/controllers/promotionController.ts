@@ -93,56 +93,63 @@ export const getPromotions = async (_req: Request, res: Response): Promise<any> 
     }
   };
   
-// Update a promotion
-export const updatePromotion = async (req: Request, res: Response): Promise<any> => {
-  try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
-    if (!token) return res.status(401).json({ message: 'Authorization token required' });
-
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
-    const userId = decoded.userId;
-
-    const { promotionId } = req.params;
-    const updates = req.body;
-
-    // Handle image upload
-    upload(req, res, async (err) => {
-      if (err instanceof multer.MulterError) {
-        return res.status(400).json({ message: 'Image upload error', error: err.message });
-      } else if (err) {
-        return res.status(500).json({ message: 'Server error', error: err.message });
-      }
-
-      let imageUrl = '';
-      if (req.file) {
-        imageUrl = await uploadToCloudinary(req.file.buffer, 'promotions');
-      }
-
-      const promotionData = { ...updates, image_url: imageUrl || updates.image_url };
-
-      // Validate store IDs if they are being updated
-      if (promotionData.stores) {
-        const storeIds = promotionData.stores.split(',');
-        const isValidStores = await validateStoreIds(storeIds);
-        if (!isValidStores) {
-          return res.status(400).json({ message: 'Invalid store IDs provided' });
+  export const updatePromotion = async (req: Request, res: Response): Promise<any> => {
+    try {
+      const token = req.header('Authorization')?.replace('Bearer ', '');
+      if (!token) return res.status(401).json({ message: 'Authorization token required' });
+  
+      const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
+      const userId = decoded.userId;
+  
+      const { promotionId } = req.params;
+  
+      // Handle image upload and construct `updateData`
+      upload(req, res, async (err) => {
+        if (err instanceof multer.MulterError) {
+          return res.status(400).json({ message: 'Image upload error', error: err.message });
+        } else if (err) {
+          return res.status(500).json({ message: 'Server error', error: err.message });
         }
-        promotionData.stores = storeIds;
-      }
+  
+        let imageUrl = '';
+        if (req.file) {
+          imageUrl = await uploadToCloudinary(req.file.buffer, 'promotions');
+        }
+  
+        // Merge image URL and other fields
+        const updates = req.body;
+        const updateData: any = {
+          ...updates,
+          ...(imageUrl && { image_url: imageUrl }),
+        };
+  
+        // Validate store IDs if `stores` field is being updated
+        if (updateData.stores) {
+          const storeIds = updateData.stores.split(',');
+          const isValidStores = await validateStoreIds(storeIds);
+          if (!isValidStores) {
+            return res.status(400).json({ message: 'Invalid store IDs provided' });
+          }
+          updateData.stores = storeIds;
+        }
+  
+        const updatedPromotion = await PromotionService.updatePromotion(promotionId, updateData);
+  
+        if (!updatedPromotion) {
+          return res.status(404).json({ message: 'Promotion not found' });
+        }
+  
+        return res.status(200).json({ promotion: updatedPromotion, message: 'Promotion updated successfully' });
+      });
+    } catch (error) {
+      console.error('Error updating promotion:', error);
+      return res.status(500).json({ message: 'Server error while updating promotion' });
+    }
+  };
+  
 
-      const updatedPromotion = await PromotionService.updatePromotion(promotionId, promotionData);
+  
 
-      if (!updatedPromotion) {
-        return res.status(404).json({ message: 'Promotion not found' });
-      }
-
-      return res.status(200).json({ promotion: updatedPromotion, message: 'Promotion updated successfully' });
-    });
-  } catch (error) {
-    console.error('Error updating promotion:', error);
-    return res.status(500).json({ message: 'Server error while updating promotion' });
-  }
-};
 export const deletePromotion = async (req: Request, res: Response): Promise<any> => {
     try {
       const token = req.header('Authorization')?.replace('Bearer ', '');
