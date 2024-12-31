@@ -10,12 +10,13 @@ router.post('/createqrCode', QRCodeController.createQRCode);
 router.get('/getqrCode', QRCodeController.getAllQRCodes);
 
 // Get QR Code by ID
-router.get('/:qrCodeId', QRCodeController.getQRCodeById);
+router.get('/getqrCodeById:qrCodeId', QRCodeController.getQRCodeById);
 
 // Update a QR Code
-router.put('/:qrCodeId', QRCodeController.updateQRCode);
+router.put('/updateqrCode/:qrCodeId', QRCodeController.updateQRCode);
 
-// Delete a QR Code
-router.delete('/:qrCodeId', QRCodeController.deleteQRCode);
+// Delete QR Code
+router.delete('/deleteqrCode/:qrCodeId', QRCodeController.deleteQRCode);
+
 
 export default router;
