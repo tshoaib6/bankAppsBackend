@@ -8,6 +8,8 @@ interface IHistory extends Document {
   points_earned?: number;
   points_used?: string;
   type: string;
+  qrCode: string; // The QR code scanned
+
   reference_id?: string;
 }
 
@@ -18,8 +20,10 @@ const HistorySchema: Schema<IHistory> = new Schema(
     date: { type: Date, required: false },
     description: { type: String, required: false },
     points_earned: { type: Number, default: 0 },
+    qrCode: { type: String, required: true },
+
     points_used: { type: String, default: '0' },
-    type: { type: String, required: true },
+    type: { type: String, required: false },
     reference_id: { type: String, default: '' },
   },
   { timestamps: true } // Automatically adds `createdAt` and `updatedAt` fields
