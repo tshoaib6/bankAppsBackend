@@ -3,7 +3,6 @@ import { redeemCampaign } from '../controllers/reedemCampaignController'; // Pat
 
 const router = Router();
 
-// Route to redeem a campaign
 router.post('/redeem', redeemCampaign);
 
 export default router;

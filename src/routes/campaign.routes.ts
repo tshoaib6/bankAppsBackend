@@ -10,10 +10,9 @@ import { upload } from '../middlewares/multer';
 
 const router = express.Router();
 
-router.post('/bankPremiums', upload.single('image'), createBankPremium); // Create a new BankPremium
-router.put('/updateBankPremiums/:bankPremiumId', upload.single('image'), updateBankPremium); // Update a BankPremium
-router.delete('/bankPremiums/:bankPremiumId', deleteBankPremium); // Delete a BankPremium
-router.get('/getBankPremiums', getAllBankPremiums); // Get all BankPremiums
-router.get('/getBankPremiumById/:bankPremiumId', getBankPremiumById); // Get a BankPremium by ID
-
+router.post('/bankPremiums', upload.single('image'), createBankPremium); 
+router.put('/updateBankPremiums/:bankPremiumId', upload.single('image'), updateBankPremium);
+router.delete('/bankPremiums/:bankPremiumId', deleteBankPremium); 
+router.get('/getBankPremiums', getAllBankPremiums); 
+router.get('/getBankPremiumById/:bankPremiumId', getBankPremiumById); 
 export default router;
