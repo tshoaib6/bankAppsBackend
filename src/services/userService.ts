@@ -89,13 +89,13 @@ export const registerUser = async (
       await sendVerificationEmail(email, verificationToken);
   
       // Log the signup activity
-      await logUserActivity(
-        newUser._id.toString(), // Convert _id to a string
-        'User signed up successfully.', // Description
-        'signup', // Type
-        0, // Points earned
-        0 // Points used
-      );
+      // await logUserActivity(
+      //   newUser._id.toString(), // Convert _id to a string
+      //   'User signed up successfully.', // Description
+      //   'signup', // Type
+      //   0, // Points earned
+      //   0 // Points used
+      // );
   
       return newUser;
     } catch (error) {

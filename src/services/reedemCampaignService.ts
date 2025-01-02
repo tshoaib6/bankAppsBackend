@@ -58,6 +58,7 @@ export const redeemCampaignService = async (userId: string, campaignId: string) 
       user: {
         // username: user.username,  // Send only necessary user details
         userId: user._id,
+        username: user.name,  // Send username
         remaining_points: user.points,  // Send remaining points
       },
       campaign: {

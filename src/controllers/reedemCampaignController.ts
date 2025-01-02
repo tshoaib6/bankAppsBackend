@@ -58,7 +58,7 @@ export const redeemCampaign = async (req: Request, res: Response): Promise<any> 
       message: 'Campaign redeemed successfully',
       user: {
         userId: user._id,
-        // username: user.username,  // Send username
+        username: user.name,  // Send username
         remaining_points: user.points,  // Send remaining points
       },
       campaign: {
