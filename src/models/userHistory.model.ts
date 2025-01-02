@@ -20,7 +20,7 @@ const HistorySchema: Schema<IHistory> = new Schema(
     date: { type: Date, required: false },
     description: { type: String, required: false },
     points_earned: { type: Number, default: 0 },
-    qrCode: { type: String, required: true },
+    qrCode: { type: String, required: false },
 
     points_used: { type: String, default: '0' },
     type: { type: String, required: false },
