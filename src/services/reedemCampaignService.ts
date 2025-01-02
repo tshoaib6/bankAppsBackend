@@ -64,7 +64,9 @@ export const redeemCampaignService = async (userId: string, campaignId: string) 
       campaign: {
         title: campaign.title,     // Send only necessary campaign details
         points_required: campaign.points_required,
-        enrolled_users: campaign.enrolled_users,  // Send enrolled users
+        enrolled_users: campaign.enrolled_users, // Includes userId and username
+
+
       },
       userHistory: {
         description: userHistoryEntry.description,  // Send relevant userHistory data

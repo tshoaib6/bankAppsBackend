@@ -2,7 +2,7 @@ import Campaign, { ICampaign } from '../models/campaign.model';
 
 // Create a new campaign
 const createCampaign = async (userId: string, data: Partial<ICampaign>) => {
-  const newCampaign = new Campaign({ ...data, enrolled_users: [userId] });
+  const newCampaign = new Campaign({ ...data, enrolled_users: [] });
  
   return await newCampaign.save();
 };
