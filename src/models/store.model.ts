@@ -1,6 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
-// Interface for the Store model
 export interface IStore extends Document {
   storeName: string;
   description: string;
@@ -8,7 +7,7 @@ export interface IStore extends Document {
     longitude: number;
     latitude: number;
   };
-  createdBy: mongoose.Schema.Types.ObjectId; // Reference to the User ID
+  createdBy: mongoose.Schema.Types.ObjectId;
 }
 
 const StoreSchema: Schema = new Schema(
@@ -19,7 +18,7 @@ const StoreSchema: Schema = new Schema(
       longitude: { type: Number, required: true },
       latitude: { type: Number, required: true },
     },
-    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // Reference to User
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   },
   { timestamps: true }
 );

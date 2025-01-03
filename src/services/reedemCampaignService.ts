@@ -11,38 +11,31 @@ import UserHistory from '../models/userHistory.model';
  */
 export const redeemCampaignService = async (userId: string, campaignId: string) => {
   try {
-    // Find the campaign and ensure it exists
     const campaign = await Campaign.findById(campaignId).exec();
     if (!campaign) {
       throw new Error('Campaign not found');
     }
 
-    // Parse `points_required` to a number for comparison
     const pointsRequired = parseInt(campaign.points_required, 10);
     if (isNaN(pointsRequired)) {
       throw new Error('Invalid points requirement for the campaign');
     }
 
-    // Find the user and ensure they exist
     const user = await User.findById(userId).exec();
     if (!user) {
       throw new Error('User not found');
     }
 
-    // Ensure the user has enough points
     if (user.points < pointsRequired) {
       throw new Error('Insufficient points to redeem this campaign');
     }
 
-    // Deduct points and save the updated user data
     user.points -= pointsRequired;
     await user.save();
 
-    // Add the user to the enrolled users of the campaign
     campaign.enrolled_users.push(userId);
     await campaign.save();
 
-    // Log the campaign purchase in the user's history
     const userHistoryEntry = new UserHistory({
       user_id: user._id,
       date: new Date(),
@@ -53,23 +46,21 @@ export const redeemCampaignService = async (userId: string, campaignId: string) 
     });
     await userHistoryEntry.save();
 
-    // Return necessary details in the response
     return {
       user: {
-        // username: user.username,  // Send only necessary user details
         userId: user._id,
-        username: user.name,  // Send username
-        remaining_points: user.points,  // Send remaining points
+        username: user.name,  
+        remaining_points: user.points,  
       },
       campaign: {
-        title: campaign.title,     // Send only necessary campaign details
+        title: campaign.title,    
         points_required: campaign.points_required,
-        enrolled_users: campaign.enrolled_users, // Includes userId and username
+        enrolled_users: campaign.enrolled_users, 
 
 
       },
       userHistory: {
-        description: userHistoryEntry.description,  // Send relevant userHistory data
+        description: userHistoryEntry.description,  
         points_used: userHistoryEntry.points_used,
         type: userHistoryEntry.type,
       },

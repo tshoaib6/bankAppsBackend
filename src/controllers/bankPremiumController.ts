@@ -3,7 +3,6 @@ import jwt from 'jsonwebtoken';
 import BankPremiumService from '../services/bankPremiumService';
 import { uploadToCloudinary } from '../utils/cloudinary';
 
-// Create a new BankPremium entry
 export const createBankPremium = async (req: Request, res: Response): Promise<any> => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
@@ -16,7 +15,6 @@ export const createBankPremium = async (req: Request, res: Response): Promise<an
 
     if (!req.file) return res.status(400).json({ message: 'Image is required' });
 
-    // Upload image buffer to Cloudinary
     const imageUrl = await uploadToCloudinary(req.file.buffer, 'bankpremium_images');
 
     const bankPremiumData = {
@@ -32,7 +30,6 @@ export const createBankPremium = async (req: Request, res: Response): Promise<an
 
     const newBankPremium = await BankPremiumService.createBankPremium(userId, bankPremiumData);
     
-    // Success response
     return res.status(201).json({
       message: 'BankPremium created successfully',
       bankPremium: newBankPremium,
@@ -65,7 +62,6 @@ export const updateBankPremium = async (req: Request, res: Response): Promise<an
 };
 
 
-// Delete a BankPremium entry
 export const deleteBankPremium = async (req: Request, res: Response): Promise<any> => {
   try {
     const { bankPremiumId } = req.params;
@@ -81,7 +77,6 @@ export const deleteBankPremium = async (req: Request, res: Response): Promise<an
       return res.status(404).json({ message: 'BankPremium not found' });
     }
 
-    // Success response
     return res.status(200).json({
       message: 'BankPremium deleted successfully',
       bankPremium: bankPremium,
@@ -92,7 +87,6 @@ export const deleteBankPremium = async (req: Request, res: Response): Promise<an
   }
 };
 
-// Get all BankPremium entries
 export const getAllBankPremiums = async (req: Request, res: Response): Promise<any> => {
   try {
     const bankPremiums = await BankPremiumService.getAllBankPremiums();
@@ -101,7 +95,6 @@ export const getAllBankPremiums = async (req: Request, res: Response): Promise<a
       return res.status(404).json({ message: 'No BankPremiums found' });
     }
 
-    // Success response
     return res.status(200).json({
       message: 'BankPremiums fetched successfully',
       bankPremiums,
@@ -112,7 +105,6 @@ export const getAllBankPremiums = async (req: Request, res: Response): Promise<a
   }
 };
 
-// Get a specific BankPremium entry by ID
 export const getBankPremiumById = async (req: Request, res: Response): Promise<any> => {
   try {
     const { bankPremiumId } = req.params;
@@ -122,7 +114,6 @@ export const getBankPremiumById = async (req: Request, res: Response): Promise<a
       return res.status(404).json({ message: 'BankPremium not found' });
     }
 
-    // Success response
     return res.status(200).json({
       message: 'BankPremium fetched successfully',
       bankPremium,

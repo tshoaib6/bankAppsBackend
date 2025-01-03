@@ -9,7 +9,6 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// Helper function to send emails
 export const sendEmail = async (to: string, subject: string, text: string): Promise<void> => {
   const mailOptions = {
     from: process.env.EMAIL_USER,  

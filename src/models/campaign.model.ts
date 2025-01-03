@@ -1,6 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-// Define the interface for the Campaign document
 export interface ICampaign extends Document {
   title: string;
   description: string;
@@ -9,10 +8,9 @@ export interface ICampaign extends Document {
   end_date: Date;
   image_url: string;
   active: boolean;
-  enrolled_users: string[]; // Array of user IDs (as strings)
+  enrolled_users: string[]; 
 }
 
-// Define the schema for the Campaign model
 const CampaignSchema: Schema<ICampaign> = new Schema(
   {
     title: { type: String, required: true },
@@ -21,13 +19,12 @@ const CampaignSchema: Schema<ICampaign> = new Schema(
     start_date: { type: Date, required: true },
     end_date: { type: Date, required: true },
     image_url: { type: String, required: true },
-    active: { type: Boolean, default: true }, // Default to active
-    enrolled_users: { type: [String], default: [] }, // Array of user IDs (strings)
+    active: { type: Boolean, default: true }, 
+    enrolled_users: { type: [String], default: [] }, 
   },
-  { timestamps: true } // Automatically adds `createdAt` and `updatedAt` fields
+  { timestamps: true } 
 );
 
-// Create the Campaign model
 const Campaign = mongoose.model<ICampaign>('Campaign', CampaignSchema);
 
 export default Campaign;

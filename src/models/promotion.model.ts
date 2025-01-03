@@ -9,8 +9,8 @@ export interface IPromotion extends Document {
   image_url: string;
   active: boolean;
   enrolled_users: mongoose.Types.ObjectId[];
-  stores: mongoose.Types.ObjectId[]; // Stores associated with this promotion
-  createdBy: mongoose.Types.ObjectId; // User who created the promotion
+  stores: mongoose.Types.ObjectId[]; 
+  createdBy: mongoose.Types.ObjectId; 
 }
 
 const PromotionSchema: Schema = new Schema(
@@ -46,20 +46,20 @@ const PromotionSchema: Schema = new Schema(
     enrolled_users: [
       {
         type: mongoose.Types.ObjectId,
-        ref: 'User', // Assuming you have a User collection
+        ref: 'User', 
       },
     ],
     stores: [
       {
         type: mongoose.Types.ObjectId,
-        ref: 'Store', // Referencing the Store model
+        ref: 'Store', 
         required: true,
       },
     ],
     createdBy: {
       type: mongoose.Types.ObjectId,
-      ref: 'User', // Referencing the User model
-      required: true, // This will be set when creating the promotion
+      ref: 'User', 
+      required: true, 
     },
   },
   { timestamps: true }

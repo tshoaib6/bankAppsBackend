@@ -1,22 +1,20 @@
 import nodemailer from 'nodemailer';
 
-// Create a transporter object using SMTP
 const transporter = nodemailer.createTransport({
-  service: 'gmail', // or use another service like SendGrid, Mailgun, etc.
+  service: 'gmail',
   auth: {
-    user: process.env.EMAIL_USER, // Your email (make sure to store this in an environment variable)
-    pass: process.env.EMAIL_PASS, // Your email password (also stored in an env var)
+    user: process.env.EMAIL_USER, 
+    pass: process.env.EMAIL_PASS,
   },
 });
 
-// Function to send a verification email
 export const sendVerificationEmail = async (email: string, verificationToken: string): Promise<void> => {
   const verificationUrl = `http://yourdomain.com/verify-email?token=${verificationToken}`; // Replace with your front-end URL
 
   const mailOptions = {
-    from: process.env.EMAIL_USER, // Sender address
-    to: email, // Recipient address
-    subject: 'Email Verification', // Subject line
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: 'Email Verification', 
     text: `Please click the following link to verify your email: ${verificationUrl}`,
     html: `<p>Please click the following link to verify your email: <a href="${verificationUrl}">${verificationUrl}</a></p>`,
   };

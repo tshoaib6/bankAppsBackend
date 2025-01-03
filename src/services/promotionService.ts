@@ -1,6 +1,5 @@
 import Promotion, { IPromotion } from '../models/promotion.model';
 
-// Create a promotion
 export const createPromotion = async (data: any): Promise<IPromotion> => {
   try {
     const promotion = new Promotion(data);
@@ -11,7 +10,6 @@ export const createPromotion = async (data: any): Promise<IPromotion> => {
   }
 };
 
-// Get all promotions
 export const getPromotions = async (): Promise<IPromotion[]> => {
   try {
     return await Promotion.find();
@@ -20,7 +18,6 @@ export const getPromotions = async (): Promise<IPromotion[]> => {
   }
 };
 
-// Get a promotion by ID
 export const getPromotionById = async (promotionId: string): Promise<IPromotion | null> => {
   try {
     return await Promotion.findById(promotionId);
@@ -30,14 +27,12 @@ export const getPromotionById = async (promotionId: string): Promise<IPromotion 
 };
 export const updatePromotion = async (promotionId: string, data: any): Promise<IPromotion | null> => {
     try {
-      // Find the promotion by ID and update with new data
       return await Promotion.findByIdAndUpdate(promotionId, data, { new: true });
     } catch (error) {
       console.error('Error updating promotion:', error);
       throw new Error('Error updating promotion');
     }
   };
-// Delete a promotion
 export const deletePromotion = async (promotionId: string): Promise<IPromotion | null> => {
   try {
     return await Promotion.findByIdAndDelete(promotionId);

@@ -8,7 +8,6 @@ const dbUrl = process.env.MONGO_URI || 'mongodb://localhost:27017/test';
 
 const server = http.createServer(app);
 
-// Initialize Socket.IO with CORS configuration using the utility function
 
 mongoose.connect(dbUrl)
   .then(() => {

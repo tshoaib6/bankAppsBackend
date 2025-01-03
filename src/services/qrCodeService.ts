@@ -1,57 +1,68 @@
-import QRCode from '../models/QRCode.model';
-import { IQRCode } from '../models/QRCode.model';
+import QRCode from '../models/QRCode.model'
+import { IQRCode } from '../models/QRCode.model'
 
-// Create a new QR Code
 export const createQRCode = async (data: any): Promise<IQRCode> => {
   try {
-    const { code, points, isUsed, createdBy } = data;
+    const { code, points, isUsed, createdBy } = data
 
-    // Input validation
     if (!code || typeof points !== 'number' || typeof isUsed !== 'boolean') {
-      throw new Error('Invalid input. Ensure "code" is a string, "points" is a number, and "isUsed" is a boolean.');
+      throw new Error(
+        'Invalid input. Ensure "code" is a string, "points" is a number, and "isUsed" is a boolean.'
+      )
     }
 
-    const qrCode = new QRCode({ code, points, isUsed, createdBy });
-    await qrCode.save();
+    const qrCode = new QRCode({ code, points, isUsed, createdBy })
+    await qrCode.save()
 
-    return qrCode;
+    return qrCode
   } catch (error) {
-    throw new Error(error instanceof Error ? error.message : 'Error creating QR code');
+    throw new Error(
+      error instanceof Error ? error.message : 'Error creating QR code'
+    )
   }
-};
+}
 
-// Get all QR Codes
 export const getAllQRCodes = async (): Promise<IQRCode[]> => {
   try {
-    return await QRCode.find();
+    return await QRCode.find()
   } catch (error) {
-    throw new Error(error instanceof Error ? error.message : 'Error fetching QR codes');
+    throw new Error(
+      error instanceof Error ? error.message : 'Error fetching QR codes'
+    )
   }
-};
+}
 
-// Get QR Code by ID
-export const getQRCodeById = async (qrCodeId: string): Promise<IQRCode | null> => {
+export const getQRCodeById = async (
+  qrCodeId: string
+): Promise<IQRCode | null> => {
   try {
-    return await QRCode.findById(qrCodeId);
+    return await QRCode.findById(qrCodeId)
   } catch (error) {
-    throw new Error(error instanceof Error ? error.message : 'Error fetching QR code');
+    throw new Error(
+      error instanceof Error ? error.message : 'Error fetching QR code'
+    )
   }
-};
+}
 
-// Update QR Code
-export const updateQRCode = async (qrCodeId: string, data: any): Promise<IQRCode | null> => {
+export const updateQRCode = async (
+  qrCodeId: string,
+  data: any
+): Promise<IQRCode | null> => {
   try {
-    return await QRCode.findByIdAndUpdate(qrCodeId, data, { new: true });
+    return await QRCode.findByIdAndUpdate(qrCodeId, data, { new: true })
   } catch (error) {
-    throw new Error(error instanceof Error ? error.message : 'Error updating QR code');
+    throw new Error(
+      error instanceof Error ? error.message : 'Error updating QR code'
+    )
   }
-};
+}
 
-// Delete QR Code
 export const deleteQRCode = async (qrCodeId: string): Promise<void> => {
   try {
-    await QRCode.findByIdAndDelete(qrCodeId);
+    await QRCode.findByIdAndDelete(qrCodeId)
   } catch (error) {
-    throw new Error(error instanceof Error ? error.message : 'Error deleting QR code');
+    throw new Error(
+      error instanceof Error ? error.message : 'Error deleting QR code'
+    )
   }
-};
+}
