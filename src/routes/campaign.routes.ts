@@ -1,18 +1,21 @@
-import express from 'express';
-import { 
-  createBankPremium, 
-  deleteBankPremium, 
-  updateBankPremium, 
-  getAllBankPremiums, 
-  getBankPremiumById 
-} from '../controllers/bankPremiumController';
-import { upload } from '../middlewares/multer';
-
+import express from "express";
+import {
+  createCampaign,
+  deleteCampaign,
+  updateCampaign,
+  getAllCampaigns,
+  getCampaignById,
+} from "../controllers/campaignController";
+import { upload } from "../middlewares/multer";
 const router = express.Router();
-
-router.post('/bankPremiums', upload.single('image'), createBankPremium); 
-router.put('/updateBankPremiums/:bankPremiumId', upload.single('image'), updateBankPremium);
-router.delete('/bankPremiums/:bankPremiumId', deleteBankPremium); 
-router.get('/getBankPremiums', getAllBankPremiums); 
-router.get('/getBankPremiumById/:bankPremiumId', getBankPremiumById); 
+router.post("/campaigns", upload.single("image"), createCampaign); // Create a new campaign
+router.put("/campaigns/:campaignId", upload.single("image"), updateCampaign); // Update a campaign
+router.put(
+  "/updateCampaigns/:campaignId",
+  upload.single("image"),
+  updateCampaign
+); // Update a campaign
+router.delete("/campaigns/:campaignId", deleteCampaign); // Delete a campaign
+router.get("/getCampaigns", getAllCampaigns);
+router.get("/getCampaignsById/:campaignId", getCampaignById);
 export default router;
