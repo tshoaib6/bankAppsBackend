@@ -1,165 +1,164 @@
-import { Request, Response } from 'express'
-import jwt from 'jsonwebtoken'
-import * as QRCodeService from '../services/qrCodeService'
+import { Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
+import * as QRCodeService from '../services/qrCodeService';
 
-export const createQRCode = async (
-  req: Request,
-  res: Response
-): Promise<any> => {
+export const createQRCode = async (req: Request, res: Response): Promise<any> => {
   try {
-    const token = req.header('Authorization')?.replace('Bearer ', '')
-    if (!token)
-      return res.status(401).json({ message: 'Authorization token required' })
-
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!)
-    const userId = decoded.userId
-
-    const { code, points, isUsed } = req.body
-
-    if (!code || typeof points !== 'number' || typeof isUsed !== 'boolean') {
-      return res.status(400).json({
-        message:
-          'Invalid input. Ensure "code" is a string, "points" is a number, and "isUsed" is a boolean.'
-      })
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({ message: 'Authorization token required' });
     }
 
-    const qrCodeData = { code, points, isUsed, createdBy: userId }
-    const qrCode = await QRCodeService.createQRCode(qrCodeData)
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
+    const userId = decoded.userId;
+
+    const { code, points, isUsed, brand } = req.body;
+
+    if (
+      !code ||
+      typeof points !== 'number' ||
+      typeof isUsed !== 'boolean' ||
+      !brand
+    ) {
+      return res.status(400).json({
+        message:
+          'Invalid input. Ensure "code" is a string, "points" is a number, "isUsed" is a boolean, and "brand" is provided.'
+      });
+    }
+
+    const qrCodeData = { code, points, isUsed, createdBy: userId, brand };
+    const qrCode = await QRCodeService.createQRCode(qrCodeData);
 
     return res
       .status(201)
-      .json({ message: 'QR Code created successfully', qrCode })
+      .json({ message: 'QR Code created successfully', qrCode });
   } catch (error) {
     return res.status(500).json({
       message: 'Server error while creating QR code. Please try again later.',
       error: error instanceof Error ? error.message : 'Unknown error'
-    })
+    });
   }
-}
+};
 
-export const getAllQRCodes = async (
-  _req: Request,
-  res: Response
-): Promise<any> => {
+export const getAllQRCodes = async (_req: Request, res: Response): Promise<any> => {
   try {
-    const qrCodes = await QRCodeService.getAllQRCodes()
+    const qrCodes = await QRCodeService.getAllQRCodes();
     return res
       .status(200)
-      .json({ qrCodes, message: 'QR Codes fetched successfully' })
+      .json({ qrCodes, message: 'QR Codes fetched successfully' });
   } catch (error) {
     return res.status(500).json({
       message: 'Server error while fetching QR codes. Please try again later.',
       error: error instanceof Error ? error.message : 'Unknown error'
-    })
+    });
   }
-}
+};
 
-export const getQRCodeById = async (
-  req: Request,
-  res: Response
-): Promise<any> => {
+export const getQRCodeById = async (req: Request, res: Response): Promise<any> => {
   try {
-    const { qrCodeId } = req.params
-    const qrCode = await QRCodeService.getQRCodeById(qrCodeId)
+    const { qrCodeId } = req.params;
+    const qrCode = await QRCodeService.getQRCodeById(qrCodeId);
 
     if (!qrCode) {
-      return res.status(404).json({ message: 'QR Code not found' })
+      return res.status(404).json({ message: 'QR Code not found' });
     }
 
     return res
       .status(200)
-      .json({ qrCode, message: 'QR Code fetched successfully' })
+      .json({ qrCode, message: 'QR Code fetched successfully' });
   } catch (error) {
     return res.status(500).json({
       message: 'Server error while fetching QR code. Please try again later.',
       error: error instanceof Error ? error.message : 'Unknown error'
-    })
+    });
   }
-}
+};
 
-export const updateQRCode = async (
-  req: Request,
-  res: Response
-): Promise<any> => {
+export const updateQRCode = async (req: Request, res: Response): Promise<any> => {
   try {
-    const token = req.header('Authorization')?.replace('Bearer ', '')
-    if (!token)
-      return res.status(401).json({ message: 'Authorization token required' })
-
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!)
-    const userId = decoded.userId
-
-    const { qrCodeId } = req.params
-    const { code, points, isUsed } = req.body
-
-    if (!code || typeof points !== 'number' || typeof isUsed !== 'boolean') {
-      return res.status(400).json({
-        message:
-          'Invalid input. Ensure "code" is a string, "points" is a number, and "isUsed" is a boolean.'
-      })
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({ message: 'Authorization token required' });
     }
 
-    const qrCode = await QRCodeService.getQRCodeById(qrCodeId)
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
+    const userId = decoded.userId;
+
+    const { qrCodeId } = req.params;
+    const { code, points, isUsed, brand } = req.body;
+
+    if (
+      !code ||
+      typeof points !== 'number' ||
+      typeof isUsed !== 'boolean' ||
+      !brand
+    ) {
+      return res.status(400).json({
+        message:
+          'Invalid input. Ensure "code" is a string, "points" is a number, "isUsed" is a boolean, and "brand" is provided.'
+      });
+    }
+
+    const qrCode = await QRCodeService.getQRCodeById(qrCodeId);
 
     if (!qrCode) {
-      return res.status(404).json({ message: 'QR Code not found' })
+      return res.status(404).json({ message: 'QR Code not found' });
     }
 
     if (qrCode.createdBy.toString() !== userId) {
       return res.status(403).json({
         message: 'You are not authorized to update this QR Code.'
-      })
+      });
     }
 
     const updatedQRCode = await QRCodeService.updateQRCode(qrCodeId, {
       code,
       points,
-      isUsed
-    })
+      isUsed,
+      brand
+    });
 
     return res
       .status(200)
-      .json({ message: 'QR Code updated successfully', updatedQRCode })
+      .json({ message: 'QR Code updated successfully', updatedQRCode });
   } catch (error) {
     return res.status(500).json({
       message: 'Server error while updating QR code. Please try again later.',
       error: error instanceof Error ? error.message : 'Unknown error'
-    })
+    });
   }
-}
+};
 
-export const deleteQRCode = async (
-  req: Request,
-  res: Response
-): Promise<any> => {
+export const deleteQRCode = async (req: Request, res: Response): Promise<any> => {
   try {
-    const token = req.header('Authorization')?.replace('Bearer ', '')
-    if (!token)
-      return res.status(401).json({ message: 'Authorization token required' })
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({ message: 'Authorization token required' });
+    }
 
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!)
-    const userId = decoded.userId
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
+    const userId = decoded.userId;
 
-    const { qrCodeId } = req.params
-    const qrCode = await QRCodeService.getQRCodeById(qrCodeId)
+    const { qrCodeId } = req.params;
+    const qrCode = await QRCodeService.getQRCodeById(qrCodeId);
 
     if (!qrCode) {
-      return res.status(404).json({ message: 'QR Code not found' })
+      return res.status(404).json({ message: 'QR Code not found' });
     }
 
     if (qrCode.createdBy.toString() !== userId) {
       return res.status(403).json({
         message: 'You are not authorized to delete this QR Code.'
-      })
+      });
     }
 
-    await QRCodeService.deleteQRCode(qrCodeId)
+    await QRCodeService.deleteQRCode(qrCodeId);
 
-    return res.status(200).json({ message: 'QR Code deleted successfully' })
+    return res.status(200).json({ message: 'QR Code deleted successfully' });
   } catch (error) {
     return res.status(500).json({
       message: 'Server error while deleting QR code. Please try again later.',
       error: error instanceof Error ? error.message : 'Unknown error'
-    })
+    });
   }
-}
+};

@@ -7,10 +7,12 @@ export interface IStore extends Document {
     longitude: number;
     latitude: number;
   };
-  createdBy: mongoose.Schema.Types.ObjectId;
+  createdBy: mongoose.Types.ObjectId;
+  brand?: mongoose.Types.ObjectId;
+  isActive?: boolean;
 }
 
-const StoreSchema: Schema = new Schema(
+const StoreSchema: Schema<IStore> = new Schema(
   {
     storeName: { type: String, required: true },
     description: { type: String, required: true },
@@ -18,7 +20,20 @@ const StoreSchema: Schema = new Schema(
       longitude: { type: Number, required: true },
       latitude: { type: Number, required: true },
     },
-    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    createdBy: {
+      type: Schema.Types.ObjectId, // ✅ Use Schema.Types.ObjectId
+      ref: 'User',
+      required: true,
+    },
+    brand: {
+      type: Schema.Types.ObjectId, // ✅ Optional: brand reference
+      ref: 'Brand',
+      required: false,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
   },
   { timestamps: true }
 );

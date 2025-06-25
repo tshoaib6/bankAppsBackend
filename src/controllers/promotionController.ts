@@ -46,9 +46,11 @@ export const createPromotion = async (
         points_required,
         start_date,
         end_date,
-        stores
+        stores,
+        brand // ✅ brand support
       } = req.body
-      const storeIds = stores.split(',') // Assuming stores are passed as comma-separated IDs
+
+      const storeIds = stores.split(',')
 
       const isValidStores = await validateStoreIds(storeIds)
       if (!isValidStores) {
@@ -63,7 +65,8 @@ export const createPromotion = async (
         end_date,
         image_url: imageUrl,
         stores: storeIds,
-        createdBy: userId
+        createdBy: userId,
+        ...(brand && { brand }) // ✅ optional brand association
       }
 
       const promotion = await PromotionService.createPromotion(promotionData)
@@ -79,13 +82,13 @@ export const createPromotion = async (
       .json({ message: 'Server error while creating promotion' })
   }
 }
+
 export const getPromotions = async (
   _req: Request,
   res: Response
 ): Promise<any> => {
   try {
     const promotions = await PromotionService.getPromotions()
-
     return res
       .status(200)
       .json({ promotions, message: 'Promotions fetched successfully' })
@@ -165,6 +168,10 @@ export const updatePromotion = async (
         updateData.stores = storeIds
       }
 
+      if (updates.brand) {
+        updateData.brand = updates.brand // ✅ allow optional brand update
+      }
+
       const updatedPromotion = await PromotionService.updatePromotion(
         promotionId,
         updateData
@@ -174,12 +181,10 @@ export const updatePromotion = async (
         return res.status(404).json({ message: 'Promotion not found' })
       }
 
-      return res
-        .status(200)
-        .json({
-          promotion: updatedPromotion,
-          message: 'Promotion updated successfully'
-        })
+      return res.status(200).json({
+        promotion: updatedPromotion,
+        message: 'Promotion updated successfully'
+      })
     })
   } catch (error) {
     console.error('Error updating promotion:', error)

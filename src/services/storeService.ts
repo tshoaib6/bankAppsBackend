@@ -42,6 +42,7 @@ const updateStore = async (
       throw new Error('Store not found')
     }
 
+    // Support optional fields like `brand` and `isActive`
     const updatedStore = await Store.findByIdAndUpdate(storeId, updates, {
       new: true
     })

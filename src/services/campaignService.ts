@@ -1,16 +1,26 @@
 import Campaign, { ICampaign } from '../models/campaign.model'
 
-const createCampaign = async (userId: string, data: Partial<ICampaign>) => {
-  const newCampaign = new Campaign({ ...data, enrolled_users: [] })
+// 🚀 Create campaign (now accepts brandId)
+const createCampaign = async (
+  userId: string,
+  data: Partial<ICampaign> & { brand?: string } // brand is optional for backward compatibility
+) => {
+  const newCampaign = new Campaign({
+    ...data,
+    enrolled_users: [],
+    brand: data.brand || undefined, // 👈 Safely include brand if provided
+  })
   return await newCampaign.save()
 }
 
+// 🔍 Get a single campaign
 const getCampaignById = async (campaignId: string) => {
-  const campaign = await Campaign.findById(campaignId)
+  const campaign = await Campaign.findById(campaignId).populate('brand') // 👈 include brand info
   if (!campaign) throw new Error('Campaign not found')
   return campaign
 }
 
+// ✏️ Update campaign (unchanged logic, preserved old user-based check)
 const updateCampaign = async (
   campaignId: string,
   updates: Partial<ICampaign>,
@@ -19,7 +29,7 @@ const updateCampaign = async (
   const existingCampaign = await Campaign.findById(campaignId)
   if (!existingCampaign) throw new Error('Campaign not found')
 
-  if (existingCampaign.enrolled_users[0].toString() !== userId) {
+  if (existingCampaign.enrolled_users[0]?.toString() !== userId) {
     throw new Error('You are not authorized to update this campaign')
   }
 
@@ -31,15 +41,20 @@ const updateCampaign = async (
   return updatedCampaign
 }
 
+// 🗑️ Delete campaign
 const deleteCampaign = async (campaignId: string) => {
   const campaign = await Campaign.findByIdAndDelete(campaignId)
   if (!campaign) throw new Error('Campaign not found')
   return campaign
 }
 
-export const getAllCampaigns = async (): Promise<any> => {
+// 📥 Get all campaigns (optional brand filter)
+export const getAllCampaigns = async (
+  brandId?: string
+): Promise<ICampaign[]> => {
   try {
-    return await Campaign.find()
+    const filter = brandId ? { brand: brandId } : {}
+    return await Campaign.find(filter).populate('brand') // 👈 include brand if requested
   } catch (error) {
     console.error('Error fetching campaigns from the database:', error)
     throw new Error('Error fetching campaigns')
@@ -51,5 +66,5 @@ export default {
   updateCampaign,
   deleteCampaign,
   getCampaignById,
-  getAllCampaigns
+  getAllCampaigns,
 }

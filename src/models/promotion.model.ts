@@ -9,57 +9,42 @@ export interface IPromotion extends Document {
   image_url: string;
   active: boolean;
   enrolled_users: mongoose.Types.ObjectId[];
-  stores: mongoose.Types.ObjectId[]; 
-  createdBy: mongoose.Types.ObjectId; 
+  stores: mongoose.Types.ObjectId[];
+  createdBy: mongoose.Types.ObjectId;
+  brand?: mongoose.Types.ObjectId; // ✅ NEW: Optional brand field
 }
 
 const PromotionSchema: Schema = new Schema(
   {
-    title: {
-      type: String,
-      required: true,
-    },
-    description: {
-      type: String,
-      required: true,
-    },
-    points_required: {
-      type: Number,
-      required: true,
-    },
-    start_date: {
-      type: Date,
-      required: true,
-    },
-    end_date: {
-      type: Date,
-      required: true,
-    },
-    image_url: {
-      type: String,
-      required: true,
-    },
-    active: {
-      type: Boolean,
-      default: true,
-    },
+    title: { type: String, required: true },
+    description: { type: String, required: true },
+    points_required: { type: Number, required: true },
+    start_date: { type: Date, required: true },
+    end_date: { type: Date, required: true },
+    image_url: { type: String, required: true },
+    active: { type: Boolean, default: true },
     enrolled_users: [
       {
         type: mongoose.Types.ObjectId,
-        ref: 'User', 
+        ref: 'User',
       },
     ],
     stores: [
       {
         type: mongoose.Types.ObjectId,
-        ref: 'Store', 
+        ref: 'Store',
         required: true,
       },
     ],
     createdBy: {
       type: mongoose.Types.ObjectId,
-      ref: 'User', 
-      required: true, 
+      ref: 'User',
+      required: true,
+    },
+    brand: {
+      type: mongoose.Types.ObjectId,
+      ref: 'Brand', // ✅ Reference to Brand
+      required: false, // ✅ Optional to preserve current functionality
     },
   },
   { timestamps: true }

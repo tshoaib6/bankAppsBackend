@@ -8,7 +8,8 @@ export interface ICampaign extends Document {
   end_date: Date;
   image_url: string;
   active: boolean;
-  enrolled_users: string[]; 
+  enrolled_users: string[];
+  brand: mongoose.Types.ObjectId; // 🔥 Brand reference added
 }
 
 const CampaignSchema: Schema<ICampaign> = new Schema(
@@ -19,10 +20,17 @@ const CampaignSchema: Schema<ICampaign> = new Schema(
     start_date: { type: Date, required: true },
     end_date: { type: Date, required: true },
     image_url: { type: String, required: true },
-    active: { type: Boolean, default: true }, 
-    enrolled_users: { type: [String], default: [] }, 
+    active: { type: Boolean, default: true },
+    enrolled_users: { type: [String], default: [] },
+
+    // 👇 New field to associate campaign with a brand
+    brand: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Brand',
+      required: true,
+    },
   },
-  { timestamps: true } 
+  { timestamps: true }
 );
 
 const Campaign = mongoose.model<ICampaign>('Campaign', CampaignSchema);

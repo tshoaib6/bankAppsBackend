@@ -11,7 +11,15 @@ export const createBankPremium = async (req: Request, res: Response): Promise<an
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
     const userId = decoded.userId;
 
-    const { title, description, points_required, start_date, end_date, active } = req.body;
+    const {
+      title,
+      description,
+      points_required,
+      start_date,
+      end_date,
+      active,
+      brand, // optional field
+    } = req.body;
 
     if (!req.file) return res.status(400).json({ message: 'Image is required' });
 
@@ -24,21 +32,26 @@ export const createBankPremium = async (req: Request, res: Response): Promise<an
       start_date: new Date(start_date),
       end_date: new Date(end_date),
       image_url: imageUrl,
-      active,
+      active: active ?? true,
       enrolled_users: [],
+      brand: brand || null,
     };
 
     const newBankPremium = await BankPremiumService.createBankPremium(userId, bankPremiumData);
-    
+
     return res.status(201).json({
       message: 'BankPremium created successfully',
       bankPremium: newBankPremium,
     });
-  } catch (error:any) {
+  } catch (error: any) {
     console.error('Error creating BankPremium:', error);
-    return res.status(500).json({ message: 'An error occurred while creating BankPremium', error: error.message });
+    return res.status(500).json({
+      message: 'An error occurred while creating BankPremium',
+      error: error.message,
+    });
   }
 };
+
 export const updateBankPremium = async (req: Request, res: Response): Promise<any> => {
   try {
     const { bankPremiumId } = req.params;
@@ -57,10 +70,12 @@ export const updateBankPremium = async (req: Request, res: Response): Promise<an
     });
   } catch (error: any) {
     console.error('Error updating BankPremium:', error);
-    return res.status(500).json({ message: 'An error occurred while updating BankPremium', error: error.message });
+    return res.status(500).json({
+      message: 'An error occurred while updating BankPremium',
+      error: error.message,
+    });
   }
 };
-
 
 export const deleteBankPremium = async (req: Request, res: Response): Promise<any> => {
   try {
@@ -79,11 +94,14 @@ export const deleteBankPremium = async (req: Request, res: Response): Promise<an
 
     return res.status(200).json({
       message: 'BankPremium deleted successfully',
-      bankPremium: bankPremium,
+      bankPremium,
     });
-  } catch (error:any) {
+  } catch (error: any) {
     console.error('Error deleting BankPremium:', error);
-    return res.status(500).json({ message: 'An error occurred while deleting BankPremium', error: error.message });
+    return res.status(500).json({
+      message: 'An error occurred while deleting BankPremium',
+      error: error.message,
+    });
   }
 };
 
@@ -99,9 +117,12 @@ export const getAllBankPremiums = async (req: Request, res: Response): Promise<a
       message: 'BankPremiums fetched successfully',
       bankPremiums,
     });
-  } catch (error:any) {
+  } catch (error: any) {
     console.error('Error fetching BankPremiums:', error);
-    return res.status(500).json({ message: 'An error occurred while fetching BankPremiums', error: error.message });
+    return res.status(500).json({
+      message: 'An error occurred while fetching BankPremiums',
+      error: error.message,
+    });
   }
 };
 
@@ -118,8 +139,11 @@ export const getBankPremiumById = async (req: Request, res: Response): Promise<a
       message: 'BankPremium fetched successfully',
       bankPremium,
     });
-  } catch (error:any) {
+  } catch (error: any) {
     console.error('Error fetching BankPremium:', error);
-    return res.status(500).json({ message: 'An error occurred while fetching BankPremium', error: error.message });
+    return res.status(500).json({
+      message: 'An error occurred while fetching BankPremium',
+      error: error.message,
+    });
   }
 };

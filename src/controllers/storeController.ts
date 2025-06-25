@@ -14,7 +14,14 @@ export const createStore = async (
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET!)
     const userId = decoded.userId
 
-    const { storeName, description, longitude, latitude } = req.body
+    const {
+      storeName,
+      description,
+      longitude,
+      latitude,
+      brand,        // new optional
+      isActive      // new optional
+    } = req.body
 
     if (!storeName || !description || !longitude || !latitude) {
       return res.status(400).json({ message: 'All fields are required' })
@@ -24,7 +31,9 @@ export const createStore = async (
       storeName,
       description,
       location: { longitude, latitude },
-      createdBy: userId
+      createdBy: userId,
+      ...(brand && { brand }),           // include if provided
+      ...(typeof isActive !== 'undefined' && { isActive }) // include if provided
     }
 
     const newStore = await StoreService.createStore(storeData)
@@ -120,7 +129,13 @@ export const updateStore = async (
         .json({ message: 'You are not authorized to update this store' })
     }
 
-    const updatedStore = await StoreService.updateStore(storeId, updates)
+    const updateData = {
+      ...updates,
+      ...(updates.brand && { brand: updates.brand }),
+      ...(typeof updates.isActive !== 'undefined' && { isActive: updates.isActive })
+    }
+
+    const updatedStore = await StoreService.updateStore(storeId, updateData)
 
     return res.status(200).json({
       store: updatedStore,

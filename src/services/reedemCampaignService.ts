@@ -49,18 +49,17 @@ export const redeemCampaignService = async (userId: string, campaignId: string) 
     return {
       user: {
         userId: user._id,
-        username: user.name,  
-        remaining_points: user.points,  
+        username: user.name,
+        remaining_points: user.points,
       },
       campaign: {
-        title: campaign.title,    
+        title: campaign.title,
         points_required: campaign.points_required,
-        enrolled_users: campaign.enrolled_users, 
-
-
+        enrolled_users: campaign.enrolled_users,
+        brand: campaign.brand ?? null, // Optional: included for consistency
       },
       userHistory: {
-        description: userHistoryEntry.description,  
+        description: userHistoryEntry.description,
         points_used: userHistoryEntry.points_used,
         type: userHistoryEntry.type,
       },

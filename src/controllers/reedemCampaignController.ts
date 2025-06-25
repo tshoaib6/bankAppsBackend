@@ -8,7 +8,7 @@ export const redeemCampaign = async (req: Request, res: Response): Promise<any> 
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
     if (!token) return res.status(401).json({ message: 'Authorization token required' });
-    
+
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
     const userId = decoded.userId;
 
@@ -24,7 +24,7 @@ export const redeemCampaign = async (req: Request, res: Response): Promise<any> 
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const pointsRequired = parseInt(campaign.points_required, 10); 
+    const pointsRequired = parseInt(campaign.points_required, 10);
     if (user.points < pointsRequired) {
       return res.status(400).json({ message: 'Insufficient points to redeem this campaign' });
     }
@@ -49,18 +49,19 @@ export const redeemCampaign = async (req: Request, res: Response): Promise<any> 
       message: 'Campaign redeemed successfully',
       user: {
         userId: user._id,
-        username: user.name, 
-        remaining_points: user.points, 
+        username: user.name,
+        remaining_points: user.points,
       },
       campaign: {
-        title: campaign.title,    
-        points_required: campaign.points_required,  
-        enrolled_users: campaign.enrolled_users, 
+        title: campaign.title,
+        points_required: campaign.points_required,
+        enrolled_users: campaign.enrolled_users,
+        brand: campaign.brand ?? null, // Include brand if available
       },
       userHistory: {
-        description: userHistoryEntry.description,  
-        points_used: userHistoryEntry.points_used, 
-        type: userHistoryEntry.type,  
+        description: userHistoryEntry.description,
+        points_used: userHistoryEntry.points_used,
+        type: userHistoryEntry.type,
       },
     });
   } catch (error: any) {
@@ -68,7 +69,7 @@ export const redeemCampaign = async (req: Request, res: Response): Promise<any> 
     if (error.name === 'JsonWebTokenError') {
       return res.status(401).json({ message: 'Unauthorized: Invalid token' });
     }
-    return res.status(500).json({ message: 'Internal server error', error });
+    return res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };
 
@@ -80,25 +81,21 @@ export const getCampaignDetails = async (req: Request, res: Response): Promise<a
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
     const userId = decoded.userId;
 
-    const { campaignId } = req.params;  // Assuming campaignId is passed as a route parameter
-
+    const { campaignId } = req.params;
     if (!campaignId) {
       return res.status(400).json({ message: 'Campaign ID is required' });
     }
 
-    // Fetch the campaign by ID
     const campaign = await Campaign.findById(campaignId);
     if (!campaign) {
       return res.status(404).json({ message: 'Campaign not found' });
     }
 
-    // Fetch the user by ID
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Fetch the user's history related to the campaign
     const userHistory = await UserHistory.findOne({
       user_id: user._id,
       reference_id: campaignId,
@@ -114,13 +111,14 @@ export const getCampaignDetails = async (req: Request, res: Response): Promise<a
       },
       campaign: {
         title: campaign.title,
+        description: campaign.description,
         points_required: campaign.points_required,
         enrolled_users: campaign.enrolled_users,
-        description: campaign.description,
         start_date: campaign.start_date,
         end_date: campaign.end_date,
         image_url: campaign.image_url,
         active: campaign.active,
+        brand: campaign.brand ?? null, // Include brand if defined
       },
       userHistory: userHistory
         ? {
@@ -135,6 +133,6 @@ export const getCampaignDetails = async (req: Request, res: Response): Promise<a
     if (error.name === 'JsonWebTokenError') {
       return res.status(401).json({ message: 'Unauthorized: Invalid token' });
     }
-    return res.status(500).json({ message: 'Internal server error', error });
+    return res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };

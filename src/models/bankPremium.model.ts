@@ -8,7 +8,8 @@ export interface IBankPremium extends Document {
   end_date: Date;
   image_url: string;
   active: boolean;
-  enrolled_users: string[]; 
+  enrolled_users: mongoose.Types.ObjectId[];  // updated
+  brand?: string; // optional brand field
 }
 
 const BankPremiumSchema: Schema<IBankPremium> = new Schema(
@@ -19,10 +20,22 @@ const BankPremiumSchema: Schema<IBankPremium> = new Schema(
     start_date: { type: Date, required: true },
     end_date: { type: Date, required: true },
     image_url: { type: String, required: true },
-    active: { type: Boolean, default: true }, 
-    enrolled_users: { type: [String], default: [] }, 
+    active: { type: Boolean, default: true },
+
+    enrolled_users: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: []
+      }
+    ],
+
+    brand: {
+      type: String,
+      default: null // optional, only used if applicable
+    }
   },
-  { timestamps: true } 
+  { timestamps: true }
 );
 
 const BankPremium = mongoose.model<IBankPremium>('BankPremium', BankPremiumSchema);

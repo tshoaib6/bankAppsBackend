@@ -21,7 +21,8 @@ export const createCampaign = async (
       points_required,
       start_date,
       end_date,
-      active
+      active,
+      brand // 👈 added support for brand
     } = req.body
 
     if (!req.file) return res.status(400).json({ message: 'Image is required' })
@@ -39,6 +40,7 @@ export const createCampaign = async (
       end_date: new Date(end_date),
       image_url: imageUrl,
       active,
+      brand, // 👈 attach brand to the campaign
       enrolled_users: []
     }
 
@@ -73,7 +75,7 @@ export const updateCampaign = async (
 
     const existingCampaign = await CampaignService.getCampaignById(campaignId)
 
-    if (existingCampaign.enrolled_users[0].toString() !== userId) {
+    if (existingCampaign.enrolled_users[0]?.toString() !== userId) {
       return res
         .status(403)
         .json({ message: 'You are not authorized to update this campaign' })
@@ -106,8 +108,6 @@ export const deleteCampaign = async (
   res: Response
 ): Promise<any> => {
   try {
-    console.log('Deleting campaign with ID:', req.params.campaignId) // Add logging here
-
     const { campaignId } = req.params
     const token = req.header('Authorization')?.replace('Bearer ', '')
     if (!token)
@@ -135,7 +135,10 @@ export const getAllCampaigns = async (
   res: Response
 ): Promise<any> => {
   try {
-    const campaigns = await CampaignService.getAllCampaigns()
+    const { brandId } = req.query // 👈 support for brand filter
+    const campaigns = await CampaignService.getAllCampaigns(
+      brandId?.toString()
+    )
 
     return res.status(200).json({ campaigns })
   } catch (error) {
