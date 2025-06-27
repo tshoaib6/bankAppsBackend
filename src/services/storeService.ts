@@ -79,11 +79,20 @@ const deleteStore = async (storeId: string): Promise<IStore | null> => {
     )
   }
 }
+const getStoresByBrandId = async (brandId: string): Promise<IStore[]> => {
+  try {
+    return await Store.find({ brand: brandId });
+  } catch (error: any) {
+    console.error(`Error fetching stores for brand ID ${brandId}:`, error);
+    throw new Error(error.message || 'Failed to fetch stores by brand ID');
+  }
+}
 
 export default {
   createStore,
   getStores,
   getStoreById,
   updateStore,
-  deleteStore
+  deleteStore,
+  getStoresByBrandId
 }

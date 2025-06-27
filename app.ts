@@ -8,7 +8,10 @@ dotenv.config();
 const app: Application = express();
 
 app.use(express.json());
-
+app.use((req, res, next) => {
+  console.log(`[${req.method}] ${req.url} → body:`, req.body);
+  next();
+});
 // Middleware for CORS
 app.use((req: Request, res: Response, next: NextFunction): void => {
   const allowedOrigin = process.env.FRONT_END_URL || 'http://localhost:5173'; // Use the environment variable for front-end URL, with a fallback

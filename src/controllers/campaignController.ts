@@ -170,3 +170,14 @@ export const getCampaignById = async (
       .json({ message: 'Server error while fetching campaign' })
   }
 }
+
+export const getCampaignsByBrandId = async (req: Request, res: Response) => {
+  try {
+    const { brandId } = req.params;
+    const campaigns = await CampaignService.getCampaignsByBrandId(brandId);
+    res.status(200).json({ campaigns });
+  } catch (error) {
+    console.error('Error in getCampaignsByBrandId:', error);
+    res.status(500).json({ message: 'Failed to fetch campaigns by brand ID' });
+  }
+};

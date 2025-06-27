@@ -184,3 +184,12 @@ export const deleteStore = async (
       .json({ message: 'Server error while deleting store' })
   }
 }
+export const getStoresByBrandId = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { brandId } = req.params;
+    const stores = await StoreService.getStoresByBrandId(brandId);
+    res.status(200).json({ success: true, data: stores });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
