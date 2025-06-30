@@ -13,5 +13,7 @@ router.put('/updateqrCode/:qrCodeId', QRCodeController.updateQRCode);
 
 router.delete('/deleteqrCode/:qrCodeId', QRCodeController.deleteQRCode);
 
+router.get('/getQRCodeBybrandId/:brandId', QRCodeController.getQRCodesByBrandId);
+
 
 export default router;

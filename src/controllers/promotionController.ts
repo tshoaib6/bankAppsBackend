@@ -13,73 +13,71 @@ const validateStoreIds = async (storeIds: string[]): Promise<boolean> => {
   return validStores.length === storeIds.length
 }
 
-export const createPromotion = async (
-  req: Request,
-  res: Response
-): Promise<any> => {
+export const createPromotion = async (req: Request, res: Response): Promise<any> => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '')
-    if (!token)
+    if (!token) {
       return res.status(401).json({ message: 'Authorization token required' })
+    }
 
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET!)
     const userId = decoded.userId
 
     upload(req, res, async err => {
       if (err instanceof multer.MulterError) {
-        return res
-          .status(400)
-          .json({ message: 'Image upload error', error: err.message })
+        return res.status(400).json({ message: 'Image upload error', error: err.message })
       } else if (err) {
-        return res
-          .status(500)
-          .json({ message: 'Server error', error: err.message })
+        return res.status(500).json({ message: 'Server error', error: err.message })
       }
 
-      const imageUrl = req.file
-        ? await uploadToCloudinary(req.file.buffer, 'promotions')
-        : ''
+      try {
+        const imageUrl = req.file
+          ? await uploadToCloudinary(req.file.buffer, 'promotions')
+          : ''
 
-      const {
-        title,
-        description,
-        points_required,
-        start_date,
-        end_date,
-        stores,
-        brand // ✅ brand support
-      } = req.body
+        const {
+          title,
+          description,
+          points_required,
+          start_date,
+          end_date,
+          stores,
+          brand
+        } = req.body
 
-      const storeIds = stores.split(',')
+        const storeIds = stores?.split(',') || []
 
-      const isValidStores = await validateStoreIds(storeIds)
-      if (!isValidStores) {
-        return res.status(400).json({ message: 'Invalid store IDs provided' })
+        const isValidStores = await validateStoreIds(storeIds)
+        if (!isValidStores) {
+          return res.status(400).json({ message: 'Invalid store IDs provided' })
+        }
+
+        const promotionData = {
+          title,
+          description,
+          points_required,
+          start_date,
+          end_date,
+          image_url: imageUrl,
+          stores: storeIds,
+          createdBy: userId,
+          ...(brand && { brand }) // optional brand
+        }
+
+        const promotion = await PromotionService.createPromotion(promotionData)
+
+        return res.status(201).json({
+          message: 'Promotion created successfully',
+          promotion
+        })
+      } catch (innerErr: any) {
+        console.error('Inner error during promotion creation:', innerErr.message, innerErr)
+        return res.status(500).json({ message: 'Server error during promotion creation', error: innerErr.message })
       }
-
-      const promotionData = {
-        title,
-        description,
-        points_required,
-        start_date,
-        end_date,
-        image_url: imageUrl,
-        stores: storeIds,
-        createdBy: userId,
-        ...(brand && { brand }) // ✅ optional brand association
-      }
-
-      const promotion = await PromotionService.createPromotion(promotionData)
-
-      return res
-        .status(201)
-        .json({ message: 'Promotion created successfully', promotion })
     })
-  } catch (error) {
-    console.error('Error creating promotion:', error)
-    return res
-      .status(500)
-      .json({ message: 'Server error while creating promotion' })
+  } catch (outerErr: any) {
+    console.error('Outer error in createPromotion controller:', outerErr.message, outerErr)
+    return res.status(500).json({ message: 'Server error while creating promotion', error: outerErr.message })
   }
 }
 
@@ -219,5 +217,25 @@ export const deletePromotion = async (
     return res
       .status(500)
       .json({ message: 'Server error while deleting promotion' })
+  }
+}
+
+export const getPromotionsByBrandId = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { brandId } = req.params
+
+    if (!brandId) {
+      return res.status(400).json({ message: 'Brand ID is required' })
+    }
+
+    const promotions = await PromotionService.getPromotionsByBrandId(brandId)
+
+    return res.status(200).json({
+      promotions,
+      message: 'Promotions fetched successfully by brand ID'
+    })
+  } catch (error) {
+    console.error('Error fetching promotions by brand ID:', error)
+    return res.status(500).json({ message: 'Server error while fetching promotions by brand ID' })
   }
 }

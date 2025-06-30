@@ -1,6 +1,11 @@
-import QRCode from '../models/QRCode.model'
-import User from '../models/user.model'
-import UserHistory from '../models/userHistory.model'
+import QRCode from '../models/QRCode.model';
+import User from '../models/user.model';
+import UserHistory from '../models/userHistory.model';
+import { IBrand } from '../models/brand.model'; 
+
+function isBrandPopulated(brand: any): brand is IBrand {
+  return brand && typeof brand === 'object' && 'brandName' in brand;
+}
 
 export const handleQRCodeScan = async (userId: string, scannedCode: string) => {
   const qrCode = await QRCode.findOne({ code: scannedCode }).populate('brand');
@@ -18,7 +23,6 @@ export const handleQRCodeScan = async (userId: string, scannedCode: string) => {
   }
 
   const pointsEarned = qrCode.points;
-
   user.points += pointsEarned;
   await user.save();
 
@@ -26,10 +30,10 @@ export const handleQRCodeScan = async (userId: string, scannedCode: string) => {
     user_id: userId,
     points_earned: pointsEarned,
     qrCode: scannedCode,
-    brand: qrCode.brand?._id || null, // ⬅️ Optional if you want to store brand info
+    brand: isBrandPopulated(qrCode.brand) ? qrCode.brand._id : null,
     points_used: 0,
     reference_id: '',
-    type: 'QRCodeScan'
+    type: 'QRCodeScan',
   });
 
   await userHistory.save();
@@ -37,13 +41,22 @@ export const handleQRCodeScan = async (userId: string, scannedCode: string) => {
   qrCode.isUsed = true;
   await qrCode.save();
 
+  const populatedBrand = isBrandPopulated(qrCode.brand)
+    ? {
+        _id: qrCode.brand._id,
+        brandName: qrCode.brand.brandName,
+        description: qrCode.brand.description,
+        logo: qrCode.brand.logo,
+      }
+    : null;
+
   return {
     updatedUser: user,
     userHistory,
     scannedQRCode: {
       code: qrCode.code,
-      brand: qrCode.brand || null, // helpful for UI/logs
-      points: qrCode.points
-    }
+      brand: populatedBrand,
+      points: qrCode.points,
+    },
   };
 };

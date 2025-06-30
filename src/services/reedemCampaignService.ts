@@ -1,17 +1,21 @@
 import Campaign, { ICampaign } from '../models/campaign.model';
 import User, { IUser } from '../models/user.model';
 import UserHistory from '../models/userHistory.model';
+import Brand, { IBrand } from '../models/brand.model';
 
 /**
  * Redeem a campaign for a user.
  * @param userId - ID of the user redeeming the campaign.
  * @param campaignId - ID of the campaign to redeem.
- * @returns Updated user data and campaign details.
- * @throws Error if the campaign or user does not exist, or if points are insufficient.
+ * @returns Updated user data and campaign details including full brand info.
+ * @throws Error if campaign or user not found or points insufficient.
  */
 export const redeemCampaignService = async (userId: string, campaignId: string) => {
   try {
-    const campaign = await Campaign.findById(campaignId).exec();
+    const campaign = await Campaign.findById(campaignId)
+      .populate<{ brand: IBrand }>('brand')
+      .exec();
+
     if (!campaign) {
       throw new Error('Campaign not found');
     }
@@ -30,12 +34,15 @@ export const redeemCampaignService = async (userId: string, campaignId: string) 
       throw new Error('Insufficient points to redeem this campaign');
     }
 
+    // Deduct points
     user.points -= pointsRequired;
     await user.save();
 
+    // Enroll user
     campaign.enrolled_users.push(userId);
     await campaign.save();
 
+    // Log history
     const userHistoryEntry = new UserHistory({
       user_id: user._id,
       date: new Date(),
@@ -56,7 +63,15 @@ export const redeemCampaignService = async (userId: string, campaignId: string) 
         title: campaign.title,
         points_required: campaign.points_required,
         enrolled_users: campaign.enrolled_users,
-        brand: campaign.brand ?? null, // Optional: included for consistency
+        brand: campaign.brand
+          ? {
+              _id: campaign.brand._id,
+              brandName: campaign.brand.brandName,
+              description: campaign.brand.description,
+              logo: campaign.brand.logo,
+              isActive: campaign.brand.isActive,
+            }
+          : null,
       },
       userHistory: {
         description: userHistoryEntry.description,

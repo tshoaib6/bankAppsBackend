@@ -70,3 +70,12 @@ export const deleteQRCode = async (qrCodeId: string): Promise<void> => {
     );
   }
 };
+export const getQRCodesByBrandId = async (brandId: string): Promise<IQRCode[]> => {
+  try {
+    return await QRCode.find({ brand: brandId }).populate('brand').populate('createdBy');
+  } catch (error) {
+    throw new Error(
+      error instanceof Error ? error.message : 'Error fetching QR codes by brand'
+    );
+  }
+};

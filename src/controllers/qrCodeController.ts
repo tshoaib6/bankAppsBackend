@@ -162,3 +162,30 @@ export const deleteQRCode = async (req: Request, res: Response): Promise<any> =>
     });
   }
 };
+
+
+export const getQRCodesByBrandId = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { brandId } = req.params;
+
+    if (!brandId) {
+      return res.status(400).json({ message: 'Brand ID is required' });
+    }
+
+    const qrCodes = await QRCodeService.getQRCodesByBrandId(brandId);
+
+    if (!qrCodes || qrCodes.length === 0) {
+      return res.status(404).json({ message: 'No QR Codes found for this brand' });
+    }
+
+    return res.status(200).json({
+      qrCodes,
+      message: 'QR Codes fetched successfully for the brand'
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: 'Server error while fetching QR codes by brand',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};

@@ -3,6 +3,7 @@ import Campaign from '../models/campaign.model';
 import User from '../models/user.model';
 import UserHistory from '../models/userHistory.model';
 import jwt from 'jsonwebtoken';
+import { IBrand } from '../models/brand.model';
 
 export const redeemCampaign = async (req: Request, res: Response): Promise<any> => {
   try {
@@ -14,7 +15,9 @@ export const redeemCampaign = async (req: Request, res: Response): Promise<any> 
 
     const { campaignId } = req.body;
 
-    const campaign = await Campaign.findById(campaignId);
+    const campaign = await Campaign.findById(campaignId)
+      .populate<{ brand: IBrand }>('brand')
+      .exec();
     if (!campaign) {
       return res.status(404).json({ message: 'Campaign not found' });
     }
@@ -56,7 +59,14 @@ export const redeemCampaign = async (req: Request, res: Response): Promise<any> 
         title: campaign.title,
         points_required: campaign.points_required,
         enrolled_users: campaign.enrolled_users,
-        brand: campaign.brand ?? null, // Include brand if available
+        brand: campaign.brand
+          ? {
+              _id: campaign.brand._id,
+              brandName: campaign.brand.brandName,
+              description: campaign.brand.description,
+              logo: campaign.brand.logo,
+            }
+          : null,
       },
       userHistory: {
         description: userHistoryEntry.description,
@@ -86,7 +96,10 @@ export const getCampaignDetails = async (req: Request, res: Response): Promise<a
       return res.status(400).json({ message: 'Campaign ID is required' });
     }
 
-    const campaign = await Campaign.findById(campaignId);
+    const campaign = await Campaign.findById(campaignId)
+      .populate<{ brand: IBrand }>('brand')
+      .exec();
+
     if (!campaign) {
       return res.status(404).json({ message: 'Campaign not found' });
     }
@@ -118,7 +131,14 @@ export const getCampaignDetails = async (req: Request, res: Response): Promise<a
         end_date: campaign.end_date,
         image_url: campaign.image_url,
         active: campaign.active,
-        brand: campaign.brand ?? null, // Include brand if defined
+        brand: campaign.brand
+          ? {
+              _id: campaign.brand._id,
+              brandName: campaign.brand.brandName,
+              description: campaign.brand.description,
+              logo: campaign.brand.logo,
+            }
+          : null,
       },
       userHistory: userHistory
         ? {

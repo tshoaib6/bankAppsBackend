@@ -1,5 +1,5 @@
 import express from 'express';
-import {createPromotion,getPromotions,getPromotionById,updatePromotion,deletePromotion} from '../controllers/promotionController';
+import {createPromotion,getPromotions,getPromotionById,updatePromotion,deletePromotion, getPromotionsByBrandId} from '../controllers/promotionController';
 
 const router = express.Router();
 
@@ -12,5 +12,7 @@ router.get('/getPromotionById/:promotionId', getPromotionById);
 router.put('/updatePromotion/:promotionId', updatePromotion);
 
 router.delete('/deletePromotion/:promotionId', deletePromotion);
+
+router.get('/getPromotionsByBrandId/:brandId', getPromotionsByBrandId);
 
 export default router;
