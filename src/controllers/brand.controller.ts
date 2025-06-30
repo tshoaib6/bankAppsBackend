@@ -7,11 +7,24 @@ import {
   updateBrandStatusService,
   deleteBrandService,
 } from '../services/brand.service';
+import { IBrand } from '../models/brand.model';
 
-export const createBrand = async (req: Request, res: Response):Promise<any> => {
+export const createBrand = async (req: Request, res: Response): Promise<any> => {
   try {
-    const { brandName, description, logo } = req.body;
-    if (!brandName) return res.status(400).json({ message: 'Brand name is required' });
+    const { brandName, description } = req.body;
+
+    if (!brandName) {
+      return res.status(400).json({ message: 'Brand name is required' });
+    }
+
+    let logo: string | undefined;
+
+    if (req.file) {
+      // Convert image buffer to base64
+      const base64Image = req.file.buffer.toString('base64');
+      const mimeType = req.file.mimetype;
+      logo = `data:${mimeType};base64,${base64Image}`;
+    }
 
     const brand = await createBrandService(brandName, description, logo);
     res.status(201).json({ message: 'Brand created successfully', brand });
@@ -41,15 +54,26 @@ export const getBrandById = async (req: Request, res: Response):Promise<any> => 
   }
 };
 
-export const updateBrand = async (req: Request, res: Response):Promise<any> => {
+export const updateBrand = async (req: Request, res: Response): Promise<any> => {
   try {
-    const updatedBrand = await updateBrandService(req.params.id, req.body);
+    const updates: Partial<IBrand> = { ...req.body };
+
+    if (req.file) {
+      const base64Image = req.file.buffer.toString('base64');
+      const mimeType = req.file.mimetype;
+      updates.logo = `data:${mimeType};base64,${base64Image}`;
+    }
+
+    const updatedBrand = await updateBrandService(req.params.id, updates);
     if (!updatedBrand) return res.status(404).json({ message: 'Brand not found' });
+
     res.status(200).json({ message: 'Brand updated successfully', updatedBrand });
   } catch (error) {
+    console.error('Error updating brand:', error);
     res.status(500).json({ message: 'Failed to update brand' });
   }
 };
+
 
 export const updateBrandStatus = async (req: Request, res: Response):Promise<any> => {
   try {
