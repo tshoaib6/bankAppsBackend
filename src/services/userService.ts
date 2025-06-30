@@ -5,13 +5,16 @@ import User, { IUser } from '../models/user.model';
 import { sendVerificationEmail } from '../utils/emailService';
 import { logUserActivity } from '../services/userHistory';
 
+/**
+ * Register a new user
+ * Brand assignment is handled separately after login
+ */
 export const registerUser = async (
   name: string,
   email: string,
   password: string,
   date_of_birth: Date,
-  is_over_18: boolean,
-  brandId: string // ✅ Brand required
+  is_over_18: boolean
 ): Promise<IUser | null> => {
   try {
     const existingUser = await User.findOne({ email });
@@ -20,7 +23,7 @@ export const registerUser = async (
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const verificationToken = crypto.randomBytes(32).toString('hex');
-    const verificationTokenExpiry = new Date(Date.now() + 1000 * 60 * 60 * 24); // 24 hours
+    const verificationTokenExpiry = new Date(Date.now() + 1000 * 60 * 60 * 24); // 24 hrs
 
     const newUser: IUser = new User({
       name,
@@ -30,11 +33,10 @@ export const registerUser = async (
       password: hashedPassword,
       verificationToken,
       verificationTokenExpiry,
-      brand: brandId // ✅ Set brand
+      brands: [] // 👈 No brand assigned yet
     });
 
     await newUser.save();
-
     await sendVerificationEmail(email, verificationToken);
 
     return newUser;
@@ -44,6 +46,9 @@ export const registerUser = async (
   }
 };
 
+/**
+ * Login user
+ */
 export const loginUserService = async (
   email: string,
   password: string
@@ -64,47 +69,52 @@ export const loginUserService = async (
   }
 };
 
-// Optional: Filter users by brandId
+/**
+ * Get all users
+ * Optional brandId filter supports multiple-brand association
+ */
 export const getAllUsers = async (brandId?: string): Promise<IUser[]> => {
   try {
-    const filter = brandId ? { brand: brandId } : {};
-    const users = await User.find(filter);
-    return users;
+    const filter = brandId ? { brands: brandId } : {};
+    return await User.find(filter);
   } catch (error) {
     console.error('Error in getAllUsers service:', error);
     throw new Error('Error fetching users');
   }
 };
 
+/**
+ * Update user active status
+ */
 export const updateUserStatusService = async (
   userId: string,
   isActive: boolean
 ): Promise<IUser | null> => {
   try {
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      { isActive },
-      { new: true }
-    );
-    return updatedUser;
+    return await User.findByIdAndUpdate(userId, { isActive }, { new: true });
   } catch (error) {
     console.error('Error in updateUserStatusService:', error);
     throw new Error('Error updating user status');
   }
 };
 
+/**
+ * Delete user
+ */
 export const deleteUserService = async (
   userId: string
 ): Promise<IUser | null> => {
   try {
-    const deletedUser = await User.findByIdAndDelete(userId);
-    return deletedUser;
+    return await User.findByIdAndDelete(userId);
   } catch (error) {
     console.error('Error in deleteUserService:', error);
     throw new Error('Error deleting user');
   }
 };
 
+/**
+ * Email verification
+ */
 export const verifyEmailService = async (
   token: string
 ): Promise<IUser | null> => {

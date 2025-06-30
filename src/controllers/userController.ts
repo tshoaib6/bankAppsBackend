@@ -15,11 +15,11 @@ import {
 import jwt from "jsonwebtoken";
 import User from "../models/user.model";
 
+// 🚀 Register User (no brand attached at registration)
 export const register = async (req: Request, res: Response): Promise<any> => {
   try {
-    const { name, email, password, date_of_birth, is_over_18, brandId } = req.body;
+    const { name, email, password, date_of_birth, is_over_18 } = req.body;
 
-    // Input validation
     if (!validateName(name))
       return res.status(400).json({ message: "Invalid name" });
     if (!validateEmail(email))
@@ -28,16 +28,13 @@ export const register = async (req: Request, res: Response): Promise<any> => {
       return res.status(400).json({
         message: "Password must be at least 6 characters",
       });
-    if (!brandId)
-      return res.status(400).json({ message: "Brand ID is required" });
 
     const newUser = await registerUser(
       name,
       email,
       password,
       date_of_birth,
-      is_over_18,
-      brandId
+      is_over_18
     );
 
     res.status(201).json({
@@ -51,6 +48,7 @@ export const register = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
+// 🔐 Login User
 export const login = async (req: Request, res: Response): Promise<any> => {
   try {
     const { email, password } = req.body;
@@ -75,7 +73,7 @@ export const login = async (req: Request, res: Response): Promise<any> => {
         userId: user._id,
         email: user.email,
         username: user.name,
-        brand: user.brand,
+        brands: user.brands, // ✅ brands array
       },
       process.env.JWT_SECRET || "secret",
       { expiresIn: "1h" }
@@ -88,7 +86,7 @@ export const login = async (req: Request, res: Response): Promise<any> => {
         name: user.name,
         email: user.email,
         points: user.points,
-        brand: user.brand,
+        brands: user.brands, // ✅ Updated
       },
     });
   } catch (error) {
@@ -97,6 +95,7 @@ export const login = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
+// 👥 Get All Users (optionally by brand)
 export const getUsers = async (req: Request, res: Response): Promise<any> => {
   try {
     const { brandId } = req.query;
@@ -111,6 +110,7 @@ export const getUsers = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
+// 🔄 Update Active/Blocked Status
 export const updateUserStatus = async (
   req: Request,
   res: Response
@@ -142,6 +142,7 @@ export const updateUserStatus = async (
   }
 };
 
+// 🗑️ Delete User
 export const deleteUser = async (req: Request, res: Response): Promise<any> => {
   try {
     const { userId } = req.params;
@@ -160,6 +161,7 @@ export const deleteUser = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
+// ✅ Verify Email
 export const verifyEmail = async (
   req: Request,
   res: Response

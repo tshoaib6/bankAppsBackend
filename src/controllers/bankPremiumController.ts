@@ -141,7 +141,7 @@ export const getBankPremiumById = async (req: Request, res: Response): Promise<a
     });
   } catch (error: any) {
     console.error('Error fetching BankPremium:', error);
-    return res.status(500).json({
+    return res.status(500).json({ 
       message: 'An error occurred while fetching BankPremium',
       error: error.message,
     });

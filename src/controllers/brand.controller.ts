@@ -8,6 +8,7 @@ import {
   deleteBrandService,
 } from '../services/brand.service';
 import { IBrand } from '../models/brand.model';
+import { uploadToCloudinary } from '../utils/cloudinary';
 
 export const createBrand = async (req: Request, res: Response): Promise<any> => {
   try {
@@ -19,11 +20,8 @@ export const createBrand = async (req: Request, res: Response): Promise<any> => 
 
     let logo: string | undefined;
 
-    if (req.file) {
-      // Convert image buffer to base64
-      const base64Image = req.file.buffer.toString('base64');
-      const mimeType = req.file.mimetype;
-      logo = `data:${mimeType};base64,${base64Image}`;
+    if (req.file && req.file.buffer) {
+      logo = await uploadToCloudinary(req.file.buffer, 'brands'); // 'brands' is the folder in Cloudinary
     }
 
     const brand = await createBrandService(brandName, description, logo);
@@ -53,19 +51,18 @@ export const getBrandById = async (req: Request, res: Response):Promise<any> => 
     res.status(500).json({ message: 'Error retrieving brand' });
   }
 };
-
 export const updateBrand = async (req: Request, res: Response): Promise<any> => {
   try {
     const updates: Partial<IBrand> = { ...req.body };
 
-    if (req.file) {
-      const base64Image = req.file.buffer.toString('base64');
-      const mimeType = req.file.mimetype;
-      updates.logo = `data:${mimeType};base64,${base64Image}`;
+    if (req.file && req.file.buffer) {
+      updates.logo = await uploadToCloudinary(req.file.buffer, 'brands');
     }
 
     const updatedBrand = await updateBrandService(req.params.id, updates);
-    if (!updatedBrand) return res.status(404).json({ message: 'Brand not found' });
+    if (!updatedBrand) {
+      return res.status(404).json({ message: 'Brand not found' });
+    }
 
     res.status(200).json({ message: 'Brand updated successfully', updatedBrand });
   } catch (error) {
@@ -73,7 +70,6 @@ export const updateBrand = async (req: Request, res: Response): Promise<any> => 
     res.status(500).json({ message: 'Failed to update brand' });
   }
 };
-
 
 export const updateBrandStatus = async (req: Request, res: Response):Promise<any> => {
   try {
