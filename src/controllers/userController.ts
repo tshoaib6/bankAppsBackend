@@ -85,7 +85,7 @@ export const login = async (req: Request, res: Response): Promise<any> => {
       user: {
         name: user.name,
         email: user.email,
-        points: user.points,
+        points: user.brandPoints,
         brands: user.brands, // ✅ Updated
       },
     });
