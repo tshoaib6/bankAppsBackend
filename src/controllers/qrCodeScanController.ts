@@ -5,10 +5,11 @@ import { handleQRCodeScan } from '../services/qrCodeScanService';
 export const scanQRCode = async (req: Request, res: Response): Promise<any> => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
-    if (!token)
+    if (!token) {
       return res.status(401).json({ message: 'Authorization token required' });
+    }
 
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
     const userId = decoded.userId;
 
     const { scannedCode } = req.body;
@@ -16,14 +17,19 @@ export const scanQRCode = async (req: Request, res: Response): Promise<any> => {
       return res.status(400).json({ message: 'Scanned code is required' });
     }
 
-    const { updatedUser, userHistory } = await handleQRCodeScan(userId, scannedCode);
+    const {
+      updatedUser,
+      userHistory,
+      scannedQRCode,
+    } = await handleQRCodeScan(userId, scannedCode);
 
     return res.status(200).json({
       message: 'QR Code scanned successfully. Points added to your account.',
-      userId: (updatedUser as any)._id,  // safely access _id
-      userPoints: updatedUser.points,
-      userHistory,
+      userId: updatedUser._id,
+      userPoints: updatedUser.brandPoints,
       userName: updatedUser.name,
+      userHistory,
+      scannedQRCode, // includes code, points, and brand if available
     });
   } catch (error: any) {
     console.error('Error in QR code scan:', error.message);

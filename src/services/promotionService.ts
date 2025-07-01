@@ -21,13 +21,13 @@ export const getPromotions = async (): Promise<IPromotion[]> => {
 };
 
 // ✅ NEW: Get promotions by brand ID
-export const getPromotionsByBrand = async (brandId: string): Promise<IPromotion[]> => {
-  try {
-    return await Promotion.find({ brand: brandId }).populate('brand');
-  } catch (error) {
-    throw new Error('Error fetching promotions by brand');
-  }
-};
+// export const getPromotionsByBrand = async (brandId: string): Promise<IPromotion[]> => {
+//   try {
+//     return await Promotion.find({ brand: brandId }).populate('brand');
+//   } catch (error) {
+//     throw new Error('Error fetching promotions by brand');
+//   }
+// };
 
 export const getPromotionById = async (promotionId: string): Promise<IPromotion | null> => {
   try {

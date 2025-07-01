@@ -6,7 +6,6 @@ export interface IUser extends Document {
   email: string;
   date_of_birth: Date;
   is_over_18: boolean;
-  points: number;
   scanned_qr_codes: string[];
   created_at: Date;
   password: string;
@@ -16,8 +15,12 @@ export interface IUser extends Document {
   verificationTokenExpiry: Date | null;
   resetOTP?: string;
   otpExpires?: Date;
-
   brands: mongoose.Types.ObjectId[];
+
+  brandPoints: {
+    brand: mongoose.Types.ObjectId;
+    points: number;
+  }[];
 }
 
 const UserSchema: Schema<IUser> = new Schema(
@@ -26,7 +29,6 @@ const UserSchema: Schema<IUser> = new Schema(
     email: { type: String, required: true, unique: true },
     date_of_birth: { type: Date, required: true },
     is_over_18: { type: Boolean, required: true },
-    points: { type: Number, default: 0 },
     scanned_qr_codes: { type: [String], default: [] },
     created_at: { type: Date, default: Date.now },
     password: { type: String, required: true },
@@ -42,6 +44,17 @@ const UserSchema: Schema<IUser> = new Schema(
         type: Schema.Types.ObjectId,
         ref: 'Brand',
         required: true,
+      },
+    ],
+
+    brandPoints: [
+      {
+        brand: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Brand',
+          required: true,
+        },
+        points: { type: Number, default: 0 },
       },
     ],
   },

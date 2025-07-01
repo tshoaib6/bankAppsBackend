@@ -1,7 +1,7 @@
 import Campaign, { ICampaign } from '../models/campaign.model';
-import User, { IUser } from '../models/user.model';
+import User from '../models/user.model';
 import UserHistory from '../models/userHistory.model';
-import Brand, { IBrand } from '../models/brand.model';
+import { IBrand } from '../models/brand.model';
 
 /**
  * Redeem a campaign for a user.
@@ -30,19 +30,31 @@ export const redeemCampaignService = async (userId: string, campaignId: string) 
       throw new Error('User not found');
     }
 
-    if (user.points < pointsRequired) {
-      throw new Error('Insufficient points to redeem this campaign');
+    if (!campaign.brand || !campaign.brand._id) {
+      throw new Error('Campaign brand not properly populated');
     }
 
-    // Deduct points
-    user.points -= pointsRequired;
+    const brandId = campaign.brand._id.toString();
+
+    // Find user's points for that brand
+    const brandPointsEntry = user.brandPoints.find(entry =>
+      entry.brand.toString() === brandId
+    );
+
+    if (!brandPointsEntry || brandPointsEntry.points < pointsRequired) {
+      throw new Error('Insufficient points in this brand to redeem the campaign');
+    }
+
+    // Deduct brand points
+    brandPointsEntry.points -= pointsRequired;
     await user.save();
+    if (!campaign.enrolled_users.map(id => id.toString()).includes(user._id.toString())) {
+      campaign.enrolled_users.push(user._id.toString());
+      await campaign.save();
+    }
+    
 
-    // Enroll user
-    campaign.enrolled_users.push(userId);
-    await campaign.save();
-
-    // Log history
+    // Log user history
     const userHistoryEntry = new UserHistory({
       user_id: user._id,
       date: new Date(),
@@ -50,28 +62,31 @@ export const redeemCampaignService = async (userId: string, campaignId: string) 
       points_used: pointsRequired.toString(),
       type: 'campaign_purchase',
       reference_id: campaignId,
+      brand: campaign.brand._id,
+      points_earned: 0, // since this is a redemption
+      qrCode: null,
     });
+
     await userHistoryEntry.save();
 
     return {
       user: {
         userId: user._id,
         username: user.name,
-        remaining_points: user.points,
+        remaining_brand_points: brandPointsEntry.points,
+        brandId: campaign.brand._id,
       },
       campaign: {
         title: campaign.title,
         points_required: campaign.points_required,
         enrolled_users: campaign.enrolled_users,
-        brand: campaign.brand
-          ? {
-              _id: campaign.brand._id,
-              brandName: campaign.brand.brandName,
-              description: campaign.brand.description,
-              logo: campaign.brand.logo,
-              isActive: campaign.brand.isActive,
-            }
-          : null,
+        brand: {
+          _id: campaign.brand._id,
+          brandName: campaign.brand.brandName,
+          description: campaign.brand.description,
+          logo: campaign.brand.logo,
+          isActive: campaign.brand.isActive,
+        },
       },
       userHistory: {
         description: userHistoryEntry.description,

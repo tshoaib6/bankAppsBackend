@@ -1,8 +1,9 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
+import jwt from 'jsonwebtoken';
 import Campaign from '../models/campaign.model';
 import User from '../models/user.model';
 import UserHistory from '../models/userHistory.model';
-import jwt from 'jsonwebtoken';
 import { IBrand } from '../models/brand.model';
 
 export const redeemCampaign = async (req: Request, res: Response): Promise<any> => {
@@ -14,59 +15,71 @@ export const redeemCampaign = async (req: Request, res: Response): Promise<any> 
     const userId = decoded.userId;
 
     const { campaignId } = req.body;
+    if (!campaignId) return res.status(400).json({ message: 'Campaign ID is required' });
 
     const campaign = await Campaign.findById(campaignId)
       .populate<{ brand: IBrand }>('brand')
       .exec();
-    if (!campaign) {
-      return res.status(404).json({ message: 'Campaign not found' });
+
+    if (!campaign) return res.status(404).json({ message: 'Campaign not found' });
+    if (!campaign.brand || !campaign.brand._id) {
+      return res.status(400).json({ message: 'Campaign has no associated brand' });
     }
 
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+    const brandId = campaign.brand._id.toString();
+    const requiredPoints = parseInt(campaign.points_required, 10);
+
+    const user = await User.findById(userId).exec();
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const userBrandPoints = user.brandPoints.find(bp =>
+      bp.brand instanceof mongoose.Types.ObjectId
+        ? bp.brand.toString() === brandId
+        : (bp.brand as any)._id?.toString() === brandId
+    );
+
+    if (!userBrandPoints || userBrandPoints.points < requiredPoints) {
+      return res.status(400).json({ message: 'Insufficient brand points to redeem this campaign' });
     }
 
-    const pointsRequired = parseInt(campaign.points_required, 10);
-    if (user.points < pointsRequired) {
-      return res.status(400).json({ message: 'Insufficient points to redeem this campaign' });
-    }
-
-    user.points -= pointsRequired;
+    // Deduct points
+    userBrandPoints.points -= requiredPoints;
     await user.save();
 
+    // Save user history
     const userHistoryEntry = new UserHistory({
       user_id: user._id,
       date: new Date(),
       description: `Purchased campaign: ${campaign.title}`,
-      points_used: pointsRequired.toString(),
+      points_used: requiredPoints,
       type: 'campaign_purchase',
       reference_id: campaignId,
     });
     await userHistoryEntry.save();
 
-    campaign.enrolled_users.push(userId);
-    await campaign.save();
+    // Enroll user if not already enrolled
+    if (!campaign.enrolled_users.includes(user._id.toString())) {
+      campaign.enrolled_users.push(user._id.toString());
+      await campaign.save();
+    }
 
     return res.status(200).json({
       message: 'Campaign redeemed successfully',
       user: {
         userId: user._id,
         username: user.name,
-        remaining_points: user.points,
+        remaining_points: userBrandPoints.points,
       },
       campaign: {
         title: campaign.title,
         points_required: campaign.points_required,
         enrolled_users: campaign.enrolled_users,
-        brand: campaign.brand
-          ? {
-              _id: campaign.brand._id,
-              brandName: campaign.brand.brandName,
-              description: campaign.brand.description,
-              logo: campaign.brand.logo,
-            }
-          : null,
+        brand: {
+          _id: campaign.brand._id,
+          brandName: campaign.brand.brandName,
+          description: campaign.brand.description,
+          logo: campaign.brand.logo,
+        },
       },
       userHistory: {
         description: userHistoryEntry.description,
@@ -92,22 +105,27 @@ export const getCampaignDetails = async (req: Request, res: Response): Promise<a
     const userId = decoded.userId;
 
     const { campaignId } = req.params;
-    if (!campaignId) {
-      return res.status(400).json({ message: 'Campaign ID is required' });
-    }
+    if (!campaignId) return res.status(400).json({ message: 'Campaign ID is required' });
 
     const campaign = await Campaign.findById(campaignId)
       .populate<{ brand: IBrand }>('brand')
       .exec();
 
-    if (!campaign) {
-      return res.status(404).json({ message: 'Campaign not found' });
+    if (!campaign) return res.status(404).json({ message: 'Campaign not found' });
+    if (!campaign.brand || !campaign.brand._id) {
+      return res.status(400).json({ message: 'Campaign has no associated brand' });
     }
 
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+    const brandId = campaign.brand._id.toString();
+
+    const user = await User.findById(userId).exec();
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const userBrandPoints = user.brandPoints.find(bp =>
+      bp.brand instanceof mongoose.Types.ObjectId
+        ? bp.brand.toString() === brandId
+        : (bp.brand as any)._id?.toString() === brandId
+    );
 
     const userHistory = await UserHistory.findOne({
       user_id: user._id,
@@ -120,7 +138,7 @@ export const getCampaignDetails = async (req: Request, res: Response): Promise<a
       user: {
         userId: user._id,
         username: user.name,
-        remaining_points: user.points,
+        remaining_points: userBrandPoints?.points ?? 0,
       },
       campaign: {
         title: campaign.title,
@@ -131,14 +149,12 @@ export const getCampaignDetails = async (req: Request, res: Response): Promise<a
         end_date: campaign.end_date,
         image_url: campaign.image_url,
         active: campaign.active,
-        brand: campaign.brand
-          ? {
-              _id: campaign.brand._id,
-              brandName: campaign.brand.brandName,
-              description: campaign.brand.description,
-              logo: campaign.brand.logo,
-            }
-          : null,
+        brand: {
+          _id: campaign.brand._id,
+          brandName: campaign.brand.brandName,
+          description: campaign.brand.description,
+          logo: campaign.brand.logo,
+        },
       },
       userHistory: userHistory
         ? {
