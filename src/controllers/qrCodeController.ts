@@ -105,7 +105,12 @@ export const updateQRCode = async (req: Request, res: Response): Promise<any> =>
       return res.status(404).json({ message: 'QR Code not found' });
     }
 
-    if (qrCode.createdBy.toString() !== userId) {
+    if (!qrCode.createdBy || qrCode.createdBy.toString() !== userId) {
+      console.log('Unauthorized update attempt:', {
+        qrCodeCreatedBy: qrCode.createdBy?.toString(),
+        userId,
+      });
+
       return res.status(403).json({
         message: 'You are not authorized to update this QR Code.'
       });
@@ -115,16 +120,17 @@ export const updateQRCode = async (req: Request, res: Response): Promise<any> =>
       code,
       points,
       isUsed,
-      brand
+      brand,
     });
 
-    return res
-      .status(200)
-      .json({ message: 'QR Code updated successfully', updatedQRCode });
+    return res.status(200).json({
+      message: 'QR Code updated successfully',
+      updatedQRCode,
+    });
   } catch (error) {
     return res.status(500).json({
       message: 'Server error while updating QR code. Please try again later.',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 };

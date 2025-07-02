@@ -47,7 +47,6 @@ export const getQRCodeById = async (
     );
   }
 };
-
 export const updateQRCode = async (
   qrCodeId: string,
   data: any
