@@ -15,7 +15,6 @@ export interface IUser extends Document {
   verificationTokenExpiry: Date | null;
   resetOTP?: string;
   otpExpires?: Date;
-  brands: mongoose.Types.ObjectId[];
 
   brandPoints: {
     brand: mongoose.Types.ObjectId;
@@ -38,14 +37,6 @@ const UserSchema: Schema<IUser> = new Schema(
     verificationTokenExpiry: { type: Date, default: null },
     resetOTP: { type: String },
     otpExpires: { type: Date },
-
-    brands: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: 'Brand',
-        required: true,
-      },
-    ],
 
     brandPoints: [
       {

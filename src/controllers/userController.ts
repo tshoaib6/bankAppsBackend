@@ -68,12 +68,15 @@ export const login = async (req: Request, res: Response): Promise<any> => {
         .json({ message: "Please verify your email to log in." });
     }
 
+    // Extract brand IDs from brandPoints array
+    const brandIds = user.brandPoints.map((bp) => bp.brand);
+
     const token = jwt.sign(
       {
         userId: user._id,
         email: user.email,
         username: user.name,
-        brands: user.brands, // ✅ brands array
+        brands: brandIds, // ✅ now using brandPoints for brand list
       },
       process.env.JWT_SECRET || "secret",
       { expiresIn: "1h" }
@@ -86,7 +89,7 @@ export const login = async (req: Request, res: Response): Promise<any> => {
         name: user.name,
         email: user.email,
         points: user.brandPoints,
-        brands: user.brands, // ✅ Updated
+        brands: brandIds, // ✅ replacing old brands field
       },
     });
   } catch (error) {
@@ -99,11 +102,23 @@ export const login = async (req: Request, res: Response): Promise<any> => {
 export const getUsers = async (req: Request, res: Response): Promise<any> => {
   try {
     const { brandId } = req.query;
+
     const users = await getAllUsers(brandId as string);
+
     if (!users || users.length === 0)
       return res.status(404).json({ message: "No users found" });
 
-    res.status(200).json({ users });
+    // Optional: filter brandPoints for the specific brand if brandId is provided
+    const usersWithFilteredBrands = brandId
+      ? users.map((user) => ({
+          ...user.toObject(),
+          brandPoints: user.brandPoints.filter(
+            (bp) => bp.brand.toString() === brandId
+          ),
+        }))
+      : users;
+
+    res.status(200).json({ users: usersWithFilteredBrands });
   } catch (error) {
     console.error("Error fetching users:", error);
     res.status(500).json({ message: "Server error, please try again" });

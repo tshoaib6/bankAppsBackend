@@ -33,7 +33,7 @@ export const registerUser = async (
       password: hashedPassword,
       verificationToken,
       verificationTokenExpiry,
-      brands: [] // 👈 No brand assigned yet
+      // ❌ brands: [] => removed
     });
 
     await newUser.save();
@@ -71,11 +71,13 @@ export const loginUserService = async (
 
 /**
  * Get all users
- * Optional brandId filter supports multiple-brand association
+ * Optional brandId filter supports brandPoints
  */
 export const getAllUsers = async (brandId?: string): Promise<IUser[]> => {
   try {
-    const filter = brandId ? { brands: brandId } : {};
+    const filter = brandId
+      ? { 'brandPoints.brand': brandId } // ✅ updated filtering logic
+      : {};
     return await User.find(filter);
   } catch (error) {
     console.error('Error in getAllUsers service:', error);
