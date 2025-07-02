@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import * as QRCodeService from '../services/qrCodeService';
-
+import mongoose from 'mongoose';
 export const createQRCode = async (req: Request, res: Response): Promise<any> => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
@@ -100,19 +100,27 @@ export const updateQRCode = async (req: Request, res: Response): Promise<any> =>
     }
 
     const qrCode = await QRCodeService.getQRCodeById(qrCodeId);
-
     if (!qrCode) {
       return res.status(404).json({ message: 'QR Code not found' });
     }
 
-    if (!qrCode.createdBy || qrCode.createdBy.toString() !== userId) {
+    // ✅ Type-safe handling of ObjectId vs populated object
+    let createdById: string;
+    if (mongoose.isValidObjectId(qrCode.createdBy)) {
+      createdById = qrCode.createdBy.toString();
+    } else {
+      // @ts-ignore if necessary OR define interface for populated user
+      createdById = qrCode.createdBy._id?.toString();
+    }
+
+    if (createdById !== userId) {
       console.log('Unauthorized update attempt:', {
-        qrCodeCreatedBy: qrCode.createdBy?.toString(),
+        qrCodeCreatedBy: createdById,
         userId,
       });
 
       return res.status(403).json({
-        message: 'You are not authorized to update this QR Code.'
+        message: 'You are not authorized to update this QR Code.',
       });
     }
 
