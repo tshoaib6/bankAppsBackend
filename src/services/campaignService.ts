@@ -65,7 +65,9 @@ export const getAllCampaigns = async (
 // 🔍 Get all campaigns by a specific brand ID
 const getCampaignsByBrandId = async (brandId: string): Promise<ICampaign[]> => {
   try {
-    const campaigns = await Campaign.find({ brand: brandId }).populate('brand');
+    // const campaigns = await Campaign.find({ brand: brandId }).populate('brand');
+    const campaigns = await Campaign.find({ brand: brandId });
+
     return campaigns;
   } catch (error) {
     console.error(`Error fetching campaigns for brand ${brandId}:`, error);

@@ -1,5 +1,4 @@
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import User, { IUser } from '../models/user.model';
 import { sendVerificationEmail } from '../utils/emailService';
@@ -14,7 +13,8 @@ export const registerUser = async (
   email: string,
   password: string,
   date_of_birth: Date,
-  is_over_18: boolean
+  is_over_18: boolean,
+  address: string
 ): Promise<IUser | null> => {
   try {
     const existingUser = await User.findOne({ email });
@@ -22,18 +22,19 @@ export const registerUser = async (
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const verificationToken = crypto.randomBytes(32).toString('hex');
-    const verificationTokenExpiry = new Date(Date.now() + 1000 * 60 * 60 * 24); // 24 hrs
+    // ✅ Use 6-digit code instead of random hex
+    const verificationToken = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit
+    const verificationTokenExpiry = new Date(Date.now() + 1000 * 60 * 10); // 10 minutes
 
     const newUser: IUser = new User({
       name,
       email,
       date_of_birth,
       is_over_18,
+      address,
       password: hashedPassword,
       verificationToken,
       verificationTokenExpiry,
-      // ❌ brands: [] => removed
     });
 
     await newUser.save();
@@ -45,6 +46,7 @@ export const registerUser = async (
     throw new Error('Error registering user');
   }
 };
+
 
 /**
  * Login user
@@ -76,7 +78,7 @@ export const loginUserService = async (
 export const getAllUsers = async (brandId?: string): Promise<IUser[]> => {
   try {
     const filter = brandId
-      ? { 'brandPoints.brand': brandId } // ✅ updated filtering logic
+      ? { 'brandPoints.brand': brandId }
       : {};
     return await User.find(filter);
   } catch (error) {
@@ -118,17 +120,18 @@ export const deleteUserService = async (
  * Email verification
  */
 export const verifyEmailService = async (
-  token: string
+  code: string
 ): Promise<IUser | null> => {
   try {
-    const user = await User.findOne({ verificationToken: token });
-    if (!user) throw new Error('Invalid token');
+    const user = await User.findOne({ verificationToken: code });
+
+    if (!user) throw new Error('Invalid verification code');
 
     if (
       user.verificationTokenExpiry &&
       user.verificationTokenExpiry < new Date()
     ) {
-      throw new Error('Token has expired');
+      throw new Error('Verification code has expired');
     }
 
     user.isVerified = true;
@@ -142,3 +145,4 @@ export const verifyEmailService = async (
     throw new Error('Error verifying email');
   }
 };
+

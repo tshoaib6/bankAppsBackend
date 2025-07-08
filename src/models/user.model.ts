@@ -16,6 +16,8 @@ export interface IUser extends Document {
   resetOTP?: string;
   otpExpires?: Date;
 
+  address: string; // frontend-controlled, no enum restriction
+
   brandPoints: {
     brand: mongoose.Types.ObjectId;
     points: number;
@@ -37,6 +39,12 @@ const UserSchema: Schema<IUser> = new Schema(
     verificationTokenExpiry: { type: Date, default: null },
     resetOTP: { type: String },
     otpExpires: { type: Date },
+
+    // ✅ No enum — frontend can send any string
+    address: {
+      type: String,
+      required: true,
+    },
 
     brandPoints: [
       {

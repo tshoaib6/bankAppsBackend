@@ -18,7 +18,7 @@ import User from "../models/user.model";
 // 🚀 Register User (no brand attached at registration)
 export const register = async (req: Request, res: Response): Promise<any> => {
   try {
-    const { name, email, password, date_of_birth, is_over_18 } = req.body;
+    const { name, email, password, date_of_birth, is_over_18, address } = req.body;
 
     if (!validateName(name))
       return res.status(400).json({ message: "Invalid name" });
@@ -34,7 +34,8 @@ export const register = async (req: Request, res: Response): Promise<any> => {
       email,
       password,
       date_of_birth,
-      is_over_18
+      is_over_18,
+      address // ✅ include address here
     );
 
     res.status(201).json({
@@ -88,8 +89,8 @@ export const login = async (req: Request, res: Response): Promise<any> => {
       user: {
         name: user.name,
         email: user.email,
-        points: user.brandPoints,
-        brands: brandIds, // ✅ replacing old brands field
+        // points: user.brandPoints,
+        brands: brandIds, 
       },
     });
   } catch (error) {

@@ -16,3 +16,4 @@ router.delete('/user/:userId', deleteUser);
 router.get('/verify-email/:token', verifyEmail);
 
 export default router;
+ 
