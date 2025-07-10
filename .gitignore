@@ -41,3 +41,4 @@ coverage/
 
 # TypeScript declaration maps
 *.d.ts.map
+utils/*.json
