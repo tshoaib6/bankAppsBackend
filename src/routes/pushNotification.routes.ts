@@ -5,4 +5,4 @@ const router = express.Router();
 
 router.post('/send', sendPushNotification); // POST /api/notifications/send
 
-export default router;
+export default router; 

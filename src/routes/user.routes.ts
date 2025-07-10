@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { register, login, getUsers, updateUserStatus, deleteUser, verifyEmail, sendNotificationByAddress } from '../controllers/userController'; 
+import { register, login, getUsers, updateUserStatus, deleteUser, verifyEmail, sendNotificationByAddress, updateFcmToken } from '../controllers/userController'; 
 
 const router = Router();
 
@@ -16,6 +16,8 @@ router.delete('/user/:userId', deleteUser);
 router.get('/verify-email/:token', verifyEmail);
 
 router.post('/notify-by-address', sendNotificationByAddress);
+
+router.put('/user/:userId/fcm-token', updateFcmToken);
 
 export default router;
  
