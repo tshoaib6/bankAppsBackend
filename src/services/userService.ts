@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import User, { IUser } from '../models/user.model';
 import { sendVerificationEmail } from '../utils/emailService';
 import { logUserActivity } from '../services/userHistory';
+import admin from 'firebase-admin'; // Make sure Firebase Admin SDK is initialized elsewhere
 
 /**
  * Register a new user
@@ -146,3 +147,42 @@ export const verifyEmailService = async (
   }
 };
 
+
+export const notifyUsersByAddress = async (
+  address: string,
+  title: string,
+  message: string
+): Promise<{ successCount: number; failureCount: number }> => {
+  try {
+    const users = await User.find({ address, fcmToken: { $ne: null } });
+
+    // ✅ Type-safe filtering
+    const tokens = users
+      .map(user => user.fcmToken)
+      .filter((token): token is string => typeof token === 'string' && token.trim().length > 0);
+
+    if (tokens.length === 0) {
+      throw new Error('No users with valid FCM tokens found at this address.');
+    }
+
+    const payload = {
+      notification: {
+        title,
+        body: message,
+      },
+    };
+
+    const response = await admin.messaging().sendEachForMulticast({
+      tokens,
+      ...payload,
+    });
+
+    return {
+      successCount: response.successCount,
+      failureCount: response.failureCount,
+    };
+  } catch (error) {
+    console.error('Error in notifyUsersByAddress service:', error);
+    throw new Error('Error sending notifications');
+  }
+};

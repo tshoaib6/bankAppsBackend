@@ -6,6 +6,7 @@ import {
   updateUserStatusService,
   deleteUserService,
   verifyEmailService,
+  notifyUsersByAddress,
 } from "../services/userService";
 import {
   validateEmail,
@@ -199,5 +200,37 @@ export const verifyEmail = async (
     res
       .status(500)
       .json({ message: "Failed to verify email. Please try again later." });
+  }
+};
+
+
+export const sendNotificationByAddress = async (req: Request, res: Response):Promise<any> => {
+  try {
+    const { address, title, message } = req.body;
+
+    if (!address || !title || !message) {
+      return res.status(400).json({ error: 'Address, title, and message are required.' });
+    }
+
+    const result = await notifyUsersByAddress(address, title, message);
+    res.status(200).json({
+      message: 'Notification sent',
+      successCount: result.successCount,
+      failureCount: result.failureCount,
+    });
+  } catch (error) {
+    console.error('Error in sendNotificationByAddress controller:', error);
+    res.status(500).json({ error: 'Failed to send notification' });
+  }
+};
+
+
+export const updateFcmToken = async (req: Request, res: Response) => {
+  const { userId, fcmToken } = req.body;
+  try {
+    await User.findByIdAndUpdate(userId, { fcmToken });
+    res.status(200).json({ message: 'FCM token updated' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update FCM token' });
   }
 };

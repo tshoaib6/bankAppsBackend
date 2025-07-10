@@ -15,8 +15,8 @@ export interface IUser extends Document {
   verificationTokenExpiry: Date | null;
   resetOTP?: string;
   otpExpires?: Date;
-
-  address: string; // frontend-controlled, no enum restriction
+  address: string; // e.g., 'Rawalpindi'
+  fcmToken?: string; // ✅ For push notifications
 
   brandPoints: {
     brand: mongoose.Types.ObjectId;
@@ -40,11 +40,11 @@ const UserSchema: Schema<IUser> = new Schema(
     resetOTP: { type: String },
     otpExpires: { type: Date },
 
-    // ✅ No enum — frontend can send any string
-    address: {
-      type: String,
-      required: true,
-    },
+    // ✅ Frontend sends plain string like "Peshawar", "Karachi"
+    address: { type: String, required: true },
+
+    // ✅ For FCM notifications
+    fcmToken: { type: String },
 
     brandPoints: [
       {

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { register, login, getUsers, updateUserStatus, deleteUser, verifyEmail } from '../controllers/userController'; 
+import { register, login, getUsers, updateUserStatus, deleteUser, verifyEmail, sendNotificationByAddress } from '../controllers/userController'; 
 
 const router = Router();
 
@@ -14,6 +14,8 @@ router.put('/user/:userId/status', updateUserStatus);
 router.delete('/user/:userId', deleteUser);
 
 router.get('/verify-email/:token', verifyEmail);
+
+router.post('/notify-by-address', sendNotificationByAddress);
 
 export default router;
  
