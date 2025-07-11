@@ -6,7 +6,8 @@ import {
   updateUserStatusService,
   deleteUserService,
   verifyEmailService,
-  notifyUsersByAddress,
+  // notifyUsersByAddress,
+  getUsersByAddress,
 } from "../services/userService";
 import {
   validateEmail,
@@ -78,6 +79,7 @@ export const login = async (req: Request, res: Response): Promise<any> => {
         userId: user._id,
         email: user.email,
         username: user.name,
+        
         brands: brandIds, // ✅ now using brandPoints for brand list
       },
       process.env.JWT_SECRET || "secret",
@@ -92,6 +94,8 @@ export const login = async (req: Request, res: Response): Promise<any> => {
         email: user.email,
         // points: user.brandPoints,
         brands: brandIds, 
+        address: user.address,
+        _id: user._id,
       },
     });
   } catch (error) {
@@ -204,33 +208,60 @@ export const verifyEmail = async (
 };
 
 
-export const sendNotificationByAddress = async (req: Request, res: Response):Promise<any> => {
-  try {
-    const { address, title, message } = req.body;
+// export const sendNotificationByAddress = async (req: Request, res: Response):Promise<any> => {
+//   try {
+//     const { address, title, message } = req.body;
 
-    if (!address || !title || !message) {
-      return res.status(400).json({ error: 'Address, title, and message are required.' });
+//     if (!address || !title || !message) {
+//       return res.status(400).json({ error: 'Address, title, and message are required.' });
+//     }
+
+//     const result = await notifyUsersByAddress(address, title, message);
+//     res.status(200).json({
+//       message: 'Notification sent',
+//       successCount: result.successCount,
+//       failureCount: result.failureCount,
+//     });
+//   } catch (error) {
+//     console.error('Error in sendNotificationByAddress controller:', error);
+//     res.status(500).json({ error: 'Failed to send notification' });
+//   }
+// };
+
+
+
+
+export const getUsersByAddressController = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  try {
+    const { address } = req.body;
+
+    if (!address) {
+      return res.status(400).json({ error: 'Address is required.' });
     }
 
-    const result = await notifyUsersByAddress(address, title, message);
+    const users = await getUsersByAddress(address);
+
     res.status(200).json({
-      message: 'Notification sent',
-      successCount: result.successCount,
-      failureCount: result.failureCount,
+      message: 'Users retrieved successfully',
+      count: users.length,
+      users,
     });
   } catch (error) {
-    console.error('Error in sendNotificationByAddress controller:', error);
-    res.status(500).json({ error: 'Failed to send notification' });
+    console.error('Error in getUsersByAddressController:', error);
+    res.status(500).json({ error: 'Failed to retrieve users by address' });
   }
 };
 
-
 export const updateFcmToken = async (req: Request, res: Response) => {
-  const { userId, fcmToken } = req.body;
+  const { userId } = req.params; // Get from URL params
+  const { fcmToken, address } = req.body; // Get from body
   try {
-    await User.findByIdAndUpdate(userId, { fcmToken });
-    res.status(200).json({ message: 'FCM token updated' });
+    await User.findByIdAndUpdate(userId, { fcmToken, address });
+    res.status(200).json({ message: "FCM token updated" }); 
   } catch (err) {
-    res.status(500).json({ error: 'Failed to update FCM token' });
+    res.status(500).json({ error: "Failed to update FCM token" });
   }
 };
