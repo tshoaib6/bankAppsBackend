@@ -16,6 +16,7 @@ export interface IUser extends Document {
   resetOTP?: string;
   otpExpires?: Date;
   address: string; // e.g., 'Rawalpindi'
+  parish: string; // ✅ New field added
   fcmToken?: string; // ✅ For push notifications
 
   brandPoints: {
@@ -42,6 +43,9 @@ const UserSchema: Schema<IUser> = new Schema(
 
     // ✅ Frontend sends plain string like "Peshawar", "Karachi"
     address: { type: String, required: true },
+
+    // ✅ New field added
+    parish: { type: String, required: true },
 
     // ✅ For FCM notifications
     fcmToken: { type: String },

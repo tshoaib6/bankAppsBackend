@@ -20,7 +20,7 @@ import User from "../models/user.model";
 // 🚀 Register User (no brand attached at registration)
 export const register = async (req: Request, res: Response): Promise<any> => {
   try {
-    const { name, email, password, date_of_birth, is_over_18, address } = req.body;
+    const { name, email, password, date_of_birth, is_over_18, address, parish } = req.body; // ✅ added parish
 
     if (!validateName(name))
       return res.status(400).json({ message: "Invalid name" });
@@ -30,6 +30,8 @@ export const register = async (req: Request, res: Response): Promise<any> => {
       return res.status(400).json({
         message: "Password must be at least 6 characters",
       });
+    if (!parish || typeof parish !== "string")
+      return res.status(400).json({ message: "Parish is required" }); // ✅ validation for parish
 
     const newUser = await registerUser(
       name,
@@ -37,7 +39,8 @@ export const register = async (req: Request, res: Response): Promise<any> => {
       password,
       date_of_birth,
       is_over_18,
-      address // ✅ include address here
+      address,
+      parish // ✅ pass parish to service
     );
 
     res.status(201).json({
@@ -50,6 +53,7 @@ export const register = async (req: Request, res: Response): Promise<any> => {
     res.status(500).json({ message: "Server error, please try again" });
   }
 };
+
 
 // 🔐 Login User
 export const login = async (req: Request, res: Response): Promise<any> => {

@@ -15,7 +15,8 @@ export const registerUser = async (
   password: string,
   date_of_birth: Date,
   is_over_18: boolean,
-  address: string
+  address: string,
+  parish: string // ✅ Added parish
 ): Promise<IUser | null> => {
   try {
     const existingUser = await User.findOne({ email });
@@ -23,9 +24,8 @@ export const registerUser = async (
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // ✅ Use 6-digit code instead of random hex
-    const verificationToken = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit
-    const verificationTokenExpiry = new Date(Date.now() + 1000 * 60 * 10); // 10 minutes
+    const verificationToken = Math.floor(100000 + Math.random() * 900000).toString(); 
+    const verificationTokenExpiry = new Date(Date.now() + 1000 * 60 * 10);
 
     const newUser: IUser = new User({
       name,
@@ -33,6 +33,7 @@ export const registerUser = async (
       date_of_birth,
       is_over_18,
       address,
+      parish, // ✅ Save parish
       password: hashedPassword,
       verificationToken,
       verificationTokenExpiry,
@@ -47,6 +48,7 @@ export const registerUser = async (
     throw new Error('Error registering user');
   }
 };
+
 
 
 /**
@@ -146,46 +148,6 @@ export const verifyEmailService = async (
     throw new Error('Error verifying email');
   }
 };
-
-
-// export const notifyUsersByAddress = async (
-//   address: string,
-//   title: string,
-//   message: string
-// ): Promise<{ successCount: number; failureCount: number }> => {
-//   try {
-//     const users = await User.find({ address, fcmToken: { $ne: null } });
-
-//     // ✅ Type-safe filtering
-//     const tokens = users
-//       .map(user => user.fcmToken)
-//       .filter((token): token is string => typeof token === 'string' && token.trim().length > 0);
-
-//     if (tokens.length === 0) {
-//       throw new Error('No users with valid FCM tokens found at this address.');
-//     }
-
-//     const payload = {
-//       notification: {
-//         title,
-//         body: message,
-//       },
-//     };
-
-//     const response = await admin.messaging().sendEachForMulticast({
-//       tokens,
-//       ...payload,
-//     });
-
-//     return {
-//       successCount: response.successCount,
-//       failureCount: response.failureCount,
-//     };
-//   } catch (error) {
-//     console.error('Error in notifyUsersByAddress service:', error);
-//     throw new Error('Error sending notifications');
-//   }
-// };
 
 
 export const getUsersByAddress = async (

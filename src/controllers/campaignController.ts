@@ -148,28 +148,28 @@ export const getAllCampaigns = async (
       .json({ message: 'Server error while fetching campaigns' })
   }
 }
-
 export const getCampaignById = async (
   req: Request,
   res: Response
 ): Promise<any> => {
   try {
-    const { campaignId } = req.params
+    const { campaignId } = req.params;
 
-    const campaign = await CampaignService.getCampaignById(campaignId)
+    const campaignData = await CampaignService.getCampaignById(campaignId);
 
-    if (!campaign) {
-      return res.status(404).json({ message: 'Campaign not found' })
+    if (!campaignData) {
+      return res.status(404).json({ message: "Campaign not found" });
     }
 
-    return res.status(200).json({ campaign })
+    return res.status(200).json(campaignData); // ✅ return directly
   } catch (error) {
-    console.error('Error fetching campaign:', error)
+    console.error("Error fetching campaign:", error);
     return res
       .status(500)
-      .json({ message: 'Server error while fetching campaign' })
+      .json({ message: "Server error while fetching campaign" });
   }
-}
+};
+
 
 export const getCampaignsByBrandId = async (req: Request, res: Response) => {
   try {
@@ -179,5 +179,19 @@ export const getCampaignsByBrandId = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error in getCampaignsByBrandId:', error);
     res.status(500).json({ message: 'Failed to fetch campaigns by brand ID' });
+  }
+};
+
+// controller
+export const getCampaignsWithLeaderboard = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  try {
+    const campaigns = await CampaignService.getCampaignsWithLeaderboard();
+    return res.status(200).json(campaigns);
+  } catch (error) {
+    console.error("Error fetching campaigns with leaderboard:", error);
+    return res.status(500).json({ message: "Server error while fetching campaigns" });
   }
 };

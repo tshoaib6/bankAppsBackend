@@ -48,11 +48,29 @@ export const redeemCampaignService = async (userId: string, campaignId: string) 
     // Deduct brand points
     brandPointsEntry.points -= pointsRequired;
     await user.save();
+
+    // Ensure enrolled_users contains this user
     if (!campaign.enrolled_users.map(id => id.toString()).includes(user._id.toString())) {
       campaign.enrolled_users.push(user._id.toString());
-      await campaign.save();
     }
-    
+
+    // ✅ Update redemptions count
+    const redemption = campaign.redemptions.find(
+      r => r.user.toString() === user._id.toString()
+    );
+
+    if (redemption) {
+      redemption.count += 1;
+      redemption.lastRedeemedAt = new Date();
+    } else {
+      campaign.redemptions.push({
+        user: user._id,
+        count: 1,
+        lastRedeemedAt: new Date(),
+      });
+    }
+
+    await campaign.save();
 
     // Log user history
     const userHistoryEntry = new UserHistory({
@@ -80,6 +98,7 @@ export const redeemCampaignService = async (userId: string, campaignId: string) 
         title: campaign.title,
         points_required: campaign.points_required,
         enrolled_users: campaign.enrolled_users,
+        redemptions: campaign.redemptions, // 👈 include redemption info
         brand: {
           _id: campaign.brand._id,
           brandName: campaign.brand.brandName,

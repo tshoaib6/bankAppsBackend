@@ -3,6 +3,9 @@ import jwt from 'jsonwebtoken';
 import BankPremiumService from '../services/bankPremiumService';
 import { uploadToCloudinary } from '../utils/cloudinary';
 
+/**
+ * Create a new BankPremium
+ */
 export const createBankPremium = async (req: Request, res: Response): Promise<any> => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
@@ -18,7 +21,7 @@ export const createBankPremium = async (req: Request, res: Response): Promise<an
       start_date,
       end_date,
       active,
-      brand, // optional field
+      brand,
     } = req.body;
 
     if (!req.file) return res.status(400).json({ message: 'Image is required' });
@@ -52,6 +55,9 @@ export const createBankPremium = async (req: Request, res: Response): Promise<an
   }
 };
 
+/**
+ * Update an existing BankPremium
+ */
 export const updateBankPremium = async (req: Request, res: Response): Promise<any> => {
   try {
     const { bankPremiumId } = req.params;
@@ -77,14 +83,16 @@ export const updateBankPremium = async (req: Request, res: Response): Promise<an
   }
 };
 
+/**
+ * Delete a BankPremium
+ */
 export const deleteBankPremium = async (req: Request, res: Response): Promise<any> => {
   try {
     const { bankPremiumId } = req.params;
     const token = req.header('Authorization')?.replace('Bearer ', '');
     if (!token) return res.status(401).json({ message: 'Authorization token required' });
 
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
-    const userId = decoded.userId;
+    jwt.verify(token, process.env.JWT_SECRET!);
 
     const bankPremium = await BankPremiumService.deleteBankPremium(bankPremiumId);
 
@@ -105,6 +113,9 @@ export const deleteBankPremium = async (req: Request, res: Response): Promise<an
   }
 };
 
+/**
+ * Get all BankPremiums
+ */
 export const getAllBankPremiums = async (req: Request, res: Response): Promise<any> => {
   try {
     const bankPremiums = await BankPremiumService.getAllBankPremiums();
@@ -126,6 +137,9 @@ export const getAllBankPremiums = async (req: Request, res: Response): Promise<a
   }
 };
 
+/**
+ * Get a BankPremium by ID
+ */
 export const getBankPremiumById = async (req: Request, res: Response): Promise<any> => {
   try {
     const { bankPremiumId } = req.params;
@@ -141,9 +155,74 @@ export const getBankPremiumById = async (req: Request, res: Response): Promise<a
     });
   } catch (error: any) {
     console.error('Error fetching BankPremium:', error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       message: 'An error occurred while fetching BankPremium',
       error: error.message,
     });
   }
+};
+
+/**
+ * Redeem a BankPremium (User)
+ */
+export const redeemBankPremium = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ message: 'Authorization token required' });
+
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
+    const userId = decoded.userId;
+
+    const { premiumId } = req.body;
+
+    if (!premiumId) {
+      return res.status(400).json({ message: 'premiumId is required' });
+    }
+
+    const result = await BankPremiumService.redeemBankPremiumService(userId, premiumId);
+
+    return res.status(200).json({
+      message: 'BankPremium redeemed successfully',
+      ...result,
+    });
+  } catch (error: any) {
+    console.error('Error redeeming BankPremium:', error);
+    return res.status(500).json({
+      message: 'An error occurred while redeeming BankPremium',
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Verify redemption code (Admin) → Mark as delivered
+ */
+export const verifyBankPremiumCode = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { code } = req.body;
+
+    if (!code) {
+      return res.status(400).json({ message: 'Code is required' });
+    }
+
+    const result = await BankPremiumService.verifyBankPremiumCodeService(code);
+
+    return res.status(200).json(result);
+  } catch (error: any) {
+    console.error('Error verifying BankPremium code:', error);
+    return res.status(500).json({
+      message: 'An error occurred while verifying code',
+      error: error.message,
+    });
+  }
+};
+
+export default {
+  createBankPremium,
+  updateBankPremium,
+  deleteBankPremium,
+  getAllBankPremiums,
+  getBankPremiumById,
+  redeemBankPremium,
+  verifyBankPremiumCode,
 };

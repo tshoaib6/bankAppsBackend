@@ -46,6 +46,26 @@ export const redeemCampaign = async (req: Request, res: Response): Promise<any> 
     userBrandPoints.points -= requiredPoints;
     await user.save();
 
+    // ✅ Update campaign redemptions
+    const redemption = campaign.redemptions.find(r => r.user.toString() === user._id.toString());
+    if (redemption) {
+      redemption.count += 1;
+      redemption.lastRedeemedAt = new Date();
+    } else {
+      campaign.redemptions.push({
+        user: user._id,
+        count: 1,
+        lastRedeemedAt: new Date(),
+      });
+    }
+
+    // Enroll user if not already enrolled
+    if (!campaign.enrolled_users.includes(user._id.toString())) {
+      campaign.enrolled_users.push(user._id.toString());
+    }
+
+    await campaign.save();
+
     // Save user history
     const userHistoryEntry = new UserHistory({
       user_id: user._id,
@@ -54,14 +74,9 @@ export const redeemCampaign = async (req: Request, res: Response): Promise<any> 
       points_used: requiredPoints,
       type: 'campaign_purchase',
       reference_id: campaignId,
+      brand: campaign.brand._id,
     });
     await userHistoryEntry.save();
-
-    // Enroll user if not already enrolled
-    if (!campaign.enrolled_users.includes(user._id.toString())) {
-      campaign.enrolled_users.push(user._id.toString());
-      await campaign.save();
-    }
 
     return res.status(200).json({
       message: 'Campaign redeemed successfully',
@@ -74,6 +89,7 @@ export const redeemCampaign = async (req: Request, res: Response): Promise<any> 
         title: campaign.title,
         points_required: campaign.points_required,
         enrolled_users: campaign.enrolled_users,
+        redemptions: campaign.redemptions, // 👈 now includes redemption count
         brand: {
           _id: campaign.brand._id,
           brandName: campaign.brand.brandName,
@@ -127,7 +143,11 @@ export const getCampaignDetails = async (req: Request, res: Response): Promise<a
         : (bp.brand as any)._id?.toString() === brandId
     );
 
-    const userHistory = await UserHistory.findOne({
+    // ✅ get this user’s redemption count for the campaign
+    const redemption = campaign.redemptions.find(r => r.user.toString() === user._id.toString());
+    const redemptionCount = redemption ? redemption.count : 0;
+
+    const userHistory = await UserHistory.find({
       user_id: user._id,
       reference_id: campaignId,
       type: 'campaign_purchase',
@@ -139,12 +159,14 @@ export const getCampaignDetails = async (req: Request, res: Response): Promise<a
         userId: user._id,
         username: user.name,
         remaining_points: userBrandPoints?.points ?? 0,
+        redemption_count: redemptionCount, // 👈 new field for how many times redeemed
       },
       campaign: {
         title: campaign.title,
         description: campaign.description,
         points_required: campaign.points_required,
         enrolled_users: campaign.enrolled_users,
+        redemptions: campaign.redemptions, // 👈 show all redemptions for admin/analytics
         start_date: campaign.start_date,
         end_date: campaign.end_date,
         image_url: campaign.image_url,
@@ -156,13 +178,12 @@ export const getCampaignDetails = async (req: Request, res: Response): Promise<a
           logo: campaign.brand.logo,
         },
       },
-      userHistory: userHistory
-        ? {
-            description: userHistory.description,
-            points_used: userHistory.points_used,
-            type: userHistory.type,
-          }
-        : null,
+      userHistory: userHistory.map(uh => ({
+        description: uh.description,
+        points_used: uh.points_used,
+        type: uh.type,
+        date: uh.date,
+      })),
     });
   } catch (error: any) {
     console.error('Error fetching campaign details:', error);

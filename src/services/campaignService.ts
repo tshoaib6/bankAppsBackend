@@ -1,4 +1,5 @@
 import Campaign, { ICampaign } from '../models/campaign.model'
+import UserHistory from '../models/userHistory.model'; // adjust path if needed
 
 // 🚀 Create campaign (now accepts brandId)
 const createCampaign = async (
@@ -15,10 +16,50 @@ const createCampaign = async (
 
 // 🔍 Get a single campaign
 const getCampaignById = async (campaignId: string) => {
-  const campaign = await Campaign.findById(campaignId).populate('brand') // 👈 include brand info
-  if (!campaign) throw new Error('Campaign not found')
-  return campaign
-}
+  const campaign = await Campaign.findById(campaignId).populate('brand');
+  if (!campaign) throw new Error('Campaign not found');
+
+  // total redemption count for this campaign
+  const totalRedemptions = await UserHistory.countDocuments({
+    reference_id: campaignId,
+    type: 'campaign_purchase',
+  });
+
+  // per-user redemption stats
+  const userRedemptions = await UserHistory.aggregate([
+    { $match: { reference_id: campaignId, type: 'campaign_purchase' } },
+    { 
+      $group: { 
+        _id: "$user_id", 
+        redemptionCount: { $sum: 1 } 
+      } 
+    },
+    { 
+      $lookup: { 
+        from: "users", 
+        localField: "_id", 
+        foreignField: "_id", 
+        as: "user" 
+      } 
+    },
+    { $unwind: "$user" },
+    { 
+      $project: { 
+        userId: "$user._id", 
+        username: "$user.username", 
+        redemptionCount: 1 
+      } 
+    }
+  ]);
+
+  return { 
+    ...campaign.toObject(), 
+    totalRedemptions, 
+    userRedemptions 
+  };
+};
+
+
 
 // ✏️ Update campaign (unchanged logic, preserved old user-based check)
 const updateCampaign = async (
@@ -76,11 +117,47 @@ const getCampaignsByBrandId = async (brandId: string): Promise<ICampaign[]> => {
 };
 
 
+
+export const getCampaignsWithLeaderboard = async () => {
+  const campaigns = await Campaign.find()
+    .populate("brand")
+    .lean();
+
+  // Loop through campaigns and add leaderboard
+  const campaignData = await Promise.all(
+    campaigns.map(async (campaign) => {
+      // aggregate redemptions for this campaign
+      const redemptions = await Campaign.aggregate([
+        { $match: { _id: campaign._id } },
+        { $unwind: "$redemptions" }, // assuming you store redemptions in array
+        { $group: { _id: "$redemptions.user", redemptionCount: { $sum: 1 } } },
+        { $lookup: { from: "users", localField: "_id", foreignField: "_id", as: "user" } },
+        { $unwind: "$user" },
+        {
+          $project: {
+            userId: "$user._id",
+            username: "$user.username",
+            redemptionCount: 1
+          }
+        }
+      ]);
+
+      return {
+        ...campaign,
+        leaderboard: redemptions.sort((a, b) => b.redemptionCount - a.redemptionCount)
+      };
+    })
+  );
+
+  return campaignData;
+};
+
 export default {
   createCampaign,
   updateCampaign,
   deleteCampaign,
   getCampaignById,
   getAllCampaigns,
-  getCampaignsByBrandId
+  getCampaignsByBrandId,
+  getCampaignsWithLeaderboard
 }

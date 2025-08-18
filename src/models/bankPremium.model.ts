@@ -1,5 +1,12 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+export interface IRedemption {
+  user: mongoose.Types.ObjectId;   // who redeemed
+  code: string;                    // unique redemption code
+  status: 'pending' | 'delivered'; // redemption status
+  redeemedAt: Date;                // when redemption happened
+}
+
 export interface IBankPremium extends Document {
   title: string;
   description: string;
@@ -8,9 +15,17 @@ export interface IBankPremium extends Document {
   end_date: Date;
   image_url: string;
   active: boolean;
-  enrolled_users: mongoose.Types.ObjectId[];  // updated
-  brand?: string; // optional brand field
+  enrolled_users: mongoose.Types.ObjectId[];
+  brand?: string;
+  redemptions: IRedemption[];
 }
+
+const RedemptionSchema = new Schema<IRedemption>({
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  code: { type: String, required: true, unique: true },
+  status: { type: String, enum: ['pending', 'delivered'], default: 'pending' },
+  redeemedAt: { type: Date, default: Date.now }
+});
 
 const BankPremiumSchema: Schema<IBankPremium> = new Schema(
   {
@@ -32,11 +47,19 @@ const BankPremiumSchema: Schema<IBankPremium> = new Schema(
 
     brand: {
       type: String,
-      default: null // optional, only used if applicable
-    }
+      default: null
+    },
+
+    redemptions: [RedemptionSchema]  // ✅ new field
   },
   { timestamps: true }
 );
+
+// 🔹 Generate a unique redemption code helper
+BankPremiumSchema.methods.generateRedemptionCode = function () {
+  const code = Math.random().toString(36).substring(2, 10).toUpperCase(); 
+  return code; // Example: "A1B2C3D4"
+};
 
 const BankPremium = mongoose.model<IBankPremium>('BankPremium', BankPremiumSchema);
 

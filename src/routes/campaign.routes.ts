@@ -6,6 +6,7 @@ import {
   getAllCampaigns,
   getCampaignById,
   getCampaignsByBrandId,
+  getCampaignsWithLeaderboard,
 } from "../controllers/campaignController";
 import { upload } from "../middlewares/multer";
 const router = express.Router();
@@ -21,5 +22,8 @@ router.get("/getCampaigns", getAllCampaigns);
 router.get("/getCampaignsById/:campaignId", getCampaignById);
 
 router.get('/getCampaignByBrandId/:brandId', getCampaignsByBrandId); 
+
+router.get("/campaign-with-user-history", getCampaignsWithLeaderboard);
+
 
 export default router;
