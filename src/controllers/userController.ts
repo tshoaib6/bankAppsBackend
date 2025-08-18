@@ -20,7 +20,8 @@ import User from "../models/user.model";
 // 🚀 Register User (no brand attached at registration)
 export const register = async (req: Request, res: Response): Promise<any> => {
   try {
-    const { name, email, password, date_of_birth, is_over_18, address } = req.body;
+    const { name, email, password, date_of_birth, is_over_18, address } =
+      req.body;
 
     if (!validateName(name))
       return res.status(400).json({ message: "Invalid name" });
@@ -79,7 +80,7 @@ export const login = async (req: Request, res: Response): Promise<any> => {
         userId: user._id,
         email: user.email,
         username: user.name,
-        
+
         brands: brandIds, // ✅ now using brandPoints for brand list
       },
       process.env.JWT_SECRET || "secret",
@@ -93,7 +94,7 @@ export const login = async (req: Request, res: Response): Promise<any> => {
         name: user.name,
         email: user.email,
         // points: user.brandPoints,
-        brands: brandIds, 
+        brands: brandIds,
         address: user.address,
         _id: user._id,
       },
@@ -207,7 +208,6 @@ export const verifyEmail = async (
   }
 };
 
-
 // export const sendNotificationByAddress = async (req: Request, res: Response):Promise<any> => {
 //   try {
 //     const { address, title, message } = req.body;
@@ -228,30 +228,27 @@ export const verifyEmail = async (
 //   }
 // };
 
-
-
-
 export const getUsersByAddressController = async (
   req: Request,
   res: Response
 ): Promise<any> => {
   try {
-    const { address } = req.body;
+    const { address } = req.query;
 
-    if (!address) {
-      return res.status(400).json({ error: 'Address is required.' });
+    if (!address || typeof address !== "string") {
+      return res.status(400).json({ error: "Address is required." });
     }
 
     const users = await getUsersByAddress(address);
 
     res.status(200).json({
-      message: 'Users retrieved successfully',
+      message: "Users retrieved successfully",
       count: users.length,
       users,
     });
   } catch (error) {
-    console.error('Error in getUsersByAddressController:', error);
-    res.status(500).json({ error: 'Failed to retrieve users by address' });
+    console.error("Error in getUsersByAddressController:", error);
+    res.status(500).json({ error: "Failed to retrieve users by address" });
   }
 };
 
@@ -260,7 +257,7 @@ export const updateFcmToken = async (req: Request, res: Response) => {
   const { fcmToken, address } = req.body; // Get from body
   try {
     await User.findByIdAndUpdate(userId, { fcmToken, address });
-    res.status(200).json({ message: "FCM token updated" }); 
+    res.status(200).json({ message: "FCM token updated" });
   } catch (err) {
     res.status(500).json({ error: "Failed to update FCM token" });
   }

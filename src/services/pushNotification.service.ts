@@ -13,8 +13,9 @@ export const sendPushNotificationToCity = async (
 ) => {
   try {
     console.log(`Looking for users in ${city} with FCM tokens`);
+    const normalizedCity = city.trim().toLowerCase();
     const users: IUser[] = await User.find({
-      address: city,
+      address: { $regex: `^${normalizedCity}$`, $options: "i" },
       fcmToken: { $exists: true, $ne: null },
     });
     console.log(`Found ${users.length} users with FCM tokens in ${city}`);
@@ -23,36 +24,64 @@ export const sendPushNotificationToCity = async (
       users.map((u) => ({
         id: u._id,
         address: u.address,
-        hasToken: !!u.fcmToken,
+        fcmToken: u.fcmToken,
       }))
     );
+
     if (!users.length) {
       return {
         success: false,
         message: `No users with valid FCM tokens found in ${city}.`,
       };
     }
-    // 2. Extract FCM tokens
+
     const tokens: string[] = users
       .map((user) => user.fcmToken)
-      .filter(Boolean) as string[];
-    // 3. Prepare FCM payload
+      .filter((token): token is string => !!token && token.trim().length > 0);
+
+    if (!tokens.length) {
+      return {
+        success: false,
+        message: `No valid FCM tokens found in ${city}.`,
+      };
+    }
+
+    console.log("Sending notifications to tokens:", tokens);
+
     const payload = {
       notification: {
         title,
         body,
       },
     };
-    // :white_check_mark: 4. FIXED: Use explicitly typed messaging
-    const messagingService: messaging.Messaging = admin.messaging();
-    const response = await admin.messaging().sendEachForMulticast({
+
+    const messagingService = admin.messaging();
+    const response = await messagingService.sendEachForMulticast({
       tokens,
-      notification: {
-        title,
-        body,
-      },
+      ...payload,
     });
-    // 5. Log in DB
+
+    console.log("Firebase response:", {
+      successCount: response.successCount,
+      failureCount: response.failureCount,
+      responses: response.responses.map((res, index) => ({
+        token: tokens[index],
+        success: res.success,
+        error: res.error ? res.error.message : null,
+      })),
+    });
+
+    if (response.failureCount > 0) {
+      const failedTokens = response.responses
+        .map((res, index) => (res.success ? null : tokens[index]))
+        .filter(Boolean);
+      console.log("Removing failed tokens:", failedTokens);
+      await User.updateMany(
+        { fcmToken: { $in: failedTokens } },
+        { $unset: { fcmToken: "" } }
+      );
+    }
+
     const sentToUserIds = users.map((user) => user._id.toString());
     await PushNotification.create({
       title,
@@ -60,10 +89,14 @@ export const sendPushNotificationToCity = async (
       city,
       sentTo: sentToUserIds,
     });
+
     return {
       success: true,
       message: "Notifications sent successfully",
-      firebaseResponse: response,
+      firebaseResponse: {
+        successCount: response.successCount,
+        failureCount: response.failureCount,
+      },
     };
   } catch (error) {
     console.error("FCM send error:", error);
