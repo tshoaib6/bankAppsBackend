@@ -1,7 +1,9 @@
 import express from 'express';
 import * as QRCodeController from '../controllers/qrCodeController';
+import multer from 'multer';
 
 const router = express.Router();
+const upload = multer({ dest: 'uploads/' });
 
 router.post('/createqrCode', QRCodeController.createQRCode);
 
@@ -15,5 +17,6 @@ router.delete('/deleteqrCode/:qrCodeId', QRCodeController.deleteQRCode);
 
 router.get('/getQRCodeBybrandId/:brandId', QRCodeController.getQRCodesByBrandId);
 
+router.post('/qrcodes/upload', upload.single('file'), QRCodeController.bulkUploadQRCodes);
 
 export default router;
