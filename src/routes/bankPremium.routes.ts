@@ -7,6 +7,7 @@ import {
   getBankPremiumById,
   verifyBankPremiumCode,
   redeemBankPremium,
+  getAllRedemptionsController,
 } from "../controllers/bankPremiumController";
 import { upload } from "../middlewares/multer";
 
@@ -22,8 +23,10 @@ router.delete("/deleteBankPremiums/:bankPremiumId", deleteBankPremium);
 router.get("/getBankPremiums", getAllBankPremiums);
 router.get("/getBankPremiumById/:bankPremiumId", getBankPremiumById);
 // User redeem endpoint
-router.post("/redeemBankPremium/:premiumId/redeem", redeemBankPremium);
+router.post("/redeemBankPremium:/premiumId/redeem", redeemBankPremium);
+router.get("/get-all-bank-premiums-redeemed", getAllRedemptionsController);
 
 // Admin verify/update status endpoint
-router.put("/verifyCodeAndUpdateStatus/:code", verifyBankPremiumCode);
+// Route
+router.put("/verifyCodeAndUpdateStatus", verifyBankPremiumCode);
 export default router;

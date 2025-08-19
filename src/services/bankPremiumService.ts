@@ -177,20 +177,67 @@ export const redeemBankPremiumService = async (userId: string, premiumId: string
  */
 export const verifyBankPremiumCodeService = async (code: string) => {
   const bankPremium = await BankPremium.findOne({ "redemptions.code": code });
-  if (!bankPremium) throw new Error('Invalid code');
+  if (!bankPremium) throw new Error("Invalid code");
 
   const redemption = bankPremium.redemptions.find(r => r.code === code);
-  if (!redemption) throw new Error('Invalid redemption code');
+  if (!redemption) throw new Error("Invalid redemption code");
 
-  if (redemption.status === 'delivered') {
-    throw new Error('Code already delivered');
+  if (redemption.status === "delivered") {
+    throw new Error("Code already delivered");
   }
 
-  redemption.status = 'delivered';
+  redemption.status = "delivered";
+  redemption.redeemedAt = new Date(); // ✅ optional: update timestamp if needed
   await bankPremium.save();
 
-  return { success: true, message: 'Premium delivered successfully' };
+  return {
+    success: true,
+    message: "Premium delivered successfully",
+    data: {
+      code: redemption.code,
+      status: redemption.status,
+      redeemedAt: redemption.redeemedAt,
+      user: redemption.user,
+    },
+  };
 };
+
+
+export const getAllRedemptionsService = async () => {
+  const result = await BankPremium.aggregate([
+    { $unwind: "$redemptions" },
+    {
+      $lookup: {
+        from: "users", // 👈 must match your MongoDB collection name for users
+        localField: "redemptions.user",
+        foreignField: "_id",
+        as: "userInfo"
+      }
+    },
+    { $unwind: "$userInfo" }, // ensure userInfo is an object, not array
+    {
+      $project: {
+        _id: 0,
+        bankPremiumId: "$_id",
+        title: 1,
+        code: "$redemptions.code",
+        status: "$redemptions.status",
+        redeemedAt: "$redemptions.redeemedAt",
+        user: {
+          _id: "$userInfo._id",
+          name: "$userInfo.name",
+          email: "$userInfo.email",
+          address: "$userInfo.address",
+          parish: "$userInfo.parish"
+        }
+      }
+    }
+  ]);
+
+  return result;
+};
+
+
 
 export default {
   createBankPremium,
@@ -199,5 +246,6 @@ export default {
   getBankPremiumById,
   getAllBankPremiums,
   redeemBankPremiumService,
-  verifyBankPremiumCodeService
+  verifyBankPremiumCodeService,
+  getAllRedemptionsService
 };

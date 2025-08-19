@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import BankPremiumService from "../services/bankPremiumService";
+import BankPremiumService, {
+  getAllRedemptionsService,
+} from "../services/bankPremiumService";
 import { uploadToCloudinary } from "../utils/cloudinary";
 
 /**
@@ -256,7 +258,9 @@ export const verifyBankPremiumCode = async (
     const { code } = req.body;
 
     if (!code) {
-      return res.status(400).json({ message: "Code is required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Code is required" });
     }
 
     const result = await BankPremiumService.verifyBankPremiumCodeService(code);
@@ -265,9 +269,21 @@ export const verifyBankPremiumCode = async (
   } catch (error: any) {
     console.error("Error verifying BankPremium code:", error);
     return res.status(500).json({
-      message: "An error occurred while verifying code",
-      error: error.message,
+      success: false,
+      message: error.message || "An error occurred while verifying code",
     });
+  }
+};
+
+export const getAllRedemptionsController = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const redemptions = await getAllRedemptionsService();
+    res.status(200).json({ success: true, data: redemptions });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -279,4 +295,5 @@ export default {
   getBankPremiumById,
   redeemBankPremium,
   verifyBankPremiumCode,
+  getAllRedemptionsService,
 };

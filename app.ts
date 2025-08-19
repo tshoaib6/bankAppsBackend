@@ -66,9 +66,7 @@ import * as fs from "fs";
 const dotenv = require("dotenv");
 
 dotenv.config();
-
 const app: Application = express();
-
 app.use(express.json());
 app.use((req, res, next) => {
   console.log(`[${req.method}] ${req.url} → body:`, req.body);
@@ -93,10 +91,8 @@ app.use((req: Request, res: Response, next: NextFunction): void => {
     res.sendStatus(204); // No content for preflight
     return;
   }
-
   next(); // Proceed with other middleware or route handlers
 });
-
 // Function to dynamically load routes
 const loadRoutes = (app: Application) => {
   const routesPath = path.join(__dirname, "src/routes");
@@ -104,7 +100,6 @@ const loadRoutes = (app: Application) => {
   fs.readdirSync(routesPath).forEach((file) => {
     if (file.endsWith(".routes.ts")) {
       const route = require(path.join(routesPath, file));
-
       if (route.default) {
         app.use("/api", route.default); // Use route with '/api' prefix
         console.log(`Route loaded: ${file}`);
@@ -114,13 +109,10 @@ const loadRoutes = (app: Application) => {
     }
   });
 };
-
 // Load routes dynamically
 loadRoutes(app);
-
 // Handle 404 Not Found
 app.use((req: Request, res: Response, next: NextFunction) => {
   res.status(404).send("Not Found");
 });
-
 export default app;
