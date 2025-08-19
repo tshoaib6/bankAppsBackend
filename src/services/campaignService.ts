@@ -28,34 +28,34 @@ const getCampaignById = async (campaignId: string) => {
   // per-user redemption stats
   const userRedemptions = await UserHistory.aggregate([
     { $match: { reference_id: campaignId, type: 'campaign_purchase' } },
-    { 
-      $group: { 
-        _id: "$user_id", 
-        redemptionCount: { $sum: 1 } 
-      } 
+    {
+      $group: {
+        _id: "$user_id",
+        redemptionCount: { $sum: 1 }
+      }
     },
-    { 
-      $lookup: { 
-        from: "users", 
-        localField: "_id", 
-        foreignField: "_id", 
-        as: "user" 
-      } 
+    {
+      $lookup: {
+        from: "users",
+        localField: "_id",
+        foreignField: "_id",
+        as: "user"
+      }
     },
     { $unwind: "$user" },
-    { 
-      $project: { 
-        userId: "$user._id", 
-        username: "$user.username", 
-        redemptionCount: 1 
-      } 
+    {
+      $project: {
+        userId: "$user._id",
+        username: "$user.username",
+        redemptionCount: 1
+      }
     }
   ]);
 
-  return { 
-    ...campaign.toObject(), 
-    totalRedemptions, 
-    userRedemptions 
+  return {
+    ...campaign.toObject(),
+    totalRedemptions,
+    userRedemptions
   };
 };
 
@@ -117,40 +117,56 @@ const getCampaignsByBrandId = async (brandId: string): Promise<ICampaign[]> => {
 };
 
 
-
 export const getCampaignsWithLeaderboard = async () => {
   const campaigns = await Campaign.find()
     .populate("brand")
     .lean();
 
-  // Loop through campaigns and add leaderboard
   const campaignData = await Promise.all(
     campaigns.map(async (campaign) => {
-      // aggregate redemptions for this campaign
+      // Aggregate redemptions for this campaign
       const redemptions = await Campaign.aggregate([
         { $match: { _id: campaign._id } },
-        { $unwind: "$redemptions" }, // assuming you store redemptions in array
-        { $group: { _id: "$redemptions.user", redemptionCount: { $sum: 1 } } },
-        { $lookup: { from: "users", localField: "_id", foreignField: "_id", as: "user" } },
-        { $unwind: "$user" },
+        { $unwind: "$redemptions" }, // assuming redemptions stored in array
+        {
+          $group: {
+            _id: "$redemptions.user",
+            totalRedeems: { $sum: "$redemptions.count" },
+            lastRedeemedAt: { $max: "$redemptions.lastRedeemedAt" }
+          }
+        },
+        {
+          $lookup: {
+            from: "users",
+            localField: "_id",
+            foreignField: "_id",
+            as: "userInfo"
+          }
+        },
+        { $unwind: "$userInfo" },
         {
           $project: {
-            userId: "$user._id",
-            username: "$user.username",
-            redemptionCount: 1
+            userId: "$userInfo._id",
+            username: "$userInfo.username",
+            email: "$userInfo.email",
+            fullName: "$userInfo.name",
+            totalRedeems: 1,
+            lastRedeemedAt: 1
           }
-        }
+        },
+        { $sort: { totalRedeems: -1 } } // leaderboard sorted
       ]);
 
       return {
         ...campaign,
-        leaderboard: redemptions.sort((a, b) => b.redemptionCount - a.redemptionCount)
+        leaderboard: redemptions
       };
     })
   );
 
   return campaignData;
 };
+
 
 export default {
   createCampaign,

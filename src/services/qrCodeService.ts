@@ -26,15 +26,48 @@ export const createQRCode = async (data: any): Promise<IQRCode> => {
   }
 };
 
-export const getAllQRCodes = async (): Promise<IQRCode[]> => {
+export const getAllQRCodes = async (): Promise<{
+  qrCodes: IQRCode[];
+  totalCount: number;
+  usedCount: number;
+  unusedCount: number;
+}> => {
   try {
-    return await QRCode.find().populate('brand').populate('createdBy');
+    const qrCodes = await QRCode.find()
+      .populate('brand')
+      .populate('createdBy');
+
+    const stats = await QRCode.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalCount: { $sum: 1 },
+          usedCount: { $sum: { $cond: ['$isUsed', 1, 0] } },
+          unusedCount: { $sum: { $cond: ['$isUsed', 0, 1] } },
+        },
+      },
+    ]);
+
+    const { totalCount, usedCount, unusedCount } = stats[0] || {
+      totalCount: 0,
+      usedCount: 0,
+      unusedCount: 0,
+    };
+
+    return {
+      qrCodes,
+      totalCount,
+      usedCount,
+      unusedCount,
+    };
   } catch (error) {
     throw new Error(
       error instanceof Error ? error.message : 'Error fetching QR codes'
     );
   }
 };
+
+
 
 export const getQRCodeById = async (
   qrCodeId: string
@@ -75,6 +108,50 @@ export const getQRCodesByBrandId = async (brandId: string): Promise<IQRCode[]> =
   } catch (error) {
     throw new Error(
       error instanceof Error ? error.message : 'Error fetching QR codes by brand'
+    );
+  }
+};
+
+
+/**
+ * Bulk insert QR Codes (optimized for CSV import with millions of records)
+ */
+export const bulkInsertQRCodes = async (
+  qrCodeData: any[]
+): Promise<{ insertedCount: number; errors: any[] }> => {
+  try {
+    if (!Array.isArray(qrCodeData) || qrCodeData.length === 0) {
+      throw new Error('QR Code data must be a non-empty array.');
+    }
+
+    // Validate structure minimally before inserting
+    const validQRCodes = qrCodeData.map((item) => ({
+      code: item.code,
+      points: Number(item.points) || 0,
+      isUsed: Boolean(item.isUsed),
+      createdBy: item.createdBy,
+      brand: item.brand,
+    }));
+
+    // Insert in chunks (to avoid memory issues with millions of records)
+    const CHUNK_SIZE = 10000; // Adjust depending on your system
+    let insertedCount = 0;
+    const errors: any[] = [];
+
+    for (let i = 0; i < validQRCodes.length; i += CHUNK_SIZE) {
+      const chunk = validQRCodes.slice(i, i + CHUNK_SIZE);
+      try {
+        const result = await QRCode.insertMany(chunk, { ordered: false });
+        insertedCount += result.length;
+      } catch (err: any) {
+        errors.push(err);
+      }
+    }
+
+    return { insertedCount, errors };
+  } catch (error) {
+    throw new Error(
+      error instanceof Error ? error.message : 'Error bulk inserting QR codes'
     );
   }
 };

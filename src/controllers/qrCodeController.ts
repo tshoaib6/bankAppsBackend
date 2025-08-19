@@ -2,6 +2,10 @@ import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import * as QRCodeService from '../services/qrCodeService';
 import mongoose from 'mongoose';
+import fs from 'fs';
+import csv from 'csv-parser';
+
+
 export const createQRCode = async (req: Request, res: Response): Promise<any> => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
@@ -42,17 +46,23 @@ export const createQRCode = async (req: Request, res: Response): Promise<any> =>
 
 export const getAllQRCodes = async (_req: Request, res: Response): Promise<any> => {
   try {
-    const qrCodes = await QRCodeService.getAllQRCodes();
-    return res
-      .status(200)
-      .json({ qrCodes, message: 'QR Codes fetched successfully' });
+    const { qrCodes, totalCount, usedCount, unusedCount } = await QRCodeService.getAllQRCodes();
+
+    return res.status(200).json({
+      qrCodes,
+      totalCount,
+      usedCount,
+      unusedCount,
+      message: 'QR Codes fetched successfully',
+    });
   } catch (error) {
     return res.status(500).json({
       message: 'Server error while fetching QR codes. Please try again later.',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 };
+
 
 export const getQRCodeById = async (req: Request, res: Response): Promise<any> => {
   try {
@@ -200,6 +210,62 @@ export const getQRCodesByBrandId = async (req: Request, res: Response): Promise<
     return res.status(500).json({
       message: 'Server error while fetching QR codes by brand',
       error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};
+
+export const bulkUploadQRCodes = async (req: Request, res: Response): Promise<any> => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "CSV file is required" });
+    }
+
+    const token = req.header("Authorization")?.replace("Bearer ", "");
+    if (!token) {
+      return res.status(401).json({ message: "Authorization token required" });
+    }
+
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
+    const userId = decoded.userId;
+
+    const qrCodeData: any[] = [];
+
+    fs.createReadStream(req.file.path)
+      .pipe(csv({ trim: true } as any)) // TypeScript-safe cast
+      .on("data", (row) => {
+        // Only push rows with required fields
+        if (row.code && row.brand) {
+          qrCodeData.push({
+            code: row.code.trim(),
+            points: Number(row.points) || 0,
+            isUsed: row.isUsed === "true" || row.isUsed === true,
+            createdBy: userId,
+            brand: row.brand.trim(),
+          });
+        }
+      })
+      .on("end", async () => {
+        console.log("QR Code data read from CSV:", qrCodeData); // debug log
+
+        if (qrCodeData.length === 0) {
+          return res.status(400).json({ message: "No valid QR codes found in CSV" });
+        }
+
+        const result = await QRCodeService.bulkInsertQRCodes(qrCodeData);
+
+        return res.status(201).json({
+          message: `${result.insertedCount} QR codes inserted successfully`,
+          errors: result.errors.length,
+        });
+      })
+      .on("error", (err) => {
+        console.error("Error reading CSV:", err);
+        return res.status(500).json({ message: "Error reading CSV file", error: err });
+      });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Server error while uploading QR codes. Please try again later.",
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 };
