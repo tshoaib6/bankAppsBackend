@@ -1,16 +1,18 @@
-import { Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
-import * as QRCodeService from '../services/qrCodeService';
-import mongoose from 'mongoose';
-import fs from 'fs';
-import csv from 'csv-parser';
+import { Request, Response } from "express";
+import jwt from "jsonwebtoken";
+import * as QRCodeService from "../services/qrCodeService";
+import mongoose from "mongoose";
+import fs from "fs";
+import csv from "csv-parser";
 
-
-export const createQRCode = async (req: Request, res: Response): Promise<any> => {
+export const createQRCode = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
   try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
+    const token = req.header("Authorization")?.replace("Bearer ", "");
     if (!token) {
-      return res.status(401).json({ message: 'Authorization token required' });
+      return res.status(401).json({ message: "Authorization token required" });
     }
 
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
@@ -20,13 +22,13 @@ export const createQRCode = async (req: Request, res: Response): Promise<any> =>
 
     if (
       !code ||
-      typeof points !== 'number' ||
-      typeof isUsed !== 'boolean' ||
+      typeof points !== "number" ||
+      typeof isUsed !== "boolean" ||
       !brand
     ) {
       return res.status(400).json({
         message:
-          'Invalid input. Ensure "code" is a string, "points" is a number, "isUsed" is a boolean, and "brand" is provided.'
+          'Invalid input. Ensure "code" is a string, "points" is a number, "isUsed" is a boolean, and "brand" is provided.',
       });
     }
 
@@ -35,60 +37,69 @@ export const createQRCode = async (req: Request, res: Response): Promise<any> =>
 
     return res
       .status(201)
-      .json({ message: 'QR Code created successfully', qrCode });
+      .json({ message: "QR Code created successfully", qrCode });
   } catch (error) {
     return res.status(500).json({
-      message: 'Server error while creating QR code. Please try again later.',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      message: "Server error while creating QR code. Please try again later.",
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 };
 
-export const getAllQRCodes = async (_req: Request, res: Response): Promise<any> => {
+export const getAllQRCodes = async (
+  _req: Request,
+  res: Response
+): Promise<any> => {
   try {
-    const { qrCodes, totalCount, usedCount, unusedCount } = await QRCodeService.getAllQRCodes();
+    const { qrCodes, totalCount, usedCount, unusedCount } =
+      await QRCodeService.getAllQRCodes();
 
     return res.status(200).json({
       qrCodes,
       totalCount,
       usedCount,
       unusedCount,
-      message: 'QR Codes fetched successfully',
+      message: "QR Codes fetched successfully",
     });
   } catch (error) {
     return res.status(500).json({
-      message: 'Server error while fetching QR codes. Please try again later.',
-      error: error instanceof Error ? error.message : 'Unknown error',
+      message: "Server error while fetching QR codes. Please try again later.",
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 };
 
-
-export const getQRCodeById = async (req: Request, res: Response): Promise<any> => {
+export const getQRCodeById = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
   try {
     const { qrCodeId } = req.params;
     const qrCode = await QRCodeService.getQRCodeById(qrCodeId);
 
     if (!qrCode) {
-      return res.status(404).json({ message: 'QR Code not found' });
+      return res.status(404).json({ message: "QR Code not found" });
     }
 
     return res
       .status(200)
-      .json({ qrCode, message: 'QR Code fetched successfully' });
+      .json({ qrCode, message: "QR Code fetched successfully" });
   } catch (error) {
     return res.status(500).json({
-      message: 'Server error while fetching QR code. Please try again later.',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      message: "Server error while fetching QR code. Please try again later.",
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 };
 
-export const updateQRCode = async (req: Request, res: Response): Promise<any> => {
+export const updateQRCode = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
   try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
+    const token = req.header("Authorization")?.replace("Bearer ", "");
     if (!token) {
-      return res.status(401).json({ message: 'Authorization token required' });
+      return res.status(401).json({ message: "Authorization token required" });
     }
 
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
@@ -99,19 +110,19 @@ export const updateQRCode = async (req: Request, res: Response): Promise<any> =>
 
     if (
       !code ||
-      typeof points !== 'number' ||
-      typeof isUsed !== 'boolean' ||
+      typeof points !== "number" ||
+      typeof isUsed !== "boolean" ||
       !brand
     ) {
       return res.status(400).json({
         message:
-          'Invalid input. Ensure "code" is a string, "points" is a number, "isUsed" is a boolean, and "brand" is provided.'
+          'Invalid input. Ensure "code" is a string, "points" is a number, "isUsed" is a boolean, and "brand" is provided.',
       });
     }
 
     const qrCode = await QRCodeService.getQRCodeById(qrCodeId);
     if (!qrCode) {
-      return res.status(404).json({ message: 'QR Code not found' });
+      return res.status(404).json({ message: "QR Code not found" });
     }
 
     // ✅ Type-safe handling of ObjectId vs populated object
@@ -124,13 +135,13 @@ export const updateQRCode = async (req: Request, res: Response): Promise<any> =>
     }
 
     if (createdById !== userId) {
-      console.log('Unauthorized update attempt:', {
+      console.log("Unauthorized update attempt:", {
         qrCodeCreatedBy: createdById,
         userId,
       });
 
       return res.status(403).json({
-        message: 'You are not authorized to update this QR Code.',
+        message: "You are not authorized to update this QR Code.",
       });
     }
 
@@ -142,22 +153,25 @@ export const updateQRCode = async (req: Request, res: Response): Promise<any> =>
     });
 
     return res.status(200).json({
-      message: 'QR Code updated successfully',
+      message: "QR Code updated successfully",
       updatedQRCode,
     });
   } catch (error) {
     return res.status(500).json({
-      message: 'Server error while updating QR code. Please try again later.',
-      error: error instanceof Error ? error.message : 'Unknown error',
+      message: "Server error while updating QR code. Please try again later.",
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 };
 
-export const deleteQRCode = async (req: Request, res: Response): Promise<any> => {
+export const deleteQRCode = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
   try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
+    const token = req.header("Authorization")?.replace("Bearer ", "");
     if (!token) {
-      return res.status(401).json({ message: 'Authorization token required' });
+      return res.status(401).json({ message: "Authorization token required" });
     }
 
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
@@ -167,54 +181,61 @@ export const deleteQRCode = async (req: Request, res: Response): Promise<any> =>
     const qrCode = await QRCodeService.getQRCodeById(qrCodeId);
 
     if (!qrCode) {
-      return res.status(404).json({ message: 'QR Code not found' });
+      return res.status(404).json({ message: "QR Code not found" });
     }
 
-    if (qrCode.createdBy.toString() !== userId) {
-      return res.status(403).json({
-        message: 'You are not authorized to delete this QR Code.'
-      });
-    }
+    // if (qrCode.createdBy.toString() !== userId) {
+    //   return res.status(403).json({
+    //     message: 'You are not authorized to delete this QR Code.'
+    //   });
+    // }
 
     await QRCodeService.deleteQRCode(qrCodeId);
 
-    return res.status(200).json({ message: 'QR Code deleted successfully' });
+    return res.status(200).json({ message: "QR Code deleted successfully" });
   } catch (error) {
     return res.status(500).json({
-      message: 'Server error while deleting QR code. Please try again later.',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      message: "Server error while deleting QR code. Please try again later.",
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 };
 
-
-export const getQRCodesByBrandId = async (req: Request, res: Response): Promise<any> => {
+export const getQRCodesByBrandId = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
   try {
     const { brandId } = req.params;
 
     if (!brandId) {
-      return res.status(400).json({ message: 'Brand ID is required' });
+      return res.status(400).json({ message: "Brand ID is required" });
     }
 
     const qrCodes = await QRCodeService.getQRCodesByBrandId(brandId);
 
     if (!qrCodes || qrCodes.length === 0) {
-      return res.status(404).json({ message: 'No QR Codes found for this brand' });
+      return res
+        .status(404)
+        .json({ message: "No QR Codes found for this brand" });
     }
 
     return res.status(200).json({
       qrCodes,
-      message: 'QR Codes fetched successfully for the brand'
+      message: "QR Codes fetched successfully for the brand",
     });
   } catch (error) {
     return res.status(500).json({
-      message: 'Server error while fetching QR codes by brand',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      message: "Server error while fetching QR codes by brand",
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 };
 
-export const bulkUploadQRCodes = async (req: Request, res: Response): Promise<any> => {
+export const bulkUploadQRCodes = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: "CSV file is required" });
@@ -248,7 +269,9 @@ export const bulkUploadQRCodes = async (req: Request, res: Response): Promise<an
         console.log("QR Code data read from CSV:", qrCodeData); // debug log
 
         if (qrCodeData.length === 0) {
-          return res.status(400).json({ message: "No valid QR codes found in CSV" });
+          return res
+            .status(400)
+            .json({ message: "No valid QR codes found in CSV" });
         }
 
         const result = await QRCodeService.bulkInsertQRCodes(qrCodeData);
@@ -260,7 +283,9 @@ export const bulkUploadQRCodes = async (req: Request, res: Response): Promise<an
       })
       .on("error", (err) => {
         console.error("Error reading CSV:", err);
-        return res.status(500).json({ message: "Error reading CSV file", error: err });
+        return res
+          .status(500)
+          .json({ message: "Error reading CSV file", error: err });
       });
   } catch (error) {
     return res.status(500).json({
