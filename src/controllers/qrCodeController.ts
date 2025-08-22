@@ -170,11 +170,11 @@ export const deleteQRCode = async (req: Request, res: Response): Promise<any> =>
       return res.status(404).json({ message: 'QR Code not found' });
     }
 
-    if (qrCode.createdBy.toString() !== userId) {
-      return res.status(403).json({
-        message: 'You are not authorized to delete this QR Code.'
-      });
-    }
+    // if (qrCode.createdBy.toString() !== userId) {
+    //   return res.status(403).json({
+    //     message: 'You are not authorized to delete this QR Code.'
+    //   });
+    // }
 
     await QRCodeService.deleteQRCode(qrCodeId);
 

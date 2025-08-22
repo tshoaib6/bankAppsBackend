@@ -83,7 +83,7 @@ export const login = async (req: Request, res: Response): Promise<any> => {
         userId: user._id,
         email: user.email,
         username: user.name,
-        
+
         brands: brandIds, // ✅ now using brandPoints for brand list
       },
       process.env.JWT_SECRET || "secret",
@@ -96,8 +96,8 @@ export const login = async (req: Request, res: Response): Promise<any> => {
       user: {
         name: user.name,
         email: user.email,
-        // points: user.brandPoints,
-        brands: brandIds, 
+        points: user.brandPoints,
+        brands: brandIds,
         address: user.address,
         _id: user._id,
       },
@@ -121,11 +121,11 @@ export const getUsers = async (req: Request, res: Response): Promise<any> => {
     // Optional: filter brandPoints for the specific brand if brandId is provided
     const usersWithFilteredBrands = brandId
       ? users.map((user) => ({
-          ...user.toObject(),
-          brandPoints: user.brandPoints.filter(
-            (bp) => bp.brand.toString() === brandId
-          ),
-        }))
+        ...user.toObject(),
+        brandPoints: user.brandPoints.filter(
+          (bp) => bp.brand.toString() === brandId
+        ),
+      }))
       : users;
 
     res.status(200).json({ users: usersWithFilteredBrands });
@@ -264,7 +264,7 @@ export const updateFcmToken = async (req: Request, res: Response) => {
   const { fcmToken, address } = req.body; // Get from body
   try {
     await User.findByIdAndUpdate(userId, { fcmToken, address });
-    res.status(200).json({ message: "FCM token updated" }); 
+    res.status(200).json({ message: "FCM token updated" });
   } catch (err) {
     res.status(500).json({ error: "Failed to update FCM token" });
   }
