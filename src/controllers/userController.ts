@@ -256,7 +256,7 @@ export const getUsersByAddressController = async (
       return res.status(400).json({ error: "Address is required." });
     }
 
-    const users = await getUsersByAddress(address);
+    const users = await getUsersByAddress(address as string);
 
     res.status(200).json({
       message: "Users retrieved successfully",
