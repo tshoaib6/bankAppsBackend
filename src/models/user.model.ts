@@ -16,13 +16,16 @@ export interface IUser extends Document {
   resetOTP?: string;
   otpExpires?: Date;
   address: string; // e.g., 'Rawalpindi'
-  parish: string; // ✅ New field added
-  fcmToken?: string; // ✅ For push notifications
+  parish: string;
+  fcmToken?: string;
 
   brandPoints: {
     brand: mongoose.Types.ObjectId;
     points: number;
   }[];
+
+  // ✅ Added userRole
+  userRole: 'user' | 'admin';
 }
 
 const UserSchema: Schema<IUser> = new Schema(
@@ -40,15 +43,16 @@ const UserSchema: Schema<IUser> = new Schema(
     verificationTokenExpiry: { type: Date, default: null },
     resetOTP: { type: String },
     otpExpires: { type: Date },
-
-    // ✅ Frontend sends plain string like "Peshawar", "Karachi"
     address: { type: String, required: true },
-
-    // ✅ New field added
     parish: { type: String, required: true },
-
-    // ✅ For FCM notifications
     fcmToken: { type: String },
+
+    // ✅ New userRole field
+    userRole: {
+      type: String,
+      enum: ['user', 'admin'],
+      default: 'user',
+    },
 
     brandPoints: [
       {

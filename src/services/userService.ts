@@ -16,7 +16,8 @@ export const registerUser = async (
   date_of_birth: Date,
   is_over_18: boolean,
   address: string,
-  parish: string // ✅ Added parish
+  parish: string,
+  userRole: 'user' | 'admin' = 'user' // ✅ optional, defaults to 'user'
 ): Promise<IUser | null> => {
   try {
     const existingUser = await User.findOne({ email });
@@ -33,10 +34,11 @@ export const registerUser = async (
       date_of_birth,
       is_over_18,
       address,
-      parish, // ✅ Save parish
+      parish,
       password: hashedPassword,
       verificationToken,
       verificationTokenExpiry,
+      userRole, // ✅ explicitly set role
     });
 
     await newUser.save();
@@ -48,6 +50,7 @@ export const registerUser = async (
     throw new Error('Error registering user');
   }
 };
+
 
 
 

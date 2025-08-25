@@ -20,7 +20,16 @@ import User from "../models/user.model";
 // 🚀 Register User (no brand attached at registration)
 export const register = async (req: Request, res: Response): Promise<any> => {
   try {
-    const { name, email, password, date_of_birth, is_over_18, address, parish } = req.body; // ✅ added parish
+    const {
+      name,
+      email,
+      password,
+      date_of_birth,
+      is_over_18,
+      address,
+      parish,
+      userRole // ✅ new optional field
+    } = req.body;
 
     if (!validateName(name))
       return res.status(400).json({ message: "Invalid name" });
@@ -31,8 +40,9 @@ export const register = async (req: Request, res: Response): Promise<any> => {
         message: "Password must be at least 6 characters",
       });
     if (!parish || typeof parish !== "string")
-      return res.status(400).json({ message: "Parish is required" }); // ✅ validation for parish
+      return res.status(400).json({ message: "Parish is required" });
 
+    // ✅ Pass role to service (default will be user if not sent)
     const newUser = await registerUser(
       name,
       email,
@@ -40,7 +50,8 @@ export const register = async (req: Request, res: Response): Promise<any> => {
       date_of_birth,
       is_over_18,
       address,
-      parish // ✅ pass parish to service
+      parish,
+      userRole || "user" // ✅ force default user
     );
 
     res.status(201).json({
