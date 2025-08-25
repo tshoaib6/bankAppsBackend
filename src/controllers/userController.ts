@@ -107,7 +107,7 @@ export const login = async (req: Request, res: Response): Promise<any> => {
       user: {
         name: user.name,
         email: user.email,
-        // points: user.brandPoints,
+        points: user.brandPoints,
         brands: brandIds,
         address: user.address,
         _id: user._id,

@@ -24,7 +24,7 @@ export const registerUser = async (
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const verificationToken = Math.floor(100000 + Math.random() * 900000).toString(); 
+    const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
     const verificationTokenExpiry = new Date(Date.now() + 1000 * 60 * 10);
 
     const newUser: IUser = new User({
