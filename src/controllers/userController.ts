@@ -65,7 +65,6 @@ export const register = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
-
 // 🔐 Login User
 export const login = async (req: Request, res: Response): Promise<any> => {
   try {
@@ -99,6 +98,10 @@ export const login = async (req: Request, res: Response): Promise<any> => {
       },
       process.env.JWT_SECRET || "secret",
       { expiresIn: "1h" }
+    );
+    const totalPoints = user.brandPoints.reduce(
+      (sum, bp) => sum + bp.points,
+      0
     );
 
     res.status(200).json({
@@ -222,7 +225,6 @@ export const verifyEmail = async (
   }
 };
 
-
 // export const sendNotificationByAddress = async (req: Request, res: Response):Promise<any> => {
 //   try {
 //     const { address, title, message } = req.body;
@@ -243,9 +245,6 @@ export const verifyEmail = async (
 //   }
 // };
 
-
-
-
 export const getUsersByAddressController = async (
   req: Request,
   res: Response
@@ -254,19 +253,19 @@ export const getUsersByAddressController = async (
     const { address } = req.body;
 
     if (!address) {
-      return res.status(400).json({ error: 'Address is required.' });
+      return res.status(400).json({ error: "Address is required." });
     }
 
     const users = await getUsersByAddress(address);
 
     res.status(200).json({
-      message: 'Users retrieved successfully',
+      message: "Users retrieved successfully",
       count: users.length,
       users,
     });
   } catch (error) {
-    console.error('Error in getUsersByAddressController:', error);
-    res.status(500).json({ error: 'Failed to retrieve users by address' });
+    console.error("Error in getUsersByAddressController:", error);
+    res.status(500).json({ error: "Failed to retrieve users by address" });
   }
 };
 
