@@ -47,18 +47,29 @@ export const createQRCode = async (
 };
 
 export const getAllQRCodes = async (
-  _req: Request,
+  req: Request,
   res: Response
 ): Promise<any> => {
   try {
-    const { qrCodes, totalCount, usedCount, unusedCount } =
-      await QRCodeService.getAllQRCodes();
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+
+    const {
+      qrCodes,
+      totalCount,
+      usedCount,
+      unusedCount,
+      totalPages,
+      currentPage,
+    } = await QRCodeService.getAllQRCodes(page, limit);
 
     return res.status(200).json({
       qrCodes,
       totalCount,
       usedCount,
       unusedCount,
+      totalPages,
+      currentPage,
       message: "QR Codes fetched successfully",
     });
   } catch (error) {

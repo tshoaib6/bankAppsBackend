@@ -1,4 +1,5 @@
 import Store, { IStore } from '../models/store.model'
+import { paginate } from '../utils/pagination'
 
 const createStore = async (storeData: Partial<IStore>): Promise<IStore> => {
   try {
@@ -10,14 +11,34 @@ const createStore = async (storeData: Partial<IStore>): Promise<IStore> => {
   }
 }
 
-const getStores = async (): Promise<IStore[]> => {
+export const getStores = async (
+  page: number,
+  limit: number
+): Promise<{
+  stores: IStore[];
+  totalCount: number;
+  totalPages: number;
+  currentPage: number;
+}> => {
   try {
-    return await Store.find()
+    const { data: stores, totalCount, totalPages, currentPage } =
+      await paginate<IStore>(Store, {
+        page,
+        limit,
+        sort: { createdAt: -1 }, // sort by newest first
+      });
+
+    return {
+      stores,
+      totalCount,
+      totalPages,
+      currentPage,
+    };
   } catch (error) {
-    console.error('Error fetching stores:', error)
-    throw new Error('Failed to fetch stores. Please try again.')
+    console.error("Error fetching stores:", error);
+    throw new Error("Failed to fetch stores. Please try again.");
   }
-}
+};
 
 const getStoreById = async (storeId: string): Promise<IStore | null> => {
   try {

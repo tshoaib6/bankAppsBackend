@@ -1,5 +1,6 @@
 import QRCode from "../models/QRCode.model";
 import { IQRCode } from "../models/QRCode.model";
+import { paginate } from "../utils/pagination";
 
 export const createQRCode = async (data: any): Promise<IQRCode> => {
   try {
@@ -26,28 +27,39 @@ export const createQRCode = async (data: any): Promise<IQRCode> => {
   }
 };
 
-export const getAllQRCodes = async (): Promise<{
+export const getAllQRCodes = async (
+  page: number,
+  limit: number
+): Promise<{
   qrCodes: IQRCode[];
   totalCount: number;
   usedCount: number;
   unusedCount: number;
+  totalPages: number;
+  currentPage: number;
 }> => {
   try {
-    const qrCodes = await QRCode.find().populate("brand").populate("createdBy");
+    // Pagination + populated results
+    const { data: qrCodes, totalCount, totalPages, currentPage } =
+      await paginate<IQRCode>(QRCode, {
+        page,
+        limit,
+        sort: { createdAt: -1 },
+        populate: ["brand", "createdBy"],
+      });
 
+    // Stats (for dashboard counts)
     const stats = await QRCode.aggregate([
       {
         $group: {
           _id: null,
-          totalCount: { $sum: 1 },
           usedCount: { $sum: { $cond: ["$isUsed", 1, 0] } },
           unusedCount: { $sum: { $cond: ["$isUsed", 0, 1] } },
         },
       },
     ]);
 
-    const { totalCount, usedCount, unusedCount } = stats[0] || {
-      totalCount: 0,
+    const { usedCount, unusedCount } = stats[0] || {
       usedCount: 0,
       unusedCount: 0,
     };
@@ -57,6 +69,8 @@ export const getAllQRCodes = async (): Promise<{
       totalCount,
       usedCount,
       unusedCount,
+      totalPages,
+      currentPage,
     };
   } catch (error) {
     throw new Error(

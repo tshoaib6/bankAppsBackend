@@ -4,6 +4,7 @@ import User, { IUser } from '../models/user.model';
 import { sendVerificationEmail } from '../utils/emailService';
 import { logUserActivity } from '../services/userHistory';
 import admin from 'firebase-admin'; // Make sure Firebase Admin SDK is initialized elsewhere
+import { paginate } from '../utils/pagination';
 
 /**
  * Register a new user
@@ -81,15 +82,36 @@ export const loginUserService = async (
  * Get all users
  * Optional brandId filter supports brandPoints
  */
-export const getAllUsers = async (brandId?: string): Promise<IUser[]> => {
+export const getAllUsers = async (
+  page: number,
+  limit: number,
+  brandId?: string
+): Promise<{
+  users: IUser[];
+  totalCount: number;
+  totalPages: number;
+  currentPage: number;
+}> => {
   try {
-    const filter = brandId
-      ? { 'brandPoints.brand': brandId }
-      : {};
-    return await User.find(filter);
+    const filter = brandId ? { "brandPoints.brand": brandId } : {};
+
+    const { data: users, totalCount, totalPages, currentPage } =
+      await paginate<IUser>(User, {
+        page,
+        limit,
+        filter,
+        sort: { createdAt: -1 }, // newest users first
+      });
+
+    return {
+      users,
+      totalCount,
+      totalPages,
+      currentPage,
+    };
   } catch (error) {
-    console.error('Error in getAllUsers service:', error);
-    throw new Error('Error fetching users');
+    console.error("Error in getAllUsers service:", error);
+    throw new Error("Error fetching users");
   }
 };
 

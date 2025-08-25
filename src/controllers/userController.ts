@@ -127,11 +127,18 @@ export const login = async (req: Request, res: Response): Promise<any> => {
 export const getUsers = async (req: Request, res: Response): Promise<any> => {
   try {
     const { brandId } = req.query;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
 
-    const users = await getAllUsers(brandId as string);
+    const { users, totalCount, totalPages, currentPage } = await getAllUsers(
+      page,
+      limit,
+      brandId as string
+    );
 
-    if (!users || users.length === 0)
+    if (!users || users.length === 0) {
       return res.status(404).json({ message: "No users found" });
+    }
 
     // Optional: filter brandPoints for the specific brand if brandId is provided
     const usersWithFilteredBrands = brandId
@@ -143,10 +150,18 @@ export const getUsers = async (req: Request, res: Response): Promise<any> => {
       }))
       : users;
 
-    res.status(200).json({ users: usersWithFilteredBrands });
+    return res.status(200).json({
+      users: usersWithFilteredBrands,
+      totalCount,
+      totalPages,
+      currentPage,
+      message: "Users fetched successfully",
+    });
   } catch (error) {
     console.error("Error fetching users:", error);
-    res.status(500).json({ message: "Server error, please try again" });
+    return res
+      .status(500)
+      .json({ message: "Server error, please try again" });
   }
 };
 

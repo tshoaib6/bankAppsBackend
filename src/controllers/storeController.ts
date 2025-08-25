@@ -49,22 +49,29 @@ export const createStore = async (
       .json({ message: 'Server error while creating store' })
   }
 }
-
 export const getStores = async (_req: Request, res: Response): Promise<any> => {
   try {
-    const stores = await StoreService.getStores()
+    const page = parseInt(_req.query.page as string) || 1;
+    const limit = parseInt(_req.query.limit as string) || 20;
+
+    const { stores, totalCount, totalPages, currentPage } =
+      await StoreService.getStores(page, limit);
 
     return res.status(200).json({
       stores,
-      message: 'Stores fetched successfully'
-    })
+      totalCount,
+      totalPages,
+      currentPage,
+      message: "Stores fetched successfully",
+    });
   } catch (error) {
-    console.error('Error fetching stores:', error)
-    return res
-      .status(500)
-      .json({ message: 'Server error while fetching stores' })
+    console.error("Error fetching stores:", error);
+    return res.status(500).json({
+      message: "Server error while fetching stores",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
   }
-}
+};
 
 export const getStoreById = async (
   req: Request,
