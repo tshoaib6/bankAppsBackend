@@ -111,7 +111,6 @@ export const login = async (req: Request, res: Response): Promise<any> => {
         brands: brandIds,
         address: user.address,
         _id: user._id,
-        points: totalPoints,
       },
     });
   } catch (error) {
