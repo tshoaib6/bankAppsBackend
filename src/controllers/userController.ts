@@ -113,6 +113,7 @@ export const login = async (req: Request, res: Response): Promise<any> => {
         points: user.brandPoints,
         brands: brandIds,
         address: user.address,
+        userRole: user.userRole,
         _id: user._id,
       },
     });
