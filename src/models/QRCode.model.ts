@@ -1,29 +1,31 @@
 import mongoose, { Document, Schema } from 'mongoose';
-import { IBrand } from './brand.model';
 
 export interface IQRCode extends Document {
   code: string;
+  codeUrl: string;
   points: number;
   isUsed: boolean;
-  createdBy: mongoose.Schema.Types.ObjectId;
-  brand?: mongoose.Types.ObjectId | IBrand; // ✅ allow either ObjectId or populated object
+  claimedBy?: mongoose.Schema.Types.ObjectId | null;
+  claimedAt?: Date | null;
+  brand?: string | null;   // ✅ brand is now a simple string
 }
 
 const QRCodeSchema: Schema<IQRCode> = new Schema(
   {
     code: { type: String, required: true, unique: true },
-    points: { type: Number, required: true },
+    codeUrl: { type: String, required: true },
+    points: { type: Number, required: true, default: 0 },
     isUsed: { type: Boolean, default: false },
-    createdBy: {
+    claimedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
+      default: null,
     },
-    brand: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Brand',
-      required: true,
+    claimedAt: {
+      type: Date,
+      default: null,
     },
+    brand: { type: String, default: null },   // ✅ changed from ObjectId ref → String
   },
   { timestamps: true }
 );

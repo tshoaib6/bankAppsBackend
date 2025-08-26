@@ -253,18 +253,23 @@ export const bulkUploadQRCodes = async (
       .pipe(csv({ trim: true } as any)) // TypeScript-safe cast
       .on("data", (row) => {
         // Only push rows with required fields
-        if (row.code && row.brand) {
+
+        const extractedCode = row.url.split("/").pop()?.trim() || "";
+
+        if (row.url) {
           qrCodeData.push({
-            code: row.code.trim(),
-            points: Number(row.points) || 0,
-            isUsed: row.isUsed === "true" || row.isUsed === true,
-            createdBy: userId,
-            brand: row.brand.trim(),
+            code: extractedCode,
+            points:20,
+            isUsed: false,
+            claimedAt:null,
+            claimedBy:null,
+            codeUrl:row.url,
+            brand: "Banks",
           });
         }
       })
       .on("end", async () => {
-        console.log("QR Code data read from CSV:", qrCodeData); // debug log
+        console.log("QR Code data read from CSV:", qrCodeData.length); // debug log
 
         if (qrCodeData.length === 0) {
           return res

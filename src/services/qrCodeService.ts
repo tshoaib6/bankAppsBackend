@@ -39,13 +39,12 @@ export const getAllQRCodes = async (
   currentPage: number;
 }> => {
   try {
-    // Pagination + populated results
+    // Pagination (no populate needed anymore)
     const { data: qrCodes, totalCount, totalPages, currentPage } =
       await paginate<IQRCode>(QRCode, {
         page,
         limit,
         sort: { createdAt: -1 },
-        populate: ["brand", "createdBy"],
       });
 
     // Stats (for dashboard counts)
@@ -146,9 +145,16 @@ export const bulkInsertQRCodes = async (
       code: item.code,
       points: Number(item.points) || 0,
       isUsed: Boolean(item.isUsed),
-      createdBy: item.createdBy,
+      claimedAt: item.claimedAt,
+      claimedBy: item.claimedBy,
+      codeUrl: item.codeUrl,
       brand: item.brand,
     }));
+
+    console.log("Valid QR CODES ",validQRCodes.length)
+    console.log("Valid QR  ",validQRCodes[0])
+
+
 
     // Insert in chunks (to avoid memory issues with millions of records)
     const CHUNK_SIZE = 10000; // Adjust depending on your system
