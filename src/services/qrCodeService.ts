@@ -1,14 +1,21 @@
-import QRCode from "../models/QRCode.model";
-import { IQRCode } from "../models/QRCode.model";
+import QRCode, { IQRCode } from "../models/QRCode.model";
 import { paginate } from "../utils/pagination";
 
+/**
+ * Create a new QR Code
+ */
 export const createQRCode = async (data: any): Promise<IQRCode> => {
   try {
-    const { code, points, isUsed, createdBy, brand } = data;
+    const { code, codeUrl, points, isUsed, brand } = data;
 
-    if (!code || typeof points !== "number" || typeof isUsed !== "boolean") {
+    if (
+      !code ||
+      !codeUrl ||
+      typeof points !== "number" ||
+      typeof isUsed !== "boolean"
+    ) {
       throw new Error(
-        'Invalid input. Ensure "code" is a string, "points" is a number, and "isUsed" is a boolean.'
+        'Invalid input. Ensure "code" and "codeUrl" are strings, "points" is a number, and "isUsed" is a boolean.'
       );
     }
 
@@ -16,7 +23,7 @@ export const createQRCode = async (data: any): Promise<IQRCode> => {
       throw new Error("Brand is required when creating a QR code.");
     }
 
-    const qrCode = new QRCode({ code, points, isUsed, createdBy, brand });
+    const qrCode = new QRCode({ code, codeUrl, points, isUsed, brand });
     await qrCode.save();
 
     return qrCode;
@@ -27,6 +34,9 @@ export const createQRCode = async (data: any): Promise<IQRCode> => {
   }
 };
 
+/**
+ * Get all QR Codes with pagination + stats
+ */
 export const getAllQRCodes = async (
   page: number,
   limit: number
@@ -39,7 +49,7 @@ export const getAllQRCodes = async (
   currentPage: number;
 }> => {
   try {
-    // Pagination (no populate needed anymore)
+    // Pagination
     const { data: qrCodes, totalCount, totalPages, currentPage } =
       await paginate<IQRCode>(QRCode, {
         page,
@@ -78,19 +88,24 @@ export const getAllQRCodes = async (
   }
 };
 
+/**
+ * Get a single QR Code by ID
+ */
 export const getQRCodeById = async (
   qrCodeId: string
 ): Promise<IQRCode | null> => {
   try {
-    return await QRCode.findById(qrCodeId)
-      .populate("brand")
-      .populate("createdBy");
+    return await QRCode.findById(qrCodeId);
   } catch (error) {
     throw new Error(
       error instanceof Error ? error.message : "Error fetching QR code"
     );
   }
 };
+
+/**
+ * Update a QR Code
+ */
 export const updateQRCode = async (
   qrCodeId: string,
   data: any
@@ -104,6 +119,9 @@ export const updateQRCode = async (
   }
 };
 
+/**
+ * Delete a QR Code
+ */
 export const deleteQRCode = async (qrCodeId: string): Promise<void> => {
   try {
     await QRCode.findByIdAndDelete(qrCodeId);
@@ -113,13 +131,15 @@ export const deleteQRCode = async (qrCodeId: string): Promise<void> => {
     );
   }
 };
+
+/**
+ * Get all QR Codes for a specific brand (brand is now a string)
+ */
 export const getQRCodesByBrandId = async (
   brandId: string
 ): Promise<IQRCode[]> => {
   try {
-    return await QRCode.find({ brand: brandId })
-      .populate("brand")
-      .populate("createdBy");
+    return await QRCode.find({ brand: brandId });
   } catch (error) {
     throw new Error(
       error instanceof Error
@@ -151,8 +171,8 @@ export const bulkInsertQRCodes = async (
       brand: item.brand,
     }));
 
-    console.log("Valid QR CODES ",validQRCodes.length)
-    console.log("Valid QR  ",validQRCodes[0])
+    console.log("Valid QR CODES ", validQRCodes.length)
+    console.log("Valid QR  ", validQRCodes[0])
 
 
 

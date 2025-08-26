@@ -4,11 +4,8 @@ import * as QRCodeService from "../services/qrCodeService";
 import mongoose from "mongoose";
 import fs from "fs";
 import csv from "csv-parser";
-
-export const createQRCode = async (
-  req: Request,
-  res: Response
-): Promise<any> => {
+// ✅ Create QR Code
+export const createQRCode = async (req: Request, res: Response): Promise<any> => {
   try {
     const token = req.header("Authorization")?.replace("Bearer ", "");
     if (!token) {
@@ -20,12 +17,7 @@ export const createQRCode = async (
 
     const { code, points, isUsed, brand } = req.body;
 
-    if (
-      !code ||
-      typeof points !== "number" ||
-      typeof isUsed !== "boolean" ||
-      !brand
-    ) {
+    if (!code || typeof points !== "number" || typeof isUsed !== "boolean" || !brand) {
       return res.status(400).json({
         message:
           'Invalid input. Ensure "code" is a string, "points" is a number, "isUsed" is a boolean, and "brand" is provided.',
@@ -35,9 +27,7 @@ export const createQRCode = async (
     const qrCodeData = { code, points, isUsed, createdBy: userId, brand };
     const qrCode = await QRCodeService.createQRCode(qrCodeData);
 
-    return res
-      .status(201)
-      .json({ message: "QR Code created successfully", qrCode });
+    return res.status(201).json({ message: "QR Code created successfully", qrCode });
   } catch (error) {
     return res.status(500).json({
       message: "Server error while creating QR code. Please try again later.",
@@ -46,22 +36,14 @@ export const createQRCode = async (
   }
 };
 
-export const getAllQRCodes = async (
-  req: Request,
-  res: Response
-): Promise<any> => {
+// ✅ Get All QR Codes
+export const getAllQRCodes = async (req: Request, res: Response): Promise<any> => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
 
-    const {
-      qrCodes,
-      totalCount,
-      usedCount,
-      unusedCount,
-      totalPages,
-      currentPage,
-    } = await QRCodeService.getAllQRCodes(page, limit);
+    const { qrCodes, totalCount, usedCount, unusedCount, totalPages, currentPage } =
+      await QRCodeService.getAllQRCodes(page, limit);
 
     return res.status(200).json({
       qrCodes,
@@ -80,10 +62,8 @@ export const getAllQRCodes = async (
   }
 };
 
-export const getQRCodeById = async (
-  req: Request,
-  res: Response
-): Promise<any> => {
+// ✅ Get QR Code by ID
+export const getQRCodeById = async (req: Request, res: Response): Promise<any> => {
   try {
     const { qrCodeId } = req.params;
     const qrCode = await QRCodeService.getQRCodeById(qrCodeId);
@@ -92,9 +72,7 @@ export const getQRCodeById = async (
       return res.status(404).json({ message: "QR Code not found" });
     }
 
-    return res
-      .status(200)
-      .json({ qrCode, message: "QR Code fetched successfully" });
+    return res.status(200).json({ qrCode, message: "QR Code fetched successfully" });
   } catch (error) {
     return res.status(500).json({
       message: "Server error while fetching QR code. Please try again later.",
@@ -103,10 +81,8 @@ export const getQRCodeById = async (
   }
 };
 
-export const updateQRCode = async (
-  req: Request,
-  res: Response
-): Promise<any> => {
+// ✅ Update QR Code (only admins allowed)
+export const updateQRCode = async (req: Request, res: Response): Promise<any> => {
   try {
     const token = req.header("Authorization")?.replace("Bearer ", "");
     if (!token) {
@@ -115,7 +91,6 @@ export const updateQRCode = async (
 
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
 
-    // ✅ Only allow if role is "admin"
     if (decoded.userRole !== "admin") {
       return res.status(403).json({
         message: "Only admins are authorized to update QR Codes.",
@@ -125,12 +100,7 @@ export const updateQRCode = async (
     const { qrCodeId } = req.params;
     const { code, points, isUsed, brand } = req.body;
 
-    if (
-      !code ||
-      typeof points !== "number" ||
-      typeof isUsed !== "boolean" ||
-      !brand
-    ) {
+    if (!code || typeof points !== "number" || typeof isUsed !== "boolean" || !brand) {
       return res.status(400).json({
         message:
           'Invalid input. Ensure "code" is a string, "points" is a number, "isUsed" is a boolean, and "brand" is provided.',
@@ -142,7 +112,6 @@ export const updateQRCode = async (
       return res.status(404).json({ message: "QR Code not found" });
     }
 
-    // ✅ No need to check createdBy anymore, only role matters
     const updatedQRCode = await QRCodeService.updateQRCode(qrCodeId, {
       code,
       points,
@@ -150,10 +119,7 @@ export const updateQRCode = async (
       brand,
     });
 
-    return res.status(200).json({
-      message: "QR Code updated successfully",
-      updatedQRCode,
-    });
+    return res.status(200).json({ message: "QR Code updated successfully", updatedQRCode });
   } catch (error) {
     return res.status(500).json({
       message: "Server error while updating QR code. Please try again later.",
@@ -162,10 +128,8 @@ export const updateQRCode = async (
   }
 };
 
-export const deleteQRCode = async (
-  req: Request,
-  res: Response
-): Promise<any> => {
+// ✅ Delete QR Code (admins only, but no `createdBy` check)
+export const deleteQRCode = async (req: Request, res: Response): Promise<any> => {
   try {
     const token = req.header("Authorization")?.replace("Bearer ", "");
     if (!token) {
@@ -173,7 +137,12 @@ export const deleteQRCode = async (
     }
 
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
-    const userId = decoded.userId;
+
+    if (decoded.userRole !== "admin") {
+      return res.status(403).json({
+        message: "Only admins are authorized to delete QR Codes.",
+      });
+    }
 
     const { qrCodeId } = req.params;
     const qrCode = await QRCodeService.getQRCodeById(qrCodeId);
@@ -181,12 +150,6 @@ export const deleteQRCode = async (
     if (!qrCode) {
       return res.status(404).json({ message: "QR Code not found" });
     }
-
-    // if (qrCode.createdBy.toString() !== userId) {
-    //   return res.status(403).json({
-    //     message: 'You are not authorized to delete this QR Code.'
-    //   });
-    // }
 
     await QRCodeService.deleteQRCode(qrCodeId);
 
@@ -199,10 +162,8 @@ export const deleteQRCode = async (
   }
 };
 
-export const getQRCodesByBrandId = async (
-  req: Request,
-  res: Response
-): Promise<any> => {
+// ✅ Get QR Codes by Brand
+export const getQRCodesByBrandId = async (req: Request, res: Response): Promise<any> => {
   try {
     const { brandId } = req.params;
 
@@ -213,15 +174,10 @@ export const getQRCodesByBrandId = async (
     const qrCodes = await QRCodeService.getQRCodesByBrandId(brandId);
 
     if (!qrCodes || qrCodes.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "No QR Codes found for this brand" });
+      return res.status(404).json({ message: "No QR Codes found for this brand" });
     }
 
-    return res.status(200).json({
-      qrCodes,
-      message: "QR Codes fetched successfully for the brand",
-    });
+    return res.status(200).json({ qrCodes, message: "QR Codes fetched successfully for the brand" });
   } catch (error) {
     return res.status(500).json({
       message: "Server error while fetching QR codes by brand",
@@ -259,11 +215,11 @@ export const bulkUploadQRCodes = async (
         if (row.url) {
           qrCodeData.push({
             code: extractedCode,
-            points:20,
+            points: 20,
             isUsed: false,
-            claimedAt:null,
-            claimedBy:null,
-            codeUrl:row.url,
+            claimedAt: null,
+            claimedBy: null,
+            codeUrl: row.url,
             brand: "Banks",
           });
         }
