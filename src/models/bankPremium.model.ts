@@ -22,7 +22,7 @@ export interface IBankPremium extends Document {
 
 const RedemptionSchema = new Schema<IRedemption>({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  code: { type: String, required: true, unique: true },
+  code: { type: String, required: true },
   status: { type: String, enum: ['pending', 'delivered'], default: 'pending' },
   redeemedAt: { type: Date, default: Date.now }
 });
@@ -57,7 +57,7 @@ const BankPremiumSchema: Schema<IBankPremium> = new Schema(
 
 // 🔹 Generate a unique redemption code helper
 BankPremiumSchema.methods.generateRedemptionCode = function () {
-  const code = Math.random().toString(36).substring(2, 10).toUpperCase(); 
+  const code = Math.random().toString(36).substring(2, 10).toUpperCase();
   return code; // Example: "A1B2C3D4"
 };
 
