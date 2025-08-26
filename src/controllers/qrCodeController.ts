@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import * as QRCodeService from "../services/qrCodeService";
-import mongoose from "mongoose";
 import fs from "fs";
 import csv from "csv-parser";
+
 // ✅ Create QR Code
 export const createQRCode = async (req: Request, res: Response): Promise<any> => {
   try {
@@ -15,16 +15,23 @@ export const createQRCode = async (req: Request, res: Response): Promise<any> =>
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
     const userId = decoded.userId;
 
-    const { code, points, isUsed, brand } = req.body;
+    const { code, codeUrl, points, isUsed, brand } = req.body;
 
-    if (!code || typeof points !== "number" || typeof isUsed !== "boolean" || !brand) {
+    if (
+      !code ||
+      !codeUrl ||
+      typeof points !== "number" ||
+      typeof isUsed !== "boolean" ||
+      !brand
+    ) {
       return res.status(400).json({
         message:
-          'Invalid input. Ensure "code" is a string, "points" is a number, "isUsed" is a boolean, and "brand" is provided.',
+          'Invalid input. Ensure "code" and "codeUrl" are strings, "points" is a number, "isUsed" is a boolean, and "brand" is provided.',
       });
     }
 
-    const qrCodeData = { code, points, isUsed, createdBy: userId, brand };
+    // ✅ match service: codeUrl is required
+    const qrCodeData = { code, codeUrl, points, isUsed, createdBy: userId, brand };
     const qrCode = await QRCodeService.createQRCode(qrCodeData);
 
     return res.status(201).json({ message: "QR Code created successfully", qrCode });
@@ -98,12 +105,18 @@ export const updateQRCode = async (req: Request, res: Response): Promise<any> =>
     }
 
     const { qrCodeId } = req.params;
-    const { code, points, isUsed, brand } = req.body;
+    const { code, codeUrl, points, isUsed, brand } = req.body;
 
-    if (!code || typeof points !== "number" || typeof isUsed !== "boolean" || !brand) {
+    if (
+      !code ||
+      !codeUrl ||
+      typeof points !== "number" ||
+      typeof isUsed !== "boolean" ||
+      !brand
+    ) {
       return res.status(400).json({
         message:
-          'Invalid input. Ensure "code" is a string, "points" is a number, "isUsed" is a boolean, and "brand" is provided.',
+          'Invalid input. Ensure "code" and "codeUrl" are strings, "points" is a number, "isUsed" is a boolean, and "brand" is provided.',
       });
     }
 
@@ -112,8 +125,10 @@ export const updateQRCode = async (req: Request, res: Response): Promise<any> =>
       return res.status(404).json({ message: "QR Code not found" });
     }
 
+    // ✅ now also updates codeUrl (since service expects it)
     const updatedQRCode = await QRCodeService.updateQRCode(qrCodeId, {
       code,
+      codeUrl,
       points,
       isUsed,
       brand,
@@ -128,7 +143,7 @@ export const updateQRCode = async (req: Request, res: Response): Promise<any> =>
   }
 };
 
-// ✅ Delete QR Code (admins only, but no `createdBy` check)
+// ✅ Delete QR Code (admins only)
 export const deleteQRCode = async (req: Request, res: Response): Promise<any> => {
   try {
     const token = req.header("Authorization")?.replace("Bearer ", "");
@@ -162,7 +177,7 @@ export const deleteQRCode = async (req: Request, res: Response): Promise<any> =>
   }
 };
 
-// ✅ Get QR Codes by Brand
+// ✅ Get QR Codes by Brand (brand is string now)
 export const getQRCodesByBrandId = async (req: Request, res: Response): Promise<any> => {
   try {
     const { brandId } = req.params;
@@ -186,10 +201,8 @@ export const getQRCodesByBrandId = async (req: Request, res: Response): Promise<
   }
 };
 
-export const bulkUploadQRCodes = async (
-  req: Request,
-  res: Response
-): Promise<any> => {
+// ✅ Bulk Upload QR Codes (CSV import)
+export const bulkUploadQRCodes = async (req: Request, res: Response): Promise<any> => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: "CSV file is required" });
@@ -206,31 +219,25 @@ export const bulkUploadQRCodes = async (
     const qrCodeData: any[] = [];
 
     fs.createReadStream(req.file.path)
-      .pipe(csv({ trim: true } as any)) // TypeScript-safe cast
+      .pipe(csv({ trim: true } as any))
       .on("data", (row) => {
-        // Only push rows with required fields
-
         const extractedCode = row.url.split("/").pop()?.trim() || "";
 
         if (row.url) {
           qrCodeData.push({
             code: extractedCode,
-            points: 20,
+            codeUrl: row.url, // ✅ must include codeUrl
+            points: Number(row.points) || 20, // ✅ allow CSV to set points
             isUsed: false,
             claimedAt: null,
             claimedBy: null,
-            codeUrl: row.url,
-            brand: "Banks",
+            brand: row.brand || "Banks", // ✅ use row.brand if present
           });
         }
       })
       .on("end", async () => {
-        console.log("QR Code data read from CSV:", qrCodeData.length); // debug log
-
         if (qrCodeData.length === 0) {
-          return res
-            .status(400)
-            .json({ message: "No valid QR codes found in CSV" });
+          return res.status(400).json({ message: "No valid QR codes found in CSV" });
         }
 
         const result = await QRCodeService.bulkInsertQRCodes(qrCodeData);
@@ -241,10 +248,7 @@ export const bulkUploadQRCodes = async (
         });
       })
       .on("error", (err) => {
-        console.error("Error reading CSV:", err);
-        return res
-          .status(500)
-          .json({ message: "Error reading CSV file", error: err });
+        return res.status(500).json({ message: "Error reading CSV file", error: err });
       });
   } catch (error) {
     return res.status(500).json({
