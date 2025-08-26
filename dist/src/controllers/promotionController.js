@@ -45,7 +45,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deletePromotion = exports.updatePromotion = exports.getPromotionById = exports.getPromotions = exports.createPromotion = void 0;
+exports.getPromotionsByBrandId = exports.deletePromotion = exports.updatePromotion = exports.getPromotionById = exports.getPromotions = exports.createPromotion = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const PromotionService = __importStar(require("../services/promotionService"));
 const cloudinary_1 = require("../utils/cloudinary");
@@ -61,51 +61,49 @@ const createPromotion = (req, res) => __awaiter(void 0, void 0, void 0, function
     var _a;
     try {
         const token = (_a = req.header('Authorization')) === null || _a === void 0 ? void 0 : _a.replace('Bearer ', '');
-        if (!token)
+        if (!token) {
             return res.status(401).json({ message: 'Authorization token required' });
+        }
         const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
         const userId = decoded.userId;
         upload(req, res, (err) => __awaiter(void 0, void 0, void 0, function* () {
             if (err instanceof multer_1.default.MulterError) {
-                return res
-                    .status(400)
-                    .json({ message: 'Image upload error', error: err.message });
+                return res.status(400).json({ message: 'Image upload error', error: err.message });
             }
             else if (err) {
-                return res
-                    .status(500)
-                    .json({ message: 'Server error', error: err.message });
+                return res.status(500).json({ message: 'Server error', error: err.message });
             }
-            const imageUrl = req.file
-                ? yield (0, cloudinary_1.uploadToCloudinary)(req.file.buffer, 'promotions')
-                : '';
-            const { title, description, points_required, start_date, end_date, stores } = req.body;
-            const storeIds = stores.split(','); // Assuming stores are passed as comma-separated IDs
-            const isValidStores = yield validateStoreIds(storeIds);
-            if (!isValidStores) {
-                return res.status(400).json({ message: 'Invalid store IDs provided' });
+            try {
+                const imageUrl = req.file
+                    ? yield (0, cloudinary_1.uploadToCloudinary)(req.file.buffer, 'promotions')
+                    : '';
+                const { title, description, points_required, start_date, end_date, stores, brand } = req.body;
+                const storeIds = (stores === null || stores === void 0 ? void 0 : stores.split(',')) || [];
+                const isValidStores = yield validateStoreIds(storeIds);
+                if (!isValidStores) {
+                    return res.status(400).json({ message: 'Invalid store IDs provided' });
+                }
+                const promotionData = Object.assign({ title,
+                    description,
+                    points_required,
+                    start_date,
+                    end_date, image_url: imageUrl, stores: storeIds, createdBy: userId }, (brand && { brand }) // optional brand
+                );
+                const promotion = yield PromotionService.createPromotion(promotionData);
+                return res.status(201).json({
+                    message: 'Promotion created successfully',
+                    promotion
+                });
             }
-            const promotionData = {
-                title,
-                description,
-                points_required,
-                start_date,
-                end_date,
-                image_url: imageUrl,
-                stores: storeIds,
-                createdBy: userId
-            };
-            const promotion = yield PromotionService.createPromotion(promotionData);
-            return res
-                .status(201)
-                .json({ message: 'Promotion created successfully', promotion });
+            catch (innerErr) {
+                console.error('Inner error during promotion creation:', innerErr.message, innerErr);
+                return res.status(500).json({ message: 'Server error during promotion creation', error: innerErr.message });
+            }
         }));
     }
-    catch (error) {
-        console.error('Error creating promotion:', error);
-        return res
-            .status(500)
-            .json({ message: 'Server error while creating promotion' });
+    catch (outerErr) {
+        console.error('Outer error in createPromotion controller:', outerErr.message, outerErr);
+        return res.status(500).json({ message: 'Server error while creating promotion', error: outerErr.message });
     }
 });
 exports.createPromotion = createPromotion;
@@ -177,13 +175,14 @@ const updatePromotion = (req, res) => __awaiter(void 0, void 0, void 0, function
                 }
                 updateData.stores = storeIds;
             }
+            if (updates.brand) {
+                updateData.brand = updates.brand; // ✅ allow optional brand update
+            }
             const updatedPromotion = yield PromotionService.updatePromotion(promotionId, updateData);
             if (!updatedPromotion) {
                 return res.status(404).json({ message: 'Promotion not found' });
             }
-            return res
-                .status(200)
-                .json({
+            return res.status(200).json({
                 promotion: updatedPromotion,
                 message: 'Promotion updated successfully'
             });
@@ -220,3 +219,21 @@ const deletePromotion = (req, res) => __awaiter(void 0, void 0, void 0, function
     }
 });
 exports.deletePromotion = deletePromotion;
+const getPromotionsByBrandId = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { brandId } = req.params;
+        if (!brandId) {
+            return res.status(400).json({ message: 'Brand ID is required' });
+        }
+        const promotions = yield PromotionService.getPromotionsByBrandId(brandId);
+        return res.status(200).json({
+            promotions,
+            message: 'Promotions fetched successfully by brand ID'
+        });
+    }
+    catch (error) {
+        console.error('Error fetching promotions by brand ID:', error);
+        return res.status(500).json({ message: 'Server error while fetching promotions by brand ID' });
+    }
+});
+exports.getPromotionsByBrandId = getPromotionsByBrandId;

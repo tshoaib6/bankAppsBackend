@@ -5,4 +5,5 @@ const userHistory_1 = require("../controllers/userHistory"); // Import the contr
 const router = (0, express_1.Router)();
 // Route to get the user history
 router.get('/Userhistory', userHistory_1.getUserHistory);
+router.get('/userHistoryByUserId/:userId', userHistory_1.getUserHistoryById);
 exports.default = router;

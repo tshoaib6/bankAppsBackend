@@ -41,7 +41,20 @@ const StoreSchema = new mongoose_1.Schema({
         longitude: { type: Number, required: true },
         latitude: { type: Number, required: true },
     },
-    createdBy: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'User', required: true },
+    createdBy: {
+        type: mongoose_1.Schema.Types.ObjectId, // ✅ Use Schema.Types.ObjectId
+        ref: 'User',
+        required: true,
+    },
+    brand: {
+        type: mongoose_1.Schema.Types.ObjectId, // ✅ Optional: brand reference
+        ref: 'Brand',
+        required: false,
+    },
+    isActive: {
+        type: Boolean,
+        default: true,
+    },
 }, { timestamps: true });
 const Store = mongoose_1.default.model('Store', StoreSchema);
 exports.default = Store;

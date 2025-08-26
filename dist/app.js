@@ -39,30 +39,39 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const path = __importStar(require("path"));
 const fs = __importStar(require("fs"));
-const dotenv = require('dotenv');
+const dotenv = require("dotenv");
 dotenv.config();
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
 app.use((req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173');
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Max-Age', '1800');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.setHeader('Access-Control-Allow-Methods', 'PUT, POST, GET, DELETE, PATCH, OPTIONS');
-    if (req.method === 'OPTIONS') {
-        res.sendStatus(204);
-        return;
-    }
+    console.log(`[${req.method}] ${req.url} → body:`, req.body);
     next();
 });
+// Middleware for CORS
+app.use((req, res, next) => {
+    // const allowedOrigin = process.env.FRONT_END_URL || 'http://localhost:5173'; // Use the environment variable for front-end URL, with a fallback
+    const allowedOrigin = "*"; // Use the environment variable for front-end URL, with a fallback
+    // Set CORS headers
+    res.setHeader("Access-Control-Allow-Origin", allowedOrigin); // Set dynamic allowed origin from environment variable
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Access-Control-Max-Age", "1800");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.setHeader("Access-Control-Allow-Methods", "PUT, POST, GET, DELETE, PATCH, OPTIONS");
+    // Handle OPTIONS request separately (preflight check)
+    if (req.method === "OPTIONS") {
+        res.sendStatus(204); // No content for preflight
+        return;
+    }
+    next(); // Proceed with other middleware or route handlers
+});
+// Function to dynamically load routes
 const loadRoutes = (app) => {
-    const routesPath = path.join(__dirname, 'src/routes');
+    const routesPath = path.join(__dirname, "src/routes");
     fs.readdirSync(routesPath).forEach((file) => {
-        if (file.endsWith('.routes.ts')) {
+        if (file.endsWith(".routes.ts")) {
             const route = require(path.join(routesPath, file));
             if (route.default) {
-                app.use('/api', route.default);
+                app.use("/api", route.default); // Use route with '/api' prefix
                 console.log(`Route loaded: ${file}`);
             }
             else {
@@ -71,8 +80,10 @@ const loadRoutes = (app) => {
         }
     });
 };
+// Load routes dynamically
 loadRoutes(app);
+// Handle 404 Not Found
 app.use((req, res, next) => {
-    res.status(404).send('Not Found');
+    res.status(404).send("Not Found");
 });
 exports.default = app;

@@ -38,10 +38,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const QRCodeController = __importStar(require("../controllers/qrCodeController"));
+const multer_1 = __importDefault(require("multer"));
 const router = express_1.default.Router();
+const upload = (0, multer_1.default)({ dest: 'uploads/' });
 router.post('/createqrCode', QRCodeController.createQRCode);
 router.get('/getqrCode', QRCodeController.getAllQRCodes);
 router.get('/getqrCodeById:qrCodeId', QRCodeController.getQRCodeById);
 router.put('/updateqrCode/:qrCodeId', QRCodeController.updateQRCode);
 router.delete('/deleteqrCode/:qrCodeId', QRCodeController.deleteQRCode);
+router.get('/getQRCodeBybrandId/:brandId', QRCodeController.getQRCodesByBrandId);
+router.post('/qrcodes/upload', upload.single('file'), QRCodeController.bulkUploadQRCodes);
 exports.default = router;

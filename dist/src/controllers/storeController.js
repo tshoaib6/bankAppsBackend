@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteStore = exports.updateStore = exports.getStoreById = exports.getStores = exports.createStore = void 0;
+exports.getStoresByBrandId = exports.deleteStore = exports.updateStore = exports.getStoreById = exports.getStores = exports.createStore = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const storeService_1 = __importDefault(require("../services/storeService"));
 const createStore = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -23,16 +23,15 @@ const createStore = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
             return res.status(401).json({ message: 'Authorization token required' });
         const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
         const userId = decoded.userId;
-        const { storeName, description, longitude, latitude } = req.body;
+        const { storeName, description, longitude, latitude, brand, // new optional
+        isActive // new optional
+         } = req.body;
         if (!storeName || !description || !longitude || !latitude) {
             return res.status(400).json({ message: 'All fields are required' });
         }
-        const storeData = {
-            storeName,
-            description,
-            location: { longitude, latitude },
-            createdBy: userId
-        };
+        const storeData = Object.assign(Object.assign({ storeName,
+            description, location: { longitude, latitude }, createdBy: userId }, (brand && { brand })), (typeof isActive !== 'undefined' && { isActive }) // include if provided
+        );
         const newStore = yield storeService_1.default.createStore(storeData);
         return res.status(201).json({
             store: newStore,
@@ -49,17 +48,23 @@ const createStore = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
 exports.createStore = createStore;
 const getStores = (_req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const stores = yield storeService_1.default.getStores();
+        const page = parseInt(_req.query.page) || 1;
+        const limit = parseInt(_req.query.limit) || 20;
+        const { stores, totalCount, totalPages, currentPage } = yield storeService_1.default.getStores(page, limit);
         return res.status(200).json({
             stores,
-            message: 'Stores fetched successfully'
+            totalCount,
+            totalPages,
+            currentPage,
+            message: "Stores fetched successfully",
         });
     }
     catch (error) {
-        console.error('Error fetching stores:', error);
-        return res
-            .status(500)
-            .json({ message: 'Server error while fetching stores' });
+        console.error("Error fetching stores:", error);
+        return res.status(500).json({
+            message: "Server error while fetching stores",
+            error: error instanceof Error ? error.message : "Unknown error",
+        });
     }
 });
 exports.getStores = getStores;
@@ -114,7 +119,8 @@ const updateStore = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                 .status(403)
                 .json({ message: 'You are not authorized to update this store' });
         }
-        const updatedStore = yield storeService_1.default.updateStore(storeId, updates);
+        const updateData = Object.assign(Object.assign(Object.assign({}, updates), (updates.brand && { brand: updates.brand })), (typeof updates.isActive !== 'undefined' && { isActive: updates.isActive }));
+        const updatedStore = yield storeService_1.default.updateStore(storeId, updateData);
         return res.status(200).json({
             store: updatedStore,
             message: 'Store updated successfully'
@@ -157,3 +163,14 @@ const deleteStore = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     }
 });
 exports.deleteStore = deleteStore;
+const getStoresByBrandId = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { brandId } = req.params;
+        const stores = yield storeService_1.default.getStoresByBrandId(brandId);
+        res.status(200).json({ success: true, data: stores });
+    }
+    catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+exports.getStoresByBrandId = getStoresByBrandId;

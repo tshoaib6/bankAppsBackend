@@ -8,4 +8,5 @@ router.get('/getStore', storeController_1.getStores);
 router.put('/updateStore/:storeId', storeController_1.updateStore);
 router.delete('/deleteStore/:storeId', storeController_1.deleteStore);
 router.get('/getStoreById/:storeId', storeController_1.getStoreById);
+router.get('/getStoresByBrandId/:brandId', storeController_1.getStoresByBrandId);
 exports.default = router;

@@ -38,7 +38,16 @@ const QRCodeSchema = new mongoose_1.Schema({
     code: { type: String, required: true, unique: true },
     points: { type: Number, required: true },
     isUsed: { type: Boolean, default: false },
-    createdBy: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'User', required: true },
+    createdBy: {
+        type: mongoose_1.default.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+    },
+    brand: {
+        type: mongoose_1.default.Schema.Types.ObjectId,
+        ref: 'Brand',
+        required: true,
+    },
 }, { timestamps: true });
 const QRCode = mongoose_1.default.model('QRCode', QRCodeSchema);
 exports.default = QRCode;

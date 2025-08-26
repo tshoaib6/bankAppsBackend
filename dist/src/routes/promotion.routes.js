@@ -11,4 +11,5 @@ router.get('/getPromotions', promotionController_1.getPromotions);
 router.get('/getPromotionById/:promotionId', promotionController_1.getPromotionById);
 router.put('/updatePromotion/:promotionId', promotionController_1.updatePromotion);
 router.delete('/deletePromotion/:promotionId', promotionController_1.deletePromotion);
+router.get('/getPromotionsByBrandId/:brandId', promotionController_1.getPromotionsByBrandId);
 exports.default = router;

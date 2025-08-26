@@ -7,9 +7,15 @@ const express_1 = __importDefault(require("express"));
 const bankPremiumController_1 = require("../controllers/bankPremiumController");
 const multer_1 = require("../middlewares/multer");
 const router = express_1.default.Router();
-router.post('/bankPremiums', multer_1.upload.single('image'), bankPremiumController_1.createBankPremium);
-router.put('/updateBankPremiums/:bankPremiumId', multer_1.upload.single('image'), bankPremiumController_1.updateBankPremium);
-router.delete('/deleteBankPremiums/:bankPremiumId', bankPremiumController_1.deleteBankPremium);
-router.get('/getBankPremiums', bankPremiumController_1.getAllBankPremiums);
-router.get('/getBankPremiumById/:bankPremiumId', bankPremiumController_1.getBankPremiumById);
+router.post("/bankPremiums", multer_1.upload.single("image"), bankPremiumController_1.createBankPremium);
+router.put("/updateBankPremiums/:bankPremiumId", multer_1.upload.single("image"), bankPremiumController_1.updateBankPremium);
+router.delete("/deleteBankPremiums/:bankPremiumId", bankPremiumController_1.deleteBankPremium);
+router.get("/getBankPremiums", bankPremiumController_1.getAllBankPremiums);
+router.get("/getBankPremiumById/:bankPremiumId", bankPremiumController_1.getBankPremiumById);
+// User redeem endpoint
+router.post("/redeemBankPremium/:premiumId/redeem", bankPremiumController_1.redeemBankPremium);
+router.get("/get-all-bank-premiums-redeemed", bankPremiumController_1.getAllRedemptionsController);
+// Admin verify/update status endpoint
+// Route
+router.put("/verifyCodeAndUpdateStatus", bankPremiumController_1.verifyBankPremiumCode);
 exports.default = router;

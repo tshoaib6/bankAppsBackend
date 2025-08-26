@@ -93,6 +93,7 @@ export const login = async (req: Request, res: Response): Promise<any> => {
         userId: user._id,
         email: user.email,
         username: user.name,
+        userRole: user.userRole, // <--- added here
 
         brands: brandIds, // ✅ now using brandPoints for brand list
       },

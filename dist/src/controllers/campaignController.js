@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCampaignById = exports.getAllCampaigns = exports.deleteCampaign = exports.updateCampaign = exports.createCampaign = void 0;
+exports.getCampaignsWithLeaderboard = exports.getCampaignsByBrandId = exports.getCampaignById = exports.getAllCampaigns = exports.deleteCampaign = exports.updateCampaign = exports.createCampaign = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const campaignService_1 = __importDefault(require("../services/campaignService"));
 const cloudinary_1 = require("../utils/cloudinary");
@@ -24,7 +24,8 @@ const createCampaign = (req, res) => __awaiter(void 0, void 0, void 0, function*
             return res.status(401).json({ message: 'Authorization token required' });
         const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
         const userId = decoded.userId;
-        const { title, description, points_required, start_date, end_date, active } = req.body;
+        const { title, description, points_required, start_date, end_date, active, brand // 👈 added support for brand
+         } = req.body;
         if (!req.file)
             return res.status(400).json({ message: 'Image is required' });
         const imageUrl = yield (0, cloudinary_1.uploadToCloudinary)(req.file.buffer, 'campaign_images');
@@ -36,6 +37,7 @@ const createCampaign = (req, res) => __awaiter(void 0, void 0, void 0, function*
             end_date: new Date(end_date),
             image_url: imageUrl,
             active,
+            brand, // 👈 attach brand to the campaign
             enrolled_users: []
         };
         const newCampaign = yield campaignService_1.default.createCampaign(userId, campaignData);
@@ -50,7 +52,7 @@ const createCampaign = (req, res) => __awaiter(void 0, void 0, void 0, function*
 });
 exports.createCampaign = createCampaign;
 const updateCampaign = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+    var _a, _b;
     try {
         const { campaignId } = req.params;
         const updates = req.body;
@@ -61,7 +63,7 @@ const updateCampaign = (req, res) => __awaiter(void 0, void 0, void 0, function*
         const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
         const userId = decoded.userId;
         const existingCampaign = yield campaignService_1.default.getCampaignById(campaignId);
-        if (existingCampaign.enrolled_users[0].toString() !== userId) {
+        if (((_b = existingCampaign.enrolled_users[0]) === null || _b === void 0 ? void 0 : _b.toString()) !== userId) {
             return res
                 .status(403)
                 .json({ message: 'You are not authorized to update this campaign' });
@@ -84,7 +86,6 @@ exports.updateCampaign = updateCampaign;
 const deleteCampaign = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
-        console.log('Deleting campaign with ID:', req.params.campaignId); // Add logging here
         const { campaignId } = req.params;
         const token = (_a = req.header('Authorization')) === null || _a === void 0 ? void 0 : _a.replace('Bearer ', '');
         if (!token)
@@ -107,7 +108,8 @@ const deleteCampaign = (req, res) => __awaiter(void 0, void 0, void 0, function*
 exports.deleteCampaign = deleteCampaign;
 const getAllCampaigns = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const campaigns = yield campaignService_1.default.getAllCampaigns();
+        const { brandId } = req.query; // 👈 support for brand filter
+        const campaigns = yield campaignService_1.default.getAllCampaigns(brandId === null || brandId === void 0 ? void 0 : brandId.toString());
         return res.status(200).json({ campaigns });
     }
     catch (error) {
@@ -121,17 +123,41 @@ exports.getAllCampaigns = getAllCampaigns;
 const getCampaignById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { campaignId } = req.params;
-        const campaign = yield campaignService_1.default.getCampaignById(campaignId);
-        if (!campaign) {
-            return res.status(404).json({ message: 'Campaign not found' });
+        const campaignData = yield campaignService_1.default.getCampaignById(campaignId);
+        if (!campaignData) {
+            return res.status(404).json({ message: "Campaign not found" });
         }
-        return res.status(200).json({ campaign });
+        return res.status(200).json(campaignData); // ✅ return directly
     }
     catch (error) {
-        console.error('Error fetching campaign:', error);
+        console.error("Error fetching campaign:", error);
         return res
             .status(500)
-            .json({ message: 'Server error while fetching campaign' });
+            .json({ message: "Server error while fetching campaign" });
     }
 });
 exports.getCampaignById = getCampaignById;
+const getCampaignsByBrandId = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { brandId } = req.params;
+        const campaigns = yield campaignService_1.default.getCampaignsByBrandId(brandId);
+        res.status(200).json({ campaigns });
+    }
+    catch (error) {
+        console.error('Error in getCampaignsByBrandId:', error);
+        res.status(500).json({ message: 'Failed to fetch campaigns by brand ID' });
+    }
+});
+exports.getCampaignsByBrandId = getCampaignsByBrandId;
+// controller
+const getCampaignsWithLeaderboard = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const campaigns = yield campaignService_1.default.getCampaignsWithLeaderboard();
+        return res.status(200).json(campaigns);
+    }
+    catch (error) {
+        console.error("Error fetching campaigns with leaderboard:", error);
+        return res.status(500).json({ message: "Server error while fetching campaigns" });
+    }
+});
+exports.getCampaignsWithLeaderboard = getCampaignsWithLeaderboard;

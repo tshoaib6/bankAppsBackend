@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getUserHistory = void 0;
+exports.getUserHistoryById = exports.getUserHistory = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const userHistory_model_1 = __importDefault(require("../models/userHistory.model"));
 const getUserHistory = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -40,5 +40,35 @@ const getUserHistory = (req, res) => __awaiter(void 0, void 0, void 0, function*
             .status(500)
             .json({ message: 'Server error while fetching user history' });
     }
-});
+}); // Import the History model
 exports.getUserHistory = getUserHistory;
+// Controller to get user history by userId and populate complete user details
+const getUserHistoryById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    try {
+        const { userId: requestedUserId } = req.params; // Get userId from URL params
+        const token = (_a = req.header('Authorization')) === null || _a === void 0 ? void 0 : _a.replace('Bearer ', ''); // Get the token from headers
+        if (!token) {
+            return res.status(401).json({ message: 'Authorization token required' });
+        }
+        const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET); // Decode JWT token
+        const authenticatedUserId = decoded.userId; // Extract authenticated userId from token
+        // Check if the authenticated user is trying to access their own history
+        if (authenticatedUserId !== requestedUserId) {
+            return res.status(403).json({ message: 'Access forbidden' });
+        }
+        // Find the user history and populate complete user details
+        const userHistory = yield userHistory_model_1.default.find({ user_id: requestedUserId })
+            .sort({ date: -1 }) // Sort by date in descending order
+            .populate('user_id'); // Populate the entire User model (all fields)
+        if (!userHistory || userHistory.length === 0) {
+            return res.status(404).json({ message: 'No activity found for this user' });
+        }
+        return res.status(200).json({ userHistory });
+    }
+    catch (error) {
+        console.error('Error fetching user history:', error);
+        return res.status(500).json({ message: 'Server error while fetching user history' });
+    }
+});
+exports.getUserHistoryById = getUserHistoryById;

@@ -114,7 +114,13 @@ export const updateQRCode = async (
     }
 
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
-    const userId = decoded.userId;
+
+    // ✅ Only allow if role is "admin"
+    if (decoded.userRole !== "admin") {
+      return res.status(403).json({
+        message: "Only admins are authorized to update QR Codes.",
+      });
+    }
 
     const { qrCodeId } = req.params;
     const { code, points, isUsed, brand } = req.body;
@@ -136,26 +142,7 @@ export const updateQRCode = async (
       return res.status(404).json({ message: "QR Code not found" });
     }
 
-    // ✅ Type-safe handling of ObjectId vs populated object
-    let createdById: string;
-    if (mongoose.isValidObjectId(qrCode.createdBy)) {
-      createdById = qrCode.createdBy.toString();
-    } else {
-      // @ts-ignore if necessary OR define interface for populated user
-      createdById = qrCode.createdBy._id?.toString();
-    }
-
-    if (createdById !== userId) {
-      console.log("Unauthorized update attempt:", {
-        qrCodeCreatedBy: createdById,
-        userId,
-      });
-
-      return res.status(403).json({
-        message: "You are not authorized to update this QR Code.",
-      });
-    }
-
+    // ✅ No need to check createdBy anymore, only role matters
     const updatedQRCode = await QRCodeService.updateQRCode(qrCodeId, {
       code,
       points,

@@ -12,31 +12,42 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deletePromotion = exports.updatePromotion = exports.getPromotionById = exports.getPromotions = exports.createPromotion = void 0;
+exports.getPromotionsByBrandId = exports.deletePromotion = exports.updatePromotion = exports.getPromotionById = exports.getPromotions = exports.createPromotion = void 0;
 const promotion_model_1 = __importDefault(require("../models/promotion.model"));
+// Create promotion with optional brand
 const createPromotion = (data) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const promotion = new promotion_model_1.default(data);
+        const promotion = new promotion_model_1.default(data); // includes optional brand
         yield promotion.save();
         return promotion;
     }
     catch (error) {
+        console.error('Error in createPromotion service:', error.message, error);
         throw new Error('Error creating promotion');
     }
 });
 exports.createPromotion = createPromotion;
+// Get all promotions (across all brands)
 const getPromotions = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        return yield promotion_model_1.default.find();
+        return yield promotion_model_1.default.find().populate('brand'); // populate for visibility
     }
     catch (error) {
         throw new Error('Error fetching promotions');
     }
 });
 exports.getPromotions = getPromotions;
+// ✅ NEW: Get promotions by brand ID
+// export const getPromotionsByBrand = async (brandId: string): Promise<IPromotion[]> => {
+//   try {
+//     return await Promotion.find({ brand: brandId }).populate('brand');
+//   } catch (error) {
+//     throw new Error('Error fetching promotions by brand');
+//   }
+// };
 const getPromotionById = (promotionId) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        return yield promotion_model_1.default.findById(promotionId);
+        return yield promotion_model_1.default.findById(promotionId).populate('brand');
     }
     catch (error) {
         throw new Error('Error fetching promotion by ID');
@@ -45,7 +56,7 @@ const getPromotionById = (promotionId) => __awaiter(void 0, void 0, void 0, func
 exports.getPromotionById = getPromotionById;
 const updatePromotion = (promotionId, data) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        return yield promotion_model_1.default.findByIdAndUpdate(promotionId, data, { new: true });
+        return yield promotion_model_1.default.findByIdAndUpdate(promotionId, data, { new: true }).populate('brand');
     }
     catch (error) {
         console.error('Error updating promotion:', error);
@@ -62,3 +73,12 @@ const deletePromotion = (promotionId) => __awaiter(void 0, void 0, void 0, funct
     }
 });
 exports.deletePromotion = deletePromotion;
+const getPromotionsByBrandId = (brandId) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        return yield promotion_model_1.default.find({ brand: brandId }).populate('brand');
+    }
+    catch (error) {
+        throw new Error('Error fetching promotions by brand');
+    }
+});
+exports.getPromotionsByBrandId = getPromotionsByBrandId;

@@ -34,6 +34,12 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
+const RedemptionSchema = new mongoose_1.Schema({
+    user: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'User', required: true },
+    code: { type: String, required: true },
+    status: { type: String, enum: ['pending', 'delivered'], default: 'pending' },
+    redeemedAt: { type: Date, default: Date.now }
+});
 const BankPremiumSchema = new mongoose_1.Schema({
     title: { type: String, required: true },
     description: { type: String, required: true },
@@ -42,7 +48,23 @@ const BankPremiumSchema = new mongoose_1.Schema({
     end_date: { type: Date, required: true },
     image_url: { type: String, required: true },
     active: { type: Boolean, default: true },
-    enrolled_users: { type: [String], default: [] },
+    enrolled_users: [
+        {
+            type: mongoose_1.default.Schema.Types.ObjectId,
+            ref: 'User',
+            default: []
+        }
+    ],
+    brand: {
+        type: String,
+        default: null
+    },
+    redemptions: [RedemptionSchema] // ✅ new field
 }, { timestamps: true });
+// 🔹 Generate a unique redemption code helper
+BankPremiumSchema.methods.generateRedemptionCode = function () {
+    const code = Math.random().toString(36).substring(2, 10).toUpperCase();
+    return code; // Example: "A1B2C3D4"
+};
 const BankPremium = mongoose_1.default.model('BankPremium', BankPremiumSchema);
 exports.default = BankPremium;

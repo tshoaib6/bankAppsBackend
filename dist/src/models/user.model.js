@@ -39,7 +39,6 @@ const UserSchema = new mongoose_1.Schema({
     email: { type: String, required: true, unique: true },
     date_of_birth: { type: Date, required: true },
     is_over_18: { type: Boolean, required: true },
-    points: { type: Number, default: 0 },
     scanned_qr_codes: { type: [String], default: [] },
     created_at: { type: Date, default: Date.now },
     password: { type: String, required: true },
@@ -47,8 +46,27 @@ const UserSchema = new mongoose_1.Schema({
     isVerified: { type: Boolean, default: false },
     verificationToken: { type: String },
     verificationTokenExpiry: { type: Date, default: null },
-    resetOTP: { type: String, default: undefined },
-    otpExpires: { type: Date, default: undefined },
+    resetOTP: { type: String },
+    otpExpires: { type: Date },
+    address: { type: String, required: true },
+    parish: { type: String, required: true },
+    fcmToken: { type: String },
+    // ✅ New userRole field
+    userRole: {
+        type: String,
+        enum: ['user', 'admin'],
+        default: 'user',
+    },
+    brandPoints: [
+        {
+            brand: {
+                type: mongoose_1.default.Schema.Types.ObjectId,
+                ref: 'Brand',
+                required: true,
+            },
+            points: { type: Number, default: 0 },
+        },
+    ],
 }, { timestamps: true });
 const User = mongoose_1.default.model('User', UserSchema);
 exports.default = User;

@@ -35,34 +35,13 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const PromotionSchema = new mongoose_1.Schema({
-    title: {
-        type: String,
-        required: true,
-    },
-    description: {
-        type: String,
-        required: true,
-    },
-    points_required: {
-        type: Number,
-        required: true,
-    },
-    start_date: {
-        type: Date,
-        required: true,
-    },
-    end_date: {
-        type: Date,
-        required: true,
-    },
-    image_url: {
-        type: String,
-        required: true,
-    },
-    active: {
-        type: Boolean,
-        default: true,
-    },
+    title: { type: String, required: true },
+    description: { type: String, required: true },
+    points_required: { type: Number, required: true },
+    start_date: { type: Date, required: true },
+    end_date: { type: Date, required: true },
+    image_url: { type: String, required: true },
+    active: { type: Boolean, default: true },
     enrolled_users: [
         {
             type: mongoose_1.default.Types.ObjectId,
@@ -80,6 +59,11 @@ const PromotionSchema = new mongoose_1.Schema({
         type: mongoose_1.default.Types.ObjectId,
         ref: 'User',
         required: true,
+    },
+    brand: {
+        type: mongoose_1.default.Types.ObjectId,
+        ref: 'Brand', // ✅ Reference to Brand
+        required: false, // ✅ Optional to preserve current functionality
     },
 }, { timestamps: true });
 const Promotion = mongoose_1.default.model('Promotion', PromotionSchema);

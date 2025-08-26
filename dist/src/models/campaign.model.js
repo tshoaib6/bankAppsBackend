@@ -43,6 +43,20 @@ const CampaignSchema = new mongoose_1.Schema({
     image_url: { type: String, required: true },
     active: { type: Boolean, default: true },
     enrolled_users: { type: [String], default: [] },
+    // 🔥 New field to associate campaign with a brand
+    brand: {
+        type: mongoose_1.default.Schema.Types.ObjectId,
+        ref: 'Brand',
+        required: true,
+    },
+    // 👇 New field to track redemptions per user
+    redemptions: [
+        {
+            user: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'User', required: true },
+            count: { type: Number, default: 1 },
+            lastRedeemedAt: { type: Date, default: Date.now },
+        },
+    ],
 }, { timestamps: true });
 const Campaign = mongoose_1.default.model('Campaign', CampaignSchema);
 exports.default = Campaign;
