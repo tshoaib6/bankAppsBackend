@@ -98,7 +98,7 @@ export const login = async (req: Request, res: Response): Promise<any> => {
         brands: brandIds, // ✅ now using brandPoints for brand list
       },
       process.env.JWT_SECRET || "secret",
-      { expiresIn: "1h" }
+      { expiresIn: "30d" }
     );
     const totalPoints = user.brandPoints.reduce(
       (sum, bp) => sum + bp.points,
