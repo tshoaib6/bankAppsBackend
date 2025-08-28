@@ -126,6 +126,8 @@ import mongoose from 'mongoose';
 
 // made brandId optional
 
+
+
 export const handleQRCodeScan = async (userId: string, scannedCode: string) => {
   try {
     console.log("📌 handleQRCodeScan called with:", { userId, scannedCode });
@@ -171,21 +173,40 @@ export const handleQRCodeScan = async (userId: string, scannedCode: string) => {
     user.scanned_qr_codes.push(qrCode._id.toString());
     console.log("📥 Updated scanned_qr_codes:", user.scanned_qr_codes);
 
-    // Use default brand if none exists
-    const brandName = qrCode.brand || "Banks";
-    console.log("🏷️ Brand from QR (default applied if missing):", brandName);
+    // 🏷️ Resolve brand (always store ObjectId, return string)
+    const BANKS_BRAND_ID = new mongoose.Types.ObjectId("68ad2f87cfdd5f2ad515f188");
+
+    let brandId: mongoose.Types.ObjectId;
+    let brandName: string;
+
+    if (!qrCode.brand) {
+      brandId = BANKS_BRAND_ID;
+      brandName = "Banks";
+    } else if (qrCode.brand.toString() === BANKS_BRAND_ID.toString()) {
+      brandId = BANKS_BRAND_ID;
+      brandName = "Banks";
+    } else if (qrCode.brand === "Banks") {
+      brandId = BANKS_BRAND_ID;
+      brandName = "Banks";
+    } else {
+      // Any other case (future brands)
+      brandId = new mongoose.Types.ObjectId(qrCode.brand);
+      brandName = qrCode.brand.toString();
+    }
+
+    console.log("🏷️ Brand resolved:", { brandId, brandName });
 
     // Update user.brandPoints
     const existingBrandEntry = user.brandPoints.find(
-      (entry) => entry.brand === brandName
+      (entry) => entry.brand.toString() === brandId.toString()
     );
 
     if (existingBrandEntry) {
       existingBrandEntry.points += pointsEarned;
       console.log("📈 Updated brand points:", existingBrandEntry);
     } else {
-      user.brandPoints.push({ brand: brandName, points: pointsEarned });
-      console.log("🆕 Added new brand entry:", { brand: brandName, points: pointsEarned });
+      user.brandPoints.push({ brand: brandId, points: pointsEarned });
+      console.log("🆕 Added new brand entry:", { brand: brandId, points: pointsEarned });
     }
 
     await user.save();
@@ -199,7 +220,7 @@ export const handleQRCodeScan = async (userId: string, scannedCode: string) => {
       user_id: userId,
       points_earned: pointsEarned,
       qrCode: scannedCode,
-      brand: brandName,
+      brand: brandName, // keep string for history readability
       points_used: 0,
       reference_id: "",
       type: "QRCodeScan",
@@ -235,5 +256,3 @@ export const handleQRCodeScan = async (userId: string, scannedCode: string) => {
     throw error; // rethrow for API error handling
   }
 };
-
-
