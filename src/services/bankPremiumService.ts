@@ -113,7 +113,7 @@ export const redeemBankPremiumService = async (
           : (entry.brand as any)._id?.toString() === brandId
     );
     if (brandPointsEntries.length === 0) {
-      throw new Error("No points available for this brand");
+      throw new Error("You need to earn more points to redeem.");
     }
     // :small_blue_diamond: Sum all points
     const totalPoints = brandPointsEntries.reduce(
