@@ -26,9 +26,9 @@ export const register = async (req: Request, res: Response): Promise<any> => {
       password,
       date_of_birth,
       is_over_18,
-      address, // ✅ optional now
+      address, // ✅ optional
       parish,
-      userRole, // ✅ new optional field
+      userRole // ✅ optional, defaults to "user"
     } = req.body;
 
     if (!validateName(name))
@@ -42,14 +42,14 @@ export const register = async (req: Request, res: Response): Promise<any> => {
     if (!parish || typeof parish !== "string")
       return res.status(400).json({ message: "Parish is required" });
 
-    // ✅ If address not sent, just pass null/undefined
+    // ✅ Build args dynamically like in service
     const newUser = await registerUser(
       name,
       email,
       password,
       date_of_birth,
       is_over_18,
-      address || null, // ✅ allow empty
+      address || undefined, // ✅ only pass if provided
       parish,
       userRole || "user" // ✅ force default user
     );
@@ -64,6 +64,8 @@ export const register = async (req: Request, res: Response): Promise<any> => {
     res.status(500).json({ message: "Server error, please try again" });
   }
 };
+
+
 
 // 🔐 Login User
 export const login = async (req: Request, res: Response): Promise<any> => {
