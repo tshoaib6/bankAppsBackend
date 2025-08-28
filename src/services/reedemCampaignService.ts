@@ -42,7 +42,7 @@ export const redeemCampaignService = async (userId: string, campaignId: string) 
     );
 
     if (!brandPointsEntry || brandPointsEntry.points < pointsRequired) {
-      throw new Error('Insufficient points in this brand to redeem the campaign');
+      throw new Error('You need to collect more points to redeem this campaign.');
     }
 
     // Deduct brand points
