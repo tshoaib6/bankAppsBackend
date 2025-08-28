@@ -122,7 +122,7 @@ export const redeemBankPremiumService = async (
     );
     if (totalPoints < pointsRequired) {
       throw new Error(
-        "Insufficient total points in this brand to redeem the premium"
+        "You need to collect more points to redeem."
       );
     }
     // :small_blue_diamond: Deduct points across entries

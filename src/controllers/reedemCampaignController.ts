@@ -43,7 +43,7 @@ export const redeemCampaign = async (req: Request, res: Response): Promise<any> 
     const totalBrandPoints = userBrandPointsArray.reduce((sum, bp) => sum + bp.points, 0);
 
     if (totalBrandPoints < requiredPoints) {
-      return res.status(400).json({ message: 'Insufficient brand points to redeem this campaign' });
+      return res.status(400).json({ message: 'You need to collect more points to redeem this campaign.' });
     }
 
     // ✅ Deduct points across entries
