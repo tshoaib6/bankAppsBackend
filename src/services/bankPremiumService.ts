@@ -17,7 +17,7 @@ export interface IUser extends Document {
   name: string;
   email: string;
   userRole: string;
-  points: IBrandPoints[];   // 🔹 Add this
+  brandPoints: IBrandPoints[];   // 🔹 Add this
   brands: (Types.ObjectId | string)[];
 }
 const createBankPremium = async (
@@ -90,50 +90,45 @@ export const redeemBankPremiumService = async (
   premiumId: string
 ): Promise<any> => {
   try {
-    // 🔹 Fetch premium and populate brand
+    // :small_blue_diamond: Fetch premium and populate brand
     const bankPremium = await BankPremium.findById(premiumId)
       .populate<{ brand: IBrand }>("brand")
       .exec();
-
     if (!bankPremium) throw new Error("BankPremium not found");
-
     const pointsRequired: number = Number(bankPremium.points_required);
     if (!pointsRequired || isNaN(pointsRequired)) {
       throw new Error("Invalid points requirement for this premium");
     }
-
-    // 🔹 Fetch user
-    const user = await User.findById(userId).exec() as IUser | null;
+    // :small_blue_diamond: Fetch user
+    const user = (await User.findById(userId).exec()) as IUser | null;
     if (!user) throw new Error("User not found");
-
-    if (!bankPremium.brand) throw new Error("BankPremium brand not properly set");
-
+    if (!bankPremium.brand)
+      throw new Error("BankPremium brand not properly set");
     const brandId = bankPremium.brand.toString();
-
-    // 🔹 Collect all points for this brand
-    const brandPointsEntries: IBrandPoints[] = user.points.filter(
-      (entry) => entry.brand.toString() === brandId
+    // :white_check_mark: Use correct field (brandPoints) instead of points
+    const brandPointsEntries: IBrandPoints[] = (user.brandPoints || []).filter(
+      (entry: IBrandPoints) =>
+        entry.brand instanceof mongoose.Types.ObjectId
+          ? entry.brand.toString() === brandId
+          : (entry.brand as any)._id?.toString() === brandId
     );
-
     if (brandPointsEntries.length === 0) {
       throw new Error("No points available for this brand");
     }
-
-    // 🔹 Sum all points
+    // :small_blue_diamond: Sum all points
     const totalPoints = brandPointsEntries.reduce(
       (sum, entry) => sum + entry.points,
       0
     );
-
     if (totalPoints < pointsRequired) {
-      throw new Error("Insufficient total points in this brand to redeem the premium");
+      throw new Error(
+        "Insufficient total points in this brand to redeem the premium"
+      );
     }
-
-    // 🔹 Deduct points across entries
+    // :small_blue_diamond: Deduct points across entries
     let pointsToDeduct = pointsRequired;
     for (const entry of brandPointsEntries) {
       if (pointsToDeduct <= 0) break;
-
       if (entry.points <= pointsToDeduct) {
         pointsToDeduct -= entry.points;
         entry.points = 0;
@@ -142,28 +137,26 @@ export const redeemBankPremiumService = async (
         pointsToDeduct = 0;
       }
     }
-
     await user.save();
-
-    // 🔹 Ensure user is enrolled
-    if (!bankPremium.enrolled_users.some(id => id.toString() === user._id.toString())) {
+    // :small_blue_diamond: Ensure user is enrolled
+    if (
+      !bankPremium.enrolled_users.some(
+        (id) => id.toString() === user._id.toString()
+      )
+    ) {
       bankPremium.enrolled_users.push(user._id);
     }
-
-    // 🔹 Generate unique redemption code
+    // :small_blue_diamond: Generate unique redemption code
     const code = uuidv4().split("-")[0].toUpperCase();
-
-    // 🔹 Add redemption entry
+    // :small_blue_diamond: Add redemption entry
     bankPremium.redemptions.push({
       user: user._id,
       code,
       status: "pending",
       redeemedAt: new Date(),
     });
-
     await bankPremium.save();
-
-    // 🔹 Log user history
+    // :small_blue_diamond: Log user history
     const userHistoryEntry = new UserHistory({
       user_id: user._id,
       date: new Date(),
@@ -175,17 +168,19 @@ export const redeemBankPremiumService = async (
       points_earned: 0,
       qrCode: code,
     });
-
     await userHistoryEntry.save();
-
-    // 🔹 Final Response
+    // :small_blue_diamond: Final Response
     return {
       user: {
         userId: user._id,
         username: user.name,
         remaining_total_brand_points: totalPoints - pointsRequired,
         brandId: brandId,
-        updatedPoints: user.points.filter(p => p.brand.toString() === brandId),
+        updatedPoints: (user.brandPoints || []).filter((p) =>
+          p.brand instanceof mongoose.Types.ObjectId
+            ? p.brand.toString() === brandId
+            : (p.brand as any)._id?.toString() === brandId
+        ),
       },
       bankPremium: {
         title: bankPremium.title,
@@ -203,9 +198,12 @@ export const redeemBankPremiumService = async (
     };
   } catch (error: any) {
     console.error("Error redeeming bank premium service:", error);
-    throw new Error(error.message || "An error occurred during bank premium redemption");
+    throw new Error(
+      error.message || "An error occurred during bank premium redemption"
+    );
   }
 };
+
 
 
 /**
