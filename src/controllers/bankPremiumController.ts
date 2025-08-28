@@ -1,9 +1,21 @@
 import { Request, Response } from "express";
-import jwt from "jsonwebtoken";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import BankPremiumService, {
   getAllRedemptionsService,
 } from "../services/bankPremiumService";
 import { uploadToCloudinary } from "../utils/cloudinary";
+
+
+interface RedeemRequestBody {
+  premiumId: string;
+}
+
+interface DecodedToken extends JwtPayload {
+  userId: string;
+  email: string;
+  username: string;
+  userRole: string;
+}
 
 /**
  * Create a new BankPremium
@@ -202,27 +214,32 @@ export const getBankPremiumById = async (
  * Redeem a BankPremium (User)
  */
 export const redeemBankPremium = async (
-  req: Request,
+  req: Request<{}, {}, RedeemRequestBody>,
   res: Response
-): Promise<any> => {
+): Promise<Response> => {
   try {
+    // 🔹 Extract and verify token
     const token = req.header("Authorization")?.replace("Bearer ", "");
-    if (!token)
+    if (!token) {
       return res.status(401).json({ message: "Authorization token required" });
+    }
 
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
     const userId = decoded.userId;
 
+    // 🔹 Validate request body
     const { premiumId } = req.body;
     if (!premiumId) {
       return res.status(400).json({ message: "premiumId is required" });
     }
 
+    // 🔹 Call service
     const result = await BankPremiumService.redeemBankPremiumService(
       userId,
       premiumId
     );
 
+    // 🔹 Return success response
     return res.status(200).json({
       message: "BankPremium redeemed successfully",
       ...result,
@@ -230,16 +247,19 @@ export const redeemBankPremium = async (
   } catch (error: any) {
     console.error("Error redeeming BankPremium:", error);
 
-    // 🔹 if it's a known validation / user error, return 400
-    if (
-      error.message.includes("Insufficient points") ||
-      error.message.includes("not found") ||
-      error.message.includes("Invalid")
-    ) {
+    // 🔹 Known validation/user errors
+    const knownErrors = [
+      "Insufficient points",
+      "not found",
+      "Invalid",
+      "required",
+    ];
+
+    if (knownErrors.some((msg) => error.message.includes(msg))) {
       return res.status(400).json({ message: error.message });
     }
 
-    // 🔹 otherwise, internal server error
+    // 🔹 Unknown/internal error
     return res.status(500).json({
       message: "An error occurred while redeeming BankPremium",
       error: error.message,

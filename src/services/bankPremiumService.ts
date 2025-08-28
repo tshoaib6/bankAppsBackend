@@ -4,7 +4,22 @@ import UserHistory from '../models/userHistory.model';
 import { IBrand } from '../models/brand.model';
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
+import { Document, Types } from "mongoose";
 
+export interface IBrandPoints {
+  _id?: Types.ObjectId;
+  brand: Types.ObjectId | string;
+  points: number;
+}
+
+export interface IUser extends Document {
+  _id: Types.ObjectId;
+  name: string;
+  email: string;
+  userRole: string;
+  points: IBrandPoints[];   // 🔹 Add this
+  brands: (Types.ObjectId | string)[];
+}
 const createBankPremium = async (
   userId: string,
   data: Partial<IBankPremium>
@@ -70,107 +85,128 @@ export const getAllBankPremiums = async (): Promise<IBankPremium[]> => {
  * @param premiumId - ID of the premium to redeem.
  * @returns user info + premium info + unique code
  */
-export const redeemBankPremiumService = async (userId: string, premiumId: string): Promise<any> => {
+export const redeemBankPremiumService = async (
+  userId: string,
+  premiumId: string
+): Promise<any> => {
   try {
+    // 🔹 Fetch premium and populate brand
     const bankPremium = await BankPremium.findById(premiumId)
-      .populate<{ brand: IBrand }>('brand')
+      .populate<{ brand: IBrand }>("brand")
       .exec();
 
-    if (!bankPremium) {
-      throw new Error('BankPremium not found');
+    if (!bankPremium) throw new Error("BankPremium not found");
+
+    const pointsRequired: number = Number(bankPremium.points_required);
+    if (!pointsRequired || isNaN(pointsRequired)) {
+      throw new Error("Invalid points requirement for this premium");
     }
 
-    const pointsRequired = parseInt(bankPremium.points_required, 10);
-    if (isNaN(pointsRequired)) {
-      throw new Error('Invalid points requirement for this premium');
-    }
+    // 🔹 Fetch user
+    const user = await User.findById(userId).exec() as IUser | null;
+    if (!user) throw new Error("User not found");
 
-    const user = await User.findById(userId).exec();
-    if (!user) {
-      throw new Error('User not found');
-    }
-
-    if (!bankPremium.brand) {
-      throw new Error('BankPremium brand not properly set');
-    }
+    if (!bankPremium.brand) throw new Error("BankPremium brand not properly set");
 
     const brandId = bankPremium.brand.toString();
 
-    // Find user's points for that brand
-    const brandPointsEntry = user.brandPoints.find(entry =>
-      entry.brand.toString() === brandId
+    // 🔹 Collect all points for this brand
+    const brandPointsEntries: IBrandPoints[] = user.points.filter(
+      (entry) => entry.brand.toString() === brandId
     );
 
-    if (!brandPointsEntry || brandPointsEntry.points < pointsRequired) {
-      throw new Error('Insufficient points in this brand to redeem the premium');
+    if (brandPointsEntries.length === 0) {
+      throw new Error("No points available for this brand");
     }
 
-    // Deduct brand points
-    brandPointsEntry.points -= pointsRequired;
+    // 🔹 Sum all points
+    const totalPoints = brandPointsEntries.reduce(
+      (sum, entry) => sum + entry.points,
+      0
+    );
+
+    if (totalPoints < pointsRequired) {
+      throw new Error("Insufficient total points in this brand to redeem the premium");
+    }
+
+    // 🔹 Deduct points across entries
+    let pointsToDeduct = pointsRequired;
+    for (const entry of brandPointsEntries) {
+      if (pointsToDeduct <= 0) break;
+
+      if (entry.points <= pointsToDeduct) {
+        pointsToDeduct -= entry.points;
+        entry.points = 0;
+      } else {
+        entry.points -= pointsToDeduct;
+        pointsToDeduct = 0;
+      }
+    }
+
     await user.save();
 
-    // Ensure enrolled_users contains this user
-    if (!bankPremium.enrolled_users.map(id => id.toString()).includes(user._id.toString())) {
-      bankPremium.enrolled_users.push(user._id); // ✅ push ObjectId, not string
+    // 🔹 Ensure user is enrolled
+    if (!bankPremium.enrolled_users.some(id => id.toString() === user._id.toString())) {
+      bankPremium.enrolled_users.push(user._id);
     }
 
-    // Generate unique redemption code
-    const code = uuidv4().split('-')[0].toUpperCase(); // Example: "A1B2C3D4"
+    // 🔹 Generate unique redemption code
+    const code = uuidv4().split("-")[0].toUpperCase();
 
-    // Add redemption entry
+    // 🔹 Add redemption entry
     bankPremium.redemptions.push({
       user: user._id,
       code,
-      status: 'pending',
-      redeemedAt: new Date()
+      status: "pending",
+      redeemedAt: new Date(),
     });
 
     await bankPremium.save();
 
-    // Log user history
+    // 🔹 Log user history
     const userHistoryEntry = new UserHistory({
       user_id: user._id,
       date: new Date(),
       description: `Redeemed bank premium: ${bankPremium.title}`,
       points_used: pointsRequired.toString(),
-      type: 'bank_premium_purchase',
+      type: "bank_premium_purchase",
       reference_id: premiumId,
       brand: brandId,
-      points_earned: 0, // no points earned, only redeemed
-      qrCode: code // store unique code here as well if you want
+      points_earned: 0,
+      qrCode: code,
     });
 
     await userHistoryEntry.save();
 
+    // 🔹 Final Response
     return {
       user: {
         userId: user._id,
         username: user.name,
-        remaining_brand_points: brandPointsEntry.points,
+        remaining_total_brand_points: totalPoints - pointsRequired,
         brandId: brandId,
+        updatedPoints: user.points.filter(p => p.brand.toString() === brandId),
       },
       bankPremium: {
         title: bankPremium.title,
         points_required: bankPremium.points_required,
         enrolled_users: bankPremium.enrolled_users,
         redemptions: bankPremium.redemptions,
-        brand: bankPremium.brand
+        brand: bankPremium.brand,
       },
-      receipt: {
-        code, // ✅ this code goes on the frontend receipt
-        status: 'pending'
-      },
+      receipt: { code, status: "pending" },
       userHistory: {
         description: userHistoryEntry.description,
         points_used: userHistoryEntry.points_used,
         type: userHistoryEntry.type,
-      }
+      },
     };
   } catch (error: any) {
-    console.error('Error redeeming bank premium service:', error);
-    throw new Error(error.message || 'An error occurred during bank premium redemption');
+    console.error("Error redeeming bank premium service:", error);
+    throw new Error(error.message || "An error occurred during bank premium redemption");
   }
 };
+
 
 /**
  * Verify redemption code (Admin use).
@@ -187,7 +223,12 @@ export const verifyBankPremiumCodeService = async (code: string) => {
   }
 
   redemption.status = "delivered";
-  redemption.redeemedAt = new Date(); // ✅ optional: update timestamp if needed
+
+  // Only set redeemedAt if not already set
+  if (!redemption.redeemedAt) {
+    redemption.redeemedAt = new Date();
+  }
+
   await bankPremium.save();
 
   return {
@@ -201,6 +242,7 @@ export const verifyBankPremiumCodeService = async (code: string) => {
     },
   };
 };
+
 
 
 export const getAllRedemptionsService = async () => {
