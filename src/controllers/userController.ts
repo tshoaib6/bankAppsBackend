@@ -26,9 +26,9 @@ export const register = async (req: Request, res: Response): Promise<any> => {
       password,
       date_of_birth,
       is_over_18,
-      address,
+      address, // ✅ optional now
       parish,
-      userRole // ✅ new optional field
+      userRole, // ✅ new optional field
     } = req.body;
 
     if (!validateName(name))
@@ -42,14 +42,14 @@ export const register = async (req: Request, res: Response): Promise<any> => {
     if (!parish || typeof parish !== "string")
       return res.status(400).json({ message: "Parish is required" });
 
-    // ✅ Pass role to service (default will be user if not sent)
+    // ✅ If address not sent, just pass null/undefined
     const newUser = await registerUser(
       name,
       email,
       password,
       date_of_birth,
       is_over_18,
-      address,
+      address || null, // ✅ allow empty
       parish,
       userRole || "user" // ✅ force default user
     );
@@ -242,25 +242,6 @@ export const verifyEmail = async (
   }
 };
 
-// export const sendNotificationByAddress = async (req: Request, res: Response):Promise<any> => {
-//   try {
-//     const { address, title, message } = req.body;
-
-//     if (!address || !title || !message) {
-//       return res.status(400).json({ error: 'Address, title, and message are required.' });
-//     }
-
-//     const result = await notifyUsersByAddress(address, title, message);
-//     res.status(200).json({
-//       message: 'Notification sent',
-//       successCount: result.successCount,
-//       failureCount: result.failureCount,
-//     });
-//   } catch (error) {
-//     console.error('Error in sendNotificationByAddress controller:', error);
-//     res.status(500).json({ error: 'Failed to send notification' });
-//   }
-// };
 
 export const getUsersByAddressController = async (
   req: Request,
@@ -290,7 +271,11 @@ export const updateFcmToken = async (req: Request, res: Response) => {
   const { userId } = req.params; // Get from URL params
   const { fcmToken, address } = req.body; // Get from body
   try {
-    await User.findByIdAndUpdate(userId, { fcmToken, address });
+    const updateData: any = { fcmToken };
+    if (address) {
+      updateData.address = address; // ✅ only set if passed
+    }
+    await User.findByIdAndUpdate(userId, updateData);
     res.status(200).json({ message: "FCM token updated" });
   } catch (err) {
     res.status(500).json({ error: "Failed to update FCM token" });

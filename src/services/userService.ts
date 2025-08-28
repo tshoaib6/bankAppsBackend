@@ -16,9 +16,9 @@ export const registerUser = async (
   password: string,
   date_of_birth: Date,
   is_over_18: boolean,
-  address: string,
-  parish: string,
-  userRole: 'user' | 'admin' = 'user' // ✅ optional, defaults to 'user'
+  address?: string, // ✅ optional now
+  parish?: string,
+  userRole: 'user' | 'admin' = 'user'
 ): Promise<IUser | null> => {
   try {
     const existingUser = await User.findOne({ email });
@@ -29,18 +29,24 @@ export const registerUser = async (
     const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
     const verificationTokenExpiry = new Date(Date.now() + 1000 * 60 * 10);
 
-    const newUser: IUser = new User({
+    // ✅ Build user payload dynamically so optional fields are not forced
+    const userPayload: Partial<IUser> = {
       name,
       email,
       date_of_birth,
       is_over_18,
-      address,
       parish,
       password: hashedPassword,
       verificationToken,
       verificationTokenExpiry,
-      userRole, // ✅ explicitly set role
-    });
+      userRole,
+    };
+
+    if (address) {
+      userPayload.address = address; // ✅ only add if provided
+    }
+
+    const newUser: IUser = new User(userPayload);
 
     await newUser.save();
     await sendVerificationEmail(email, verificationToken);
@@ -51,6 +57,7 @@ export const registerUser = async (
     throw new Error('Error registering user');
   }
 };
+
 
 
 
@@ -176,16 +183,20 @@ export const verifyEmailService = async (
 
 
 export const getUsersByAddress = async (
-  address: string
+  address?: string
 ): Promise<IUser[]> => {
   try {
-    const users = await User.find({ address, fcmToken: { $ne: null } });
-    const validUsers = users.filter(
+    const filter: any = { fcmToken: { $ne: null } };
+    if (address) {
+      filter.address = address; // ✅ only filter if address provided
+    }
+
+    const users = await User.find(filter);
+    return users.filter(
       user =>
         typeof user.fcmToken === 'string' &&
         user.fcmToken.trim().length > 0
     );
-    return validUsers;
   } catch (error) {
     console.error('Error in getUsersByAddress service:', error);
     throw new Error('Error retrieving users by address');

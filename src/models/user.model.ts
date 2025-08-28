@@ -15,7 +15,7 @@ export interface IUser extends Document {
   verificationTokenExpiry: Date | null;
   resetOTP?: string;
   otpExpires?: Date;
-  address: string; // e.g., 'Rawalpindi'
+  address?: string; // ✅ optional now
   parish: string;
   fcmToken?: string;
 
@@ -43,7 +43,7 @@ const UserSchema: Schema<IUser> = new Schema(
     verificationTokenExpiry: { type: Date, default: null },
     resetOTP: { type: String },
     otpExpires: { type: Date },
-    address: { type: String, required: true },
+    address: { type: String, required: false },
     parish: { type: String, required: true },
     fcmToken: { type: String },
 
