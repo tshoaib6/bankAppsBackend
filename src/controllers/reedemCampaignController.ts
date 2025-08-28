@@ -131,65 +131,82 @@ export const redeemCampaign = async (req: Request, res: Response): Promise<any> 
 
 export const getCampaignDetails = async (req: Request, res: Response): Promise<any> => {
   try {
-    const { campaignId } = req.params;
-    const userId = (req as any).userId;
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ message: 'Authorization token required' });
 
-    if (!campaignId || !mongoose.Types.ObjectId.isValid(campaignId)) {
-      return res.status(400).json({ message: "Invalid campaign ID" });
-    }
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
+    const userId = decoded.userId;
+
+    const { campaignId } = req.params;
+    if (!campaignId) return res.status(400).json({ message: 'Campaign ID is required' });
 
     const campaign = await Campaign.findById(campaignId)
-      .populate("brand")
-      .populate({
-        path: "rewards",
-        populate: { path: "rewardItems.item" },
-      });
+      .populate<{ brand: IBrand }>('brand')
+      .exec();
 
-    if (!campaign) {
-      return res.status(404).json({ message: "Campaign not found" });
+    if (!campaign) return res.status(404).json({ message: 'Campaign not found' });
+    if (!campaign.brand || !campaign.brand._id) {
+      return res.status(400).json({ message: 'Campaign has no associated brand' });
     }
 
-    const user = await User.findById(userId).populate("redemptions");
+    const brandId = campaign.brand._id.toString();
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    const user = await User.findById(userId).exec();
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
-    const brandId = (campaign.brand as any)?._id?.toString();
-
-    // ✅ handle multiple brandPoint entries for same brand
-    const userBrandPointsArray = user.brandPoints.filter(bp =>
+    const userBrandPoints = user.brandPoints.find(bp =>
       bp.brand instanceof mongoose.Types.ObjectId
         ? bp.brand.toString() === brandId
-        : (bp.brand as any)?._id?.toString() === brandId
+        : (bp.brand as any)._id?.toString() === brandId
     );
 
-    const totalBrandPoints = userBrandPointsArray.reduce((sum, bp) => sum + bp.points, 0);
+    // ✅ get this user’s redemption count for the campaign
+    const redemption = campaign.redemptions.find(r => r.user.toString() === user._id.toString());
+    const redemptionCount = redemption ? redemption.count : 0;
 
-    const redemptionCount = user.redemptions.filter(
-      redemption => redemption.campaign?.toString() === campaignId
-    ).length;
+    const userHistory = await UserHistory.find({
+      user_id: user._id,
+      reference_id: campaignId,
+      type: 'campaign_purchase',
+    });
 
-    res.status(200).json({
-      campaign: {
-        campaignId: campaign._id,
-        campaignName: campaign.name,
-        startDate: campaign.startDate,
-        endDate: campaign.endDate,
-        status: campaign.status,
-        brand: campaign.brand,
-        rewards: campaign.rewards,
-      },
+    return res.status(200).json({
+      message: 'Campaign details fetched successfully',
       user: {
         userId: user._id,
         username: user.name,
-        remaining_points: totalBrandPoints, // ✅ now summed like redeemCampaign
-        redemption_count: redemptionCount,
+        remaining_points: userBrandPoints?.points ?? 0,
+        redemption_count: redemptionCount, // 👈 new field for how many times redeemed
       },
+      campaign: {
+        title: campaign.title,
+        description: campaign.description,
+        points_required: campaign.points_required,
+        enrolled_users: campaign.enrolled_users,
+        redemptions: campaign.redemptions, // 👈 show all redemptions for admin/analytics
+        start_date: campaign.start_date,
+        end_date: campaign.end_date,
+        image_url: campaign.image_url,
+        active: campaign.active,
+        brand: {
+          _id: campaign.brand._id,
+          brandName: campaign.brand.brandName,
+          description: campaign.brand.description,
+          logo: campaign.brand.logo,
+        },
+      },
+      userHistory: userHistory.map(uh => ({
+        description: uh.description,
+        points_used: uh.points_used,
+        type: uh.type,
+        date: uh.date,
+      })),
     });
   } catch (error: any) {
-    console.error("Error fetching campaign details:", error.message);
-    res.status(500).json({ message: "Server error", error: error.message });
+    console.error('Error fetching campaign details:', error);
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ message: 'Unauthorized: Invalid token' });
+    }
+    return res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };
-
