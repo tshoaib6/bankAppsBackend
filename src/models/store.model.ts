@@ -1,43 +1,34 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Document, Schema } from "mongoose";
 
 export interface IStore extends Document {
-  storeName: string;
-  description: string;
+  customerNumber: string;   // stays same as in CSV
+  customerName: string;     // stays same as in CSV
+  address: string;
+  parish: string;
+  telephoneNumber: string;
   location: {
-    longitude: number;
     latitude: number;
+    longitude: number;
   };
-  createdBy: mongoose.Types.ObjectId;
-  brand?: mongoose.Types.ObjectId;
   isActive?: boolean;
 }
 
 const StoreSchema: Schema<IStore> = new Schema(
   {
-    storeName: { type: String, required: true },
-    description: { type: String, required: true },
+    customerNumber: { type: String, required: true, unique: true }, // e.g. 1016595
+    customerName: { type: String, required: true },                 // e.g. KEITHA PARRIS
+    address: { type: String, required: true },                      // e.g. LOT #1 GOODLAND
+    parish: { type: String, required: true },                       // e.g. Christ Church
+    telephoneNumber: { type: String, required: true },              // e.g. 2462496195
     location: {
-      longitude: { type: Number, required: true },
-      latitude: { type: Number, required: true },
+      latitude: { type: Number, required: true },                   // e.g. 13.052778
+      longitude: { type: Number, required: true },                  // e.g. -59.522483
     },
-    createdBy: {
-      type: Schema.Types.ObjectId, // ✅ Use Schema.Types.ObjectId
-      ref: 'User',
-      required: true,
-    },
-    brand: {
-      type: Schema.Types.ObjectId, // ✅ Optional: brand reference
-      ref: 'Brand',
-      required: false,
-    },
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
+    isActive: { type: Boolean, default: true },
   },
   { timestamps: true }
 );
 
-const Store = mongoose.model<IStore>('Store', StoreSchema);
+const Store = mongoose.model<IStore>("Store", StoreSchema);
 
 export default Store;

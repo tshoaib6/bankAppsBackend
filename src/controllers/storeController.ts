@@ -1,61 +1,62 @@
-import { Request, Response } from 'express'
-import jwt from 'jsonwebtoken'
-import StoreService from '../services/storeService'
+import { Request, Response } from "express";
+import jwt from "jsonwebtoken";
+import StoreService from "../services/storeService";
+import path from "path";
 
-export const createStore = async (
-  req: Request,
-  res: Response
-): Promise<any> => {
+// ✅ Create store
+export const createStore = async (req: Request, res: Response): Promise<any> => {
   try {
-    const token = req.header('Authorization')?.replace('Bearer ', '')
-    if (!token)
-      return res.status(401).json({ message: 'Authorization token required' })
+    const token = req.header("Authorization")?.replace("Bearer ", "");
+    if (!token) {
+      return res.status(401).json({ message: "Authorization token required" });
+    }
 
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!)
-    const userId = decoded.userId
+    jwt.verify(token, process.env.JWT_SECRET!); // token check only, no createdBy in model
 
     const {
-      storeName,
-      description,
-      longitude,
+      customerNumber,
+      customerName,
+      address,
+      parish,
+      telephoneNumber,
       latitude,
-      brand,        // new optional
-      isActive      // new optional
-    } = req.body
+      longitude,
+      isActive,
+    } = req.body;
 
-    if (!storeName || !description || !longitude || !latitude) {
-      return res.status(400).json({ message: 'All fields are required' })
+    if (!customerNumber || !customerName || !address || !parish || !telephoneNumber || !latitude || !longitude) {
+      return res.status(400).json({ message: "All fields are required" });
     }
 
     const storeData = {
-      storeName,
-      description,
-      location: { longitude, latitude },
-      createdBy: userId,
-      ...(brand && { brand }),           // include if provided
-      ...(typeof isActive !== 'undefined' && { isActive }) // include if provided
-    }
+      customerNumber,
+      customerName,
+      address,
+      parish,
+      telephoneNumber,
+      location: { latitude, longitude },
+      ...(typeof isActive !== "undefined" && { isActive }),
+    };
 
-    const newStore = await StoreService.createStore(storeData)
+    const newStore = await StoreService.createStore(storeData);
 
     return res.status(201).json({
       store: newStore,
-      message: 'Store created successfully'
-    })
+      message: "Store created successfully",
+    });
   } catch (error) {
-    console.error('Error creating store:', error)
-    return res
-      .status(500)
-      .json({ message: 'Server error while creating store' })
+    console.error("Error creating store:", error);
+    return res.status(500).json({ message: "Server error while creating store" });
   }
-}
-export const getStores = async (_req: Request, res: Response): Promise<any> => {
-  try {
-    const page = parseInt(_req.query.page as string) || 1;
-    const limit = parseInt(_req.query.limit as string) || 20;
+};
 
-    const { stores, totalCount, totalPages, currentPage } =
-      await StoreService.getStores(page, limit);
+// ✅ Get all stores (with pagination)
+export const getStores = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+
+    const { stores, totalCount, totalPages, currentPage } = await StoreService.getStores(page, limit);
 
     return res.status(200).json({
       stores,
@@ -73,130 +74,95 @@ export const getStores = async (_req: Request, res: Response): Promise<any> => {
   }
 };
 
-export const getStoreById = async (
-  req: Request,
-  res: Response
-): Promise<any> => {
+// ✅ Get single store by ID
+export const getStoreById = async (req: Request, res: Response): Promise<any> => {
   try {
-    const { storeId } = req.params
+    const { storeId } = req.params;
 
-    const store = await StoreService.getStoreById(storeId)
-
+    const store = await StoreService.getStoreById(storeId);
     if (!store) {
-      return res.status(404).json({ message: 'Store not found' })
+      return res.status(404).json({ message: "Store not found" });
     }
 
-    return res.status(200).json({
-      store,
-      message: 'Store fetched successfully'
-    })
+    return res.status(200).json({ store, message: "Store fetched successfully" });
   } catch (error) {
-    console.error('Error fetching store:', error)
-    return res
-      .status(500)
-      .json({ message: 'Server error while fetching store' })
+    console.error("Error fetching store:", error);
+    return res.status(500).json({ message: "Server error while fetching store" });
   }
-}
+};
 
-export const updateStore = async (
-  req: Request,
-  res: Response
-): Promise<any> => {
+// ✅ Update store
+export const updateStore = async (req: Request, res: Response): Promise<any> => {
   try {
-    const { storeId } = req.params
-    const updates = req.body
+    const { storeId } = req.params;
+    const updates = req.body;
 
-    const token = req.header('Authorization')?.replace('Bearer ', '')
-    if (!token)
-      return res.status(401).json({ message: 'Authorization token required' })
-
-    let decoded: any
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET!)
-    } catch (error: any) {
-      if (error.name === 'TokenExpiredError') {
-        return res.status(401).json({
-          message: 'Your session has expired. Please log in again.',
-          expiredAt: error.expiredAt
-        })
-      }
-      return res.status(401).json({ message: 'Invalid token' })
+    const token = req.header("Authorization")?.replace("Bearer ", "");
+    if (!token) {
+      return res.status(401).json({ message: "Authorization token required" });
     }
 
-    const userId = decoded.userId
+    jwt.verify(token, process.env.JWT_SECRET!);
 
-    const existingStore = await StoreService.getStoreById(storeId)
-    if (!existingStore) {
-      return res.status(404).json({ message: 'Store not found' })
+    const updatedStore = await StoreService.updateStore(storeId, updates);
+    if (!updatedStore) {
+      return res.status(404).json({ message: "Store not found or update failed" });
     }
-
-    if (existingStore.createdBy.toString() !== userId) {
-      return res
-        .status(403)
-        .json({ message: 'You are not authorized to update this store' })
-    }
-
-    const updateData = {
-      ...updates,
-      ...(updates.brand && { brand: updates.brand }),
-      ...(typeof updates.isActive !== 'undefined' && { isActive: updates.isActive })
-    }
-
-    const updatedStore = await StoreService.updateStore(storeId, updateData)
 
     return res.status(200).json({
       store: updatedStore,
-      message: 'Store updated successfully'
-    })
+      message: "Store updated successfully",
+    });
   } catch (error) {
-    console.error('Error updating store:', error)
-    return res
-      .status(500)
-      .json({ message: 'Server error while updating store' })
+    console.error("Error updating store:", error);
+    return res.status(500).json({ message: "Server error while updating store" });
   }
-}
+};
 
-export const deleteStore = async (
-  req: Request,
-  res: Response
-): Promise<any> => {
+// ✅ Delete store
+export const deleteStore = async (req: Request, res: Response): Promise<any> => {
   try {
-    const { storeId } = req.params
+    const { storeId } = req.params;
 
-    const token = req.header('Authorization')?.replace('Bearer ', '')
-    if (!token)
-      return res.status(401).json({ message: 'Authorization token required' })
-
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!)
-    const userId = decoded.userId
-
-    const existingStore = await StoreService.getStoreById(storeId)
-    if (!existingStore) {
-      return res.status(404).json({ message: 'Store not found' })
+    const token = req.header("Authorization")?.replace("Bearer ", "");
+    if (!token) {
+      return res.status(401).json({ message: "Authorization token required" });
     }
 
-    if (existingStore.createdBy.toString() !== userId) {
-      return res
-        .status(403)
-        .json({ message: 'You are not authorized to delete this store' })
+    jwt.verify(token, process.env.JWT_SECRET!);
+
+    const deletedStore = await StoreService.deleteStore(storeId);
+    if (!deletedStore) {
+      return res.status(404).json({ message: "Store not found or delete failed" });
     }
 
-    await StoreService.deleteStore(storeId)
-
-    return res.status(200).json({ message: 'Store deleted successfully' })
+    return res.status(200).json({ message: "Store deleted successfully" });
   } catch (error) {
-    console.error('Error deleting store:', error)
-    return res
-      .status(500)
-      .json({ message: 'Server error while deleting store' })
+    console.error("Error deleting store:", error);
+    return res.status(500).json({ message: "Server error while deleting store" });
   }
-}
-export const getStoresByBrandId = async (req: Request, res: Response): Promise<any> => {
+};
+
+export const uploadStores = async (req: Request, res: Response) => {
   try {
-    const { brandId } = req.params;
-    const stores = await StoreService.getStoresByBrandId(brandId);
-    res.status(200).json({ success: true, data: stores });
+    // File uploaded via multer middleware
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+
+    const filePath = path.resolve(req.file.path);
+
+    const stores = await StoreService.importStoresFromCSV(filePath);
+
+    res.status(201).json({
+      message: "Stores imported successfully",
+      count: stores.length,
+      data: stores,
+    });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({
+      message: "Error importing stores",
+      error: error.message,
+    });
   }
 };
