@@ -42,7 +42,7 @@ const UserSchema: Schema<IUser> = new Schema(
     verificationToken: { type: String },
     verificationTokenExpiry: { type: Date, default: null },
     resetOTP: { type: String },
-    otpExpires: { type: Date },
+    otpExpires: { type: Date }, 
     address: { type: String, required: false },
     parish: { type: String, required: true },
     fcmToken: { type: String },

@@ -13,6 +13,7 @@ import {
   validateEmail,
   validateName,
   validatePassword,
+  // validatePassword,
 } from "../utils/validators";
 import jwt from "jsonwebtoken";
 import User from "../models/user.model";
@@ -35,10 +36,10 @@ export const register = async (req: Request, res: Response): Promise<any> => {
       return res.status(400).json({ message: "Invalid name" });
     if (!validateEmail(email))
       return res.status(400).json({ message: "Invalid email" });
-    if (!validatePassword(password))
-      return res.status(400).json({
-        message: "Password must be at least 6 characters",
-      });
+    // if (!validatePassword(password))
+    //   return res.status(400).json({
+    //     message: "Password must be at least 6 characters",
+    //   });
     if (!parish || typeof parish !== "string")
       return res.status(400).json({ message: "Parish is required" });
 
@@ -74,10 +75,10 @@ export const login = async (req: Request, res: Response): Promise<any> => {
 
     if (!validateEmail(email))
       return res.status(400).json({ message: "Invalid email" });
-    if (!validatePassword(password))
-      return res.status(400).json({
-        message: "Password must be at least 6 characters",
-      });
+    // if (!validatePassword(password))
+    //   return res.status(400).json({
+    //     message: "Password must be at least 6 characters",
+    //   });
 
     const user = await loginUserService(email, password);
     if (!user) return res.status(401).json({ message: "Invalid credentials" });
