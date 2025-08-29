@@ -82,19 +82,17 @@ export const loginUserService = async (
 ): Promise<IUser | null> => {
   try {
     const user = await User.findOne({ email });
-    if (!user) throw new Error('User not found');
-
-    if (!user.isVerified) throw new Error('Email is not verified');
-
+    if (!user) throw new Error("Invalid email or password");
+    if (!user.isVerified) throw new Error("Email is not verified");
     const isPasswordMatch = await bcrypt.compare(password, user.password);
-    if (!isPasswordMatch) throw new Error('Invalid email or password');
-
+    if (!isPasswordMatch) throw new Error("Invalid email or password");
     return user;
-  } catch (error) {
-    console.error('Error in loginUserService:', error);
-    throw new Error('Error logging in');
+  } catch (error: any) {
+    console.error("Error in loginUserService:", error.message);
+    throw error; // :rocket: don’t replace with generic
   }
 };
+
 
 /**
  * Get all users

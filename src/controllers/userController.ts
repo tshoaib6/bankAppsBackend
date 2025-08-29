@@ -72,14 +72,12 @@ export const register = async (req: Request, res: Response): Promise<any> => {
 export const login = async (req: Request, res: Response): Promise<any> => {
   try {
     const { email, password } = req.body;
-
     if (!validateEmail(email))
       return res.status(400).json({ message: "Invalid email" });
     // if (!validatePassword(password))
     //   return res.status(400).json({
     //     message: "Password must be at least 6 characters",
     //   });
-
     const user = await loginUserService(email, password);
     if (!user) return res.status(401).json({ message: "Invalid credentials" });
     if (!user.isVerified) {
@@ -87,18 +85,15 @@ export const login = async (req: Request, res: Response): Promise<any> => {
         .status(401)
         .json({ message: "Please verify your email to log in." });
     }
-
     // Extract brand IDs from brandPoints array
     const brandIds = user.brandPoints.map((bp) => bp.brand);
-
     const token = jwt.sign(
       {
         userId: user._id,
         email: user.email,
         username: user.name,
         userRole: user.userRole, // <--- added here
-
-        brands: brandIds, // ✅ now using brandPoints for brand list
+        brands: brandIds, // :white_check_mark: now using brandPoints for brand list
       },
       process.env.JWT_SECRET || "secret",
       { expiresIn: "30d" }
@@ -107,7 +102,6 @@ export const login = async (req: Request, res: Response): Promise<any> => {
       (sum, bp) => sum + bp.points,
       0
     );
-
     res.status(200).json({
       message: "Login successful",
       token,
@@ -121,11 +115,34 @@ export const login = async (req: Request, res: Response): Promise<any> => {
         _id: user._id,
       },
     });
-  } catch (error) {
-    console.error("Error in user login:", error);
+  } catch (error: any) {
+    console.error("Error in user login:", error.message);
+    // If it's an authentication error, return 401 with the real message
+    if (
+      error.message === "Invalid email or password" ||
+      error.message === "Email is not verified"
+    ) {
+      return res.status(401).json({ message: error.message });
+    }
+    // Otherwise, default to 500
     res.status(500).json({ message: "Server error, please try again" });
   }
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // 👥 Get All Users (optionally by brand)
 export const getUsers = async (req: Request, res: Response): Promise<any> => {
