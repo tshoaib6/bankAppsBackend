@@ -16,20 +16,21 @@ export const registerUser = async (
   password: string,
   date_of_birth: Date,
   is_over_18: boolean,
-  address?: string, // ✅ optional now
+  address?: string,
   parish?: string,
   userRole: 'user' | 'admin' = 'user'
 ): Promise<IUser | null> => {
   try {
     const existingUser = await User.findOne({ email });
-    if (existingUser) throw new Error('Email already exists');
+    if (existingUser) {
+      throw new Error("This email is already registered. Please try logging in.");
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
     const verificationTokenExpiry = new Date(Date.now() + 1000 * 60 * 10);
 
-    // ✅ Build user payload dynamically so optional fields are not forced
     const userPayload: Partial<IUser> = {
       name,
       email,
@@ -43,18 +44,28 @@ export const registerUser = async (
     };
 
     if (address) {
-      userPayload.address = address; // ✅ only add if provided
+      userPayload.address = address;
     }
 
     const newUser: IUser = new User(userPayload);
 
     await newUser.save();
-    await sendVerificationEmail(email, verificationToken);
+    await sendVerificationEmail(email, verificationToken, name);
 
     return newUser;
-  } catch (error) {
-    console.error('Error in registerUser service:', error);
-    throw new Error('Error registering user');
+  } catch (error: any) {
+    console.error("Error in registerUser service:", error);
+
+    // ✅ Pass specific error messages to frontend
+    if (error.message.includes("already registered")) {
+      throw new Error("This email is already registered. Please use another email.");
+    }
+
+    if (error.name === "ValidationError") {
+      throw new Error("Invalid data provided. Please check your input.");
+    }
+
+    throw new Error("Something went wrong while registering. Please try again later.");
   }
 };
 

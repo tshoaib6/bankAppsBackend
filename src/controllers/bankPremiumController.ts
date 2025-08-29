@@ -249,7 +249,7 @@ export const redeemBankPremium = async (
 
     // 🔹 Known validation/user errors
     const knownErrors = [
-      "Insufficient points",
+      "  cient points",
       "not found",
       "Invalid",
       "required",

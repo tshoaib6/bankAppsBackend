@@ -37,20 +37,61 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// export const sendVerificationEmail = async (
+//   email: string,
+//   verificationCode: string
+// ): Promise<void> => {
+//   const mailOptions = {
+//     from: process.env.EMAIL_USER,
+//     to: email,
+//     subject: "Email Verification Code",
+//     text: `Your email verification code is: ${verificationCode}. This code will expire in 10 minutes.`,
+//     html: `
+//       <p>Hello,</p>
+//       <p>Your email verification code is:</p>
+//       <h2 style="letter-spacing: 4px;">${verificationCode}</h2>
+//       <p>This code will expire in <strong>10 minutes</strong>. If you did not request this, please ignore this email.</p>
+//     `,
+//   };
+
+//   try {
+//     await transporter.sendMail(mailOptions);
+//     console.log("Verification email sent successfully");
+//   } catch (error) {
+//     console.error("Error sending verification email:", error);
+//     throw new Error("Failed to send verification email");
+//   }
+// };
+
+
+
 export const sendVerificationEmail = async (
   email: string,
-  verificationCode: string
+  verificationCode: string,
+  userName?: string // ✅ so we can greet the user by name
 ): Promise<void> => {
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to: email,
-    subject: "Email Verification Code",
-    text: `Your email verification code is: ${verificationCode}. This code will expire in 10 minutes.`,
+    subject: "✅ Your Email Verification Code", // ✅ updated subject
+    text: `Hi ${userName || "User"},
+Your one-time verification code is:
+
+${verificationCode}
+
+This code is valid for 10 minutes.
+If you did not request this code, please disregard this email.
+
+Thank you,
+BanksBeer Promotion Team`,
     html: `
-      <p>Hello,</p>
-      <p>Your email verification code is:</p>
-      <h2 style="letter-spacing: 4px;">${verificationCode}</h2>
-      <p>This code will expire in <strong>10 minutes</strong>. If you did not request this, please ignore this email.</p>
+      <p>Hi <strong>${userName || "User"}</strong>,</p>
+      <p>Your one-time verification code is:</p>
+      <h2 style="letter-spacing: 4px;">🎯 ${verificationCode}</h2>
+      <p>This code is valid for <strong>10 minutes</strong>.</p>
+      <p>If you did not request this code, please disregard this email.</p>
+      <br />
+      <p>Thank you,<br/>Banks Team</p>
     `,
   };
 
