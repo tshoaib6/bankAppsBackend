@@ -22,7 +22,7 @@ const getCampaignById = async (campaignId: string) => {
   // total redemption count for this campaign
   const totalRedemptions = await UserHistory.countDocuments({
     reference_id: campaignId,
-    type: 'campaign_purchase',
+    type: 'Dmax Campagin Entry',
   });
 
   // per-user redemption stats

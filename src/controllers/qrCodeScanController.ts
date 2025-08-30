@@ -77,7 +77,7 @@ export const scanQRCode = async (req: Request, res: Response): Promise<any> => {
     if (error.message === "QR Code not found") {
       return res.status(404).json({ message: error.message });
     }
-    if (error.message === "QR Code has already been used") {
+    if (error.message === "QR Code has already been used. Please scan a new code") {
       return res.status(409).json({ message: error.message });
     }
     if (error.message === "QR Code already scanned by this user") {
