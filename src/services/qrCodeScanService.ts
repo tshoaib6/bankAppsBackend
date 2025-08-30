@@ -146,7 +146,7 @@ export const handleQRCodeScan = async (userId: string, scannedCode: string) => {
     // Check if QR already used
     if (qrCode.isUsed) {
       console.error("❌ QR Code already used:", qrCode);
-      throw new Error("QR Code has already been used");
+      throw new Error("QR Code has already been used. Please scan a new code");
     }
 
     // Find user
@@ -162,8 +162,8 @@ export const handleQRCodeScan = async (userId: string, scannedCode: string) => {
     console.log("🔎 Checking if user already scanned this QR...");
     console.log("User scanned_qr_codes:", user.scanned_qr_codes);
     if (user.scanned_qr_codes.includes(qrCode._id.toString())) {
-      console.error("❌ QR Code already scanned by this user:", qrCode._id);
-      throw new Error("QR Code already scanned by this user");
+      console.error("QR Code already scanned by this user:", qrCode._id);
+      throw new Error("QR Code has already been used. Please scan a new code");
     }
 
     const pointsEarned = qrCode.points;
