@@ -88,7 +88,7 @@ export const redeemCampaign = async (req: Request, res: Response): Promise<any> 
       date: new Date(),
       description: `Purchased campaign: ${campaign.title}`,
       points_used: requiredPoints,
-      type: 'campaign_purchase',
+      type: 'Dmax Campagin Entry',
       reference_id: campaignId,
       brand: campaign.brand._id,
     });
