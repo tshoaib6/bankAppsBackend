@@ -19,4 +19,6 @@ router.get('/getQRCodeBybrandId/:brandId', QRCodeController.getQRCodesByBrandId)
 
 router.post('/qrcodes/upload', upload.single('file'), QRCodeController.bulkUploadQRCodes);
 
+router.get("/qr-code-usage-by-users", QRCodeController.getQRCodeUsageByUsersController);
+
 export default router;

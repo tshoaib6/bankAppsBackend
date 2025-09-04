@@ -102,7 +102,7 @@ export const getQRCodeById = async (
     );
   }
 };
-
+  
 /**
  * Update a QR Code
  */
@@ -195,6 +195,55 @@ export const bulkInsertQRCodes = async (
   } catch (error) {
     throw new Error(
       error instanceof Error ? error.message : "Error bulk inserting QR codes"
+    );
+  }
+};
+
+
+
+/**
+ * Get QR code usage stats per user with user details
+ */
+export const getQRCodeUsageByUsers = async (): Promise<any[]> => {
+  try {
+    const result = await QRCode.aggregate([
+      {
+        $match: { isUsed: true, claimedBy: { $ne: null } }, // only used codes
+      },
+      {
+        $group: {
+          _id: "$claimedBy", // group by userId
+          usedCount: { $sum: 1 }, // count used codes
+        },
+      },
+      {
+        $lookup: {
+          from: "users", // collection name in MongoDB
+          localField: "_id",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      { $unwind: "$user" }, // flatten array
+      {
+        $project: {
+          _id: 0,
+          userId: "$_id",
+          usedCount: 1,
+          username: "$user.username",
+          parish: "$user.parish",
+          email: "$user.email",
+          dateOfBirth: "$user.dateOfBirth",
+        },
+      },
+    ]);
+
+    return result;
+  } catch (error) {
+    throw new Error(
+      error instanceof Error
+        ? error.message
+        : "Error fetching QR code usage by users"
     );
   }
 };

@@ -8,6 +8,7 @@ import {
   verifyEmail,
   updateFcmToken,
   getUsersByAddressController,
+  exportUsersToCSVController,
 } from "../controllers/userController";
 
 const router = Router();
@@ -27,5 +28,6 @@ router.get("/verify-email/:token", verifyEmail);
 router.get("/get-all-users-by-address", getUsersByAddressController);
 
 router.put("/user/:userId/fcm-token", updateFcmToken);
+router.get("/export-users-csv", exportUsersToCSVController);
 
 export default router;

@@ -8,6 +8,7 @@ import {
   verifyEmailService,
   // notifyUsersByAddress,
   getUsersByAddress,
+  exportUsersToCSVService,
 } from "../services/userService";
 import {
   validateEmail,
@@ -147,36 +148,34 @@ export const login = async (req: Request, res: Response): Promise<any> => {
 // 👥 Get All Users (optionally by brand)
 export const getUsers = async (req: Request, res: Response): Promise<any> => {
   try {
-    const { brandId } = req.query;
+    const { brandId, search } = req.query;
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
 
     const { users, totalCount, totalPages, currentPage } = await getAllUsers(
       page,
       limit,
-      brandId as string
+      brandId as string,
+      search as string // pass search term to service
     );
 
-    if (!users || users.length === 0) {
-      return res.status(404).json({ message: "No users found" });
-    }
-
-    // Optional: filter brandPoints for the specific brand if brandId is provided
+    // ✅ Always return 200, even if no users found
     const usersWithFilteredBrands = brandId
       ? users.map((user) => ({
-        ...user.toObject(),
-        brandPoints: user.brandPoints.filter(
-          (bp) => bp.brand.toString() === brandId
-        ),
-      }))
+          ...user.toObject(),
+          brandPoints: user.brandPoints.filter(
+            (bp) => bp.brand.toString() === brandId
+          ),
+        }))
       : users;
 
     return res.status(200).json({
-      users: usersWithFilteredBrands,
-      totalCount,
-      totalPages,
-      currentPage,
-      message: "Users fetched successfully",
+      users: usersWithFilteredBrands || [],
+      totalCount: totalCount || 0,
+      totalPages: totalPages || 0,
+      currentPage: currentPage || page,
+      message:
+        users.length === 0 ? "No users found" : "Users fetched successfully",
     });
   } catch (error) {
     console.error("Error fetching users:", error);
@@ -185,6 +184,8 @@ export const getUsers = async (req: Request, res: Response): Promise<any> => {
       .json({ message: "Server error, please try again" });
   }
 };
+
+
 
 // 🔄 Update Active/Blocked Status
 export const updateUserStatus = async (
@@ -299,5 +300,17 @@ export const updateFcmToken = async (req: Request, res: Response) => {
     res.status(200).json({ message: "FCM token updated" });
   } catch (err) {
     res.status(500).json({ error: "Failed to update FCM token" });
+  }
+};
+export const exportUsersToCSVController = async (req: Request, res: Response) => {
+  try {
+    const csv = await exportUsersToCSVService();
+
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader("Content-Disposition", "attachment; filename=users.csv");
+    res.status(200).end(csv);
+  } catch (error: any) {
+    console.error("Error exporting users to CSV:", error);
+    res.status(500).json({ message: error.message || "Error exporting users" });
   }
 };

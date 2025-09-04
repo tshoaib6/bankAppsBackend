@@ -5,7 +5,9 @@ import { sendVerificationEmail } from '../utils/emailService';
 import { logUserActivity } from '../services/userHistory';
 import admin from 'firebase-admin'; // Make sure Firebase Admin SDK is initialized elsewhere
 import { paginate } from '../utils/pagination';
-
+import { Parser } from "json2csv";
+import fs from "fs";
+import path from "path";
 /**
  * Register a new user
  * Brand assignment is handled separately after login
@@ -98,10 +100,47 @@ export const loginUserService = async (
  * Get all users
  * Optional brandId filter supports brandPoints
  */
+// export const getAllUsers = async (
+//   page: number,
+//   limit: number,
+//   brandId?: string
+// ): Promise<{
+//   users: IUser[];
+//   totalCount: number;
+//   totalPages: number;
+//   currentPage: number;
+// }> => {
+//   try {
+//     const filter = brandId ? { "brandPoints.brand": brandId } : {};
+
+//     const { data: users, totalCount, totalPages, currentPage } =
+//       await paginate<IUser>(User, {
+//         page,
+//         limit,
+//         filter,
+//         sort: { createdAt: -1 }, // newest users first
+//       });
+
+//     return {
+//       users,
+//       totalCount,
+//       totalPages,
+//       currentPage,
+//     };
+//   } catch (error) {
+//     console.error("Error in getAllUsers service:", error);
+//     throw new Error("Error fetching users");
+//   }
+// };
+
+
+
+
 export const getAllUsers = async (
   page: number,
   limit: number,
-  brandId?: string
+  brandId?: string,
+  search?: string
 ): Promise<{
   users: IUser[];
   totalCount: number;
@@ -109,7 +148,20 @@ export const getAllUsers = async (
   currentPage: number;
 }> => {
   try {
-    const filter = brandId ? { "brandPoints.brand": brandId } : {};
+    const filter: any = {};
+
+    // Brand filter
+    if (brandId) {
+      filter["brandPoints.brand"] = brandId;
+    }
+
+    // Search filter (example: by name, email, etc.)
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+      ];
+    }
 
     const { data: users, totalCount, totalPages, currentPage } =
       await paginate<IUser>(User, {
@@ -130,6 +182,7 @@ export const getAllUsers = async (
     throw new Error("Error fetching users");
   }
 };
+
 
 /**
  * Update user active status
@@ -210,4 +263,28 @@ export const getUsersByAddress = async (
     console.error('Error in getUsersByAddress service:', error);
     throw new Error('Error retrieving users by address');
   }
+};
+
+export const exportUsersToCSVService = async (): Promise<string> => {
+  const users = await User.find().lean();
+
+  if (!users || users.length === 0) {
+    throw new Error("No users found to export");
+  }
+
+  const fields = [
+    "name",
+    "email",
+    "date_of_birth",
+    "is_over_18",
+    "address",
+    "parish",
+    "userRole",
+    "isVerified",
+    "isActive",
+    "createdAt",
+  ];
+
+  const json2csvParser = new Parser({ fields });
+  return json2csvParser.parse(users); // return CSV as string
 };

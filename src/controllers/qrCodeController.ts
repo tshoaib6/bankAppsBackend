@@ -257,3 +257,20 @@ export const bulkUploadQRCodes = async (req: Request, res: Response): Promise<an
     });
   }
 };
+
+
+export const getQRCodeUsageByUsersController = async (req: Request, res: Response) => {
+  try {
+    const data = await QRCodeService.getQRCodeUsageByUsers();
+    return res.status(200).json({
+      success: true,
+      message: "QR code usage stats fetched successfully",
+      data,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Error fetching QR code usage stats",
+    });
+  }
+};

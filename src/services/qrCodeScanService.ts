@@ -120,14 +120,6 @@ import mongoose from 'mongoose';
 // };
 
 
-
-
-
-
-// made brandId optional
-
-
-
 export const handleQRCodeScan = async (userId: string, scannedCode: string) => {
   try {
     console.log("📌 handleQRCodeScan called with:", { userId, scannedCode });
