@@ -33,8 +33,8 @@ export const register = async (req: Request, res: Response): Promise<any> => {
       userRole // ✅ optional, defaults to "user"
     } = req.body;
 
-    if (!validateName(name))
-      return res.status(400).json({ message: "Invalid name" });
+    // if (!validateName(name))
+    //   return res.status(400).json({ message: "Invalid name" });
     if (!validateEmail(email))
       return res.status(400).json({ message: "Invalid email" });
     // if (!validatePassword(password))
