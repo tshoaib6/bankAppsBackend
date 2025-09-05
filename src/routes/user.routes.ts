@@ -36,7 +36,7 @@ router.get("/export-users-csv", exportUsersToCSVController);
 
 router.post("/forgot-password", sendForgotPasswordOTP);
 router.post("/resend-otp", resendForgotPasswordOTP);
-//optional
+//opti onal
 router.post("/verify-otp", verifyForgotPasswordOTP);
 router.post("/reset-password", resetPasswordWithOTP);
 

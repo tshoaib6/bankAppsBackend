@@ -381,20 +381,19 @@ export const verifyForgotPasswordOTP = async (req: Request, res: Response) => {
     res.status(500).json({ message: error.message || "Failed to verify OTP" });
   }
 };
-
 /**
- * 🔐 Reset password using OTP
+ * 🔐 Reset password (after OTP verification)
  */
 export const resetPasswordWithOTP = async (req: Request, res: Response) => {
   try {
-    const { email, otp, newPassword } = req.body;
-    if (!email || !otp || !newPassword) {
+    const { email, newPassword } = req.body;
+    if (!email || !newPassword) {
       return res
         .status(400)
-        .json({ message: "Email, OTP and new password are required" });
+        .json({ message: "Email and new password are required" });
     }
 
-    const msg = await resetPasswordWithOTPService(email, otp, newPassword);
+    const msg = await resetPasswordWithOTPService(email, newPassword);
     res.status(200).json({ message: msg });
   } catch (error: any) {
     console.error("Error in resetPasswordWithOTP:", error);

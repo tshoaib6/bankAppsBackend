@@ -366,27 +366,30 @@ export const verifyForgotPasswordOTPService = async (
     throw new Error("Error verifying OTP");
   }
 };
-
 /**
- * Reset password using OTP
+ * Reset password (after OTP verification)
  */
 export const resetPasswordWithOTPService = async (
   email: string,
-  otp: string,
   newPassword: string
 ): Promise<string> => {
   try {
-    const user = await User.findOne({ email, resetOTP: otp });
-    if (!user) throw new Error("Invalid OTP or email");
+    const user = await User.findOne({ email });
+    if (!user) throw new Error("User not found");
 
-    if (!user.otpExpires || user.otpExpires < new Date()) {
-      throw new Error("OTP has expired");
+    // Ensure OTP was verified before
+    if (!user.resetOTP || !user.otpExpires || user.otpExpires < new Date()) {
+      throw new Error("OTP not verified or expired");
     }
 
+    // Hash and update password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     user.password = hashedPassword;
+
+    // Clear OTP fields
     user.resetOTP = undefined;
     user.otpExpires = undefined;
+
     await user.save();
 
     return "Password reset successful";
