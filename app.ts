@@ -40,7 +40,7 @@ const loadRoutes = (app: Application) => {
       const route = require(path.join(routesPath, file));
       if (route.default) {
         app.use("/api", route.default); // Use route with '/api' prefix
-        console.log(`Route loaded: ${file}`);
+        // console.log(`Route loaded: ${file}`);
       } else {
         console.error(`Error: '${file}' does not export a valid router`);
       }

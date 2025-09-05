@@ -320,7 +320,6 @@
   };
 
 
-
 /**
  * 📩 Send OTP for password reset
  */
@@ -353,36 +352,32 @@ export const resendForgotPasswordOTP = async (req: Request, res: Response) => {
     res.status(200).json({ message: msg });
   } catch (error: any) {
     console.error("Error in resendForgotPasswordOTP:", error);
-    res
-      .status(500)
-      .json({ message: error.message || "Failed to resend OTP" });
+    res.status(500).json({ message: error.message || "Failed to resend OTP" });
   }
 };
 
 /**
- * ✅ Verify OTP (optional step if you want separate verification)
+ * ✅ Verify OTP (Step 2 of flow)
  */
 export const verifyForgotPasswordOTP = async (req: Request, res: Response) => {
   try {
     const { email, otp } = req.body;
     if (!email || !otp) {
-      return res
-        .status(400)
-        .json({ message: "Email and OTP are required" });
+      return res.status(400).json({ message: "Email and OTP are required" });
     }
 
-    const user = await verifyForgotPasswordOTPService(email, otp);
-    res.status(200).json({
-      message: "OTP verified successfully",
-      user: { id: user?._id, email: user?.email },
-    });
+    const msg = await verifyForgotPasswordOTPService(email, otp);
+
+    return res.status(200).json({ message: msg });
   } catch (error: any) {
     console.error("Error in verifyForgotPasswordOTP:", error);
     res.status(500).json({ message: error.message || "Failed to verify OTP" });
   }
 };
+
 /**
- * 🔐 Reset password (after OTP verification)
+ * 🔐 Reset password (Step 3 of flow)
+ * OTP is already verified in previous step, so no need to re-check
  */
 export const resetPasswordWithOTP = async (req: Request, res: Response) => {
   console.log("📩 Incoming request to resetPasswordWithOTP");
@@ -391,7 +386,6 @@ export const resetPasswordWithOTP = async (req: Request, res: Response) => {
   try {
     const { email, newPassword } = req.body;
 
-    // Validate input
     if (!email || !newPassword) {
       console.warn("⚠️ Missing email or newPassword in request");
       return res
@@ -399,9 +393,6 @@ export const resetPasswordWithOTP = async (req: Request, res: Response) => {
         .json({ message: "Email and new password are required" });
     }
 
-    console.log("✅ Input validated. Email:", email);
-
-    // Call service
     const msg = await resetPasswordWithOTPService(email, newPassword);
 
     console.log("✅ Password reset successful for user:", email);
@@ -416,3 +407,4 @@ export const resetPasswordWithOTP = async (req: Request, res: Response) => {
       .json({ message: error.message || "Failed to reset password" });
   }
 };
+

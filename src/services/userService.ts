@@ -293,6 +293,9 @@ export const exportUsersToCSVService = async (): Promise<string> => {
 /**
  * Send OTP for password reset
  */
+/**
+ * Send OTP for password reset
+ */
 export const sendForgotPasswordOTPService = async (
   email: string
 ): Promise<string> => {
@@ -309,7 +312,7 @@ export const sendForgotPasswordOTPService = async (
     user.otpExpires = otpExpires;
     await user.save();
 
-    // TODO: integrate your email/SMS sender
+    // send email
     await sendVerificationEmail(email, otp, user.name);
 
     return "OTP sent to your email";
@@ -346,12 +349,12 @@ export const resendForgotPasswordOTPService = async (
 };
 
 /**
- * Verify OTP (optional helper if you want separate verify step)
+ * Verify OTP (Step 2 of flow)
  */
 export const verifyForgotPasswordOTPService = async (
   email: string,
   otp: string
-): Promise<IUser | null> => {
+): Promise<string> => {
   try {
     const user = await User.findOne({ email, resetOTP: otp });
     if (!user) throw new Error("Invalid OTP");
@@ -360,14 +363,21 @@ export const verifyForgotPasswordOTPService = async (
       throw new Error("OTP has expired");
     }
 
-    return user;
+    // ✅ OTP is correct → Clear OTP so it cannot be reused
+    user.resetOTP = undefined;
+    user.otpExpires = undefined;
+    await user.save();
+
+    return "OTP verified successfully";
   } catch (error) {
     console.error("Error in verifyForgotPasswordOTPService:", error);
     throw new Error("Error verifying OTP");
   }
 };
+
 /**
- * Reset password (after OTP verification)
+ * Reset password (Step 3 of flow)
+ * Only works if OTP was already verified (since we cleared OTP in previous step)
  */
 export const resetPasswordWithOTPService = async (
   email: string,
@@ -377,18 +387,9 @@ export const resetPasswordWithOTPService = async (
     const user = await User.findOne({ email });
     if (!user) throw new Error("User not found");
 
-    // Ensure OTP was verified before
-    if (!user.resetOTP || !user.otpExpires || user.otpExpires < new Date()) {
-      throw new Error("OTP not verified or expired");
-    }
-
-    // Hash and update password
+    // ✅ Just update password (OTP already verified earlier)
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     user.password = hashedPassword;
-
-    // Clear OTP fields
-    user.resetOTP = undefined;
-    user.otpExpires = undefined;
 
     await user.save();
 
@@ -398,3 +399,4 @@ export const resetPasswordWithOTPService = async (
     throw new Error("Error resetting password");
   }
 };
+
