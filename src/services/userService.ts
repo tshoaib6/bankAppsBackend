@@ -288,3 +288,110 @@ export const exportUsersToCSVService = async (): Promise<string> => {
   const json2csvParser = new Parser({ fields });
   return json2csvParser.parse(users); // return CSV as string
 };
+
+
+/**
+ * Send OTP for password reset
+ */
+export const sendForgotPasswordOTPService = async (
+  email: string
+): Promise<string> => {
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      throw new Error("No account found with this email");
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins expiry
+
+    user.resetOTP = otp;
+    user.otpExpires = otpExpires;
+    await user.save();
+
+    // TODO: integrate your email/SMS sender
+    await sendVerificationEmail(email, otp, user.name);
+
+    return "OTP sent to your email";
+  } catch (error) {
+    console.error("Error in sendForgotPasswordOTPService:", error);
+    throw new Error("Error sending OTP");
+  }
+};
+
+/**
+ * Resend OTP for password reset
+ */
+export const resendForgotPasswordOTPService = async (
+  email: string
+): Promise<string> => {
+  try {
+    const user = await User.findOne({ email });
+    if (!user) throw new Error("User not found");
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+
+    user.resetOTP = otp;
+    user.otpExpires = otpExpires;
+    await user.save();
+
+    await sendVerificationEmail(email, otp, user.name);
+
+    return "New OTP has been sent";
+  } catch (error) {
+    console.error("Error in resendForgotPasswordOTPService:", error);
+    throw new Error("Error resending OTP");
+  }
+};
+
+/**
+ * Verify OTP (optional helper if you want separate verify step)
+ */
+export const verifyForgotPasswordOTPService = async (
+  email: string,
+  otp: string
+): Promise<IUser | null> => {
+  try {
+    const user = await User.findOne({ email, resetOTP: otp });
+    if (!user) throw new Error("Invalid OTP");
+
+    if (!user.otpExpires || user.otpExpires < new Date()) {
+      throw new Error("OTP has expired");
+    }
+
+    return user;
+  } catch (error) {
+    console.error("Error in verifyForgotPasswordOTPService:", error);
+    throw new Error("Error verifying OTP");
+  }
+};
+
+/**
+ * Reset password using OTP
+ */
+export const resetPasswordWithOTPService = async (
+  email: string,
+  otp: string,
+  newPassword: string
+): Promise<string> => {
+  try {
+    const user = await User.findOne({ email, resetOTP: otp });
+    if (!user) throw new Error("Invalid OTP or email");
+
+    if (!user.otpExpires || user.otpExpires < new Date()) {
+      throw new Error("OTP has expired");
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    user.resetOTP = undefined;
+    user.otpExpires = undefined;
+    await user.save();
+
+    return "Password reset successful";
+  } catch (error) {
+    console.error("Error in resetPasswordWithOTPService:", error);
+    throw new Error("Error resetting password");
+  }
+};
