@@ -385,19 +385,33 @@ export const verifyForgotPasswordOTP = async (req: Request, res: Response) => {
  * 🔐 Reset password (after OTP verification)
  */
 export const resetPasswordWithOTP = async (req: Request, res: Response) => {
+  console.log("📩 Incoming request to resetPasswordWithOTP");
+  console.log("👉 Request body:", req.body);
+
   try {
     const { email, newPassword } = req.body;
+
+    // Validate input
     if (!email || !newPassword) {
+      console.warn("⚠️ Missing email or newPassword in request");
       return res
         .status(400)
         .json({ message: "Email and new password are required" });
     }
 
+    console.log("✅ Input validated. Email:", email);
+
+    // Call service
     const msg = await resetPasswordWithOTPService(email, newPassword);
-    res.status(200).json({ message: msg });
+
+    console.log("✅ Password reset successful for user:", email);
+
+    return res.status(200).json({ message: msg });
   } catch (error: any) {
-    console.error("Error in resetPasswordWithOTP:", error);
-    res
+    console.error("❌ Error in resetPasswordWithOTP controller");
+    console.error("📛 Error details:", error);
+
+    return res
       .status(500)
       .json({ message: error.message || "Failed to reset password" });
   }
