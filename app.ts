@@ -7,7 +7,7 @@ dotenv.config();
 const app: Application = express();
 app.use(express.json());
 app.use((req, res, next) => {
-  console.log(`[${req.method}] ${req.url} → body:`, req.body);
+  // console.log(`[${req.method}] ${req.url} → body:`, req.body);
   next();
 });
 // Middleware for CORS
