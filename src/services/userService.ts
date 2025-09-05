@@ -340,7 +340,7 @@ export const resendForgotPasswordOTPService = async (
     user.otpExpires = otpExpires;
     await user.save();
 
-    await sendVerificationEmail(email, otp, user.name);
+    await sendResetPasswordEmail(email, otp, user.name);
 
     return "New OTP has been sent";
   } catch (error) {

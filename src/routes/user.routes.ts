@@ -34,10 +34,10 @@ router.get("/get-all-users-by-address", getUsersByAddressController);
 router.put("/user/:userId/fcm-token", updateFcmToken);
 router.get("/export-users-csv", exportUsersToCSVController);
 
-router.post("/forgot-password", sendForgotPasswordOTP);
-router.post("/resend-otp", resendForgotPasswordOTP);
+router.post("/send-otp-forgot-password", sendForgotPasswordOTP);
+router.post("/resend-otp-to-email", resendForgotPasswordOTP);
 //opti onal
-router.post("/verify-otp", verifyForgotPasswordOTP);
-router.post("/reset-password", resetPasswordWithOTP);
+router.post("/verify-otpp", verifyForgotPasswordOTP);
+router.post("/reset-password-now", resetPasswordWithOTP);
 
 export default router;

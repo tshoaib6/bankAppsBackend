@@ -18,7 +18,13 @@ const mailOptions = {
   to: email,
   subject: "🔐 Your Password Reset OTP Code",
   html: `
-    <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #333;">
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8" />
+      <title>Password Reset</title>
+    </head>
+    <body style="font-family: Arial, sans-serif; line-height: 1.5; color: #333;">
       <p>Hi <strong>${userName || "User"}</strong>,</p>
       <p>We received a request to reset your password.</p>
       <p>Your one-time password (OTP) is:</p>
@@ -27,9 +33,13 @@ const mailOptions = {
       <p>If you did not request a password reset, please ignore this email.</p>
       <br/>
       <p>Thank you,<br/>Banks Team</p>
-    </div>
+    </body>
+    </html>
   `,
 };
+
+
+
 
 
   try {
