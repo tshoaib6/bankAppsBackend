@@ -8,6 +8,7 @@ import { paginate } from '../utils/pagination';
 import { Parser } from "json2csv";
 import fs from "fs";
 import path from "path";
+import { sendResetPasswordEmail } from '../utils/sendResetPasswordEmail';
 /**
  * Register a new user
  * Brand assignment is handled separately after login
@@ -313,7 +314,7 @@ export const sendForgotPasswordOTPService = async (
     await user.save();
 
     // send email
-    await sendVerificationEmail(email, otp, user.name);
+await sendResetPasswordEmail(email, otp, user.name);
 
     return "OTP sent to your email";
   } catch (error) {
