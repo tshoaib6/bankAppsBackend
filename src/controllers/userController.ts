@@ -24,52 +24,55 @@
   import User from "../models/user.model";
 
   // 🚀 Register User (no brand attached at registration)
-  export const register = async (req: Request, res: Response): Promise<any> => {
-    try {
-      const {
-        name,
-        email,
-        password,
-        date_of_birth,
-        is_over_18,
-        address, // ✅ optional
-        parish,
-        userRole // ✅ optional, defaults to "user"
-      } = req.body;
+export const register = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const {
+      name,
+      email,
+      password,
+      date_of_birth,
+      is_over_18,
+      address,
+      parish,
+      userRole,
+    } = req.body;
+    if (!validateEmail(email))
+      return res.status(400).json({ message: "Invalid email" });
+    if (!parish || typeof parish !== "string")
+      return res.status(400).json({ message: "Parish is required" });
+    const newUser = await registerUser(
+      name,
+      email,
+      password,
+      date_of_birth,
+      is_over_18,
+      address || undefined,
+      parish,
+      userRole || "user"
+    );
+    res.status(201).json({
+      message:
+        "User registered successfully. Please check your email to verify your account.",
+      user: newUser,
+    });
+  } catch (error: any) {
+    console.error("Error in user registration:", error);
+    // :white_check_mark: Return the actual error message
+    return res.status(400).json({
+      message: error.message || "Something went wrong, please try again",
+    });
+  }
+};
 
-      // if (!validateName(name))
-      //   return res.status(400).json({ message: "Invalid name" });
-      if (!validateEmail(email))
-        return res.status(400).json({ message: "Invalid email" });
-      // if (!validatePassword(password))
-      //   return res.status(400).json({
-      //     message: "Password must be at least 6 characters",
-      //   });
-      if (!parish || typeof parish !== "string")
-        return res.status(400).json({ message: "Parish is required" });
 
-      // ✅ Build args dynamically like in service
-      const newUser = await registerUser(
-        name,
-        email,
-        password,
-        date_of_birth,
-        is_over_18,
-        address || undefined, // ✅ only pass if provided
-        parish,
-        userRole || "user" // ✅ force default user
-      );
 
-      res.status(201).json({
-        message:
-          "User registered successfully. Please check your email to verify your account.",
-        user: newUser,
-      });
-    } catch (error) {
-      console.error("Error in user registration:", error);
-      res.status(500).json({ message: "Server error, please try again" });
-    }
-  };
+
+
+
+
+
+
+
 
 
 
