@@ -77,65 +77,68 @@ export const register = async (req: Request, res: Response): Promise<any> => {
 
 
   // 🔐 Login User
-  export const login = async (req: Request, res: Response): Promise<any> => {
-    try {
-      const { email, password } = req.body;
-      if (!validateEmail(email))
-        return res.status(400).json({ message: "Invalid email" });
-      // if (!validatePassword(password))
-      //   return res.status(400).json({
-      //     message: "Password must be at least 6 characters",
-      //   });
-      const user = await loginUserService(email, password);
-      if (!user) return res.status(401).json({ message: "Invalid credentials" });
-      if (!user.isVerified) {
-        return res
-          .status(401)
-          .json({ message: "Please verify your email to log in." });
-      }
-      // Extract brand IDs from brandPoints array
-      const brandIds = user.brandPoints.map((bp) => bp.brand);
-      const token = jwt.sign(
-        {
-          userId: user._id,
-          email: user.email,
-          username: user.name,
-          userRole: user.userRole, // <--- added here
-          brands: brandIds, // :white_check_mark: now using brandPoints for brand list
-        },
-        process.env.JWT_SECRET || "secret",
-        { expiresIn: "30d" }
-      );
-      const totalPoints = user.brandPoints.reduce(
-        (sum, bp) => sum + bp.points,
-        0
-      );
-      res.status(200).json({
-        message: "Login successful",
-        token,
-        user: {
-          name: user.name,
-          email: user.email,
-          points: user.brandPoints,
-          brands: brandIds,
-          address: user.address,
-          userRole: user.userRole,
-          _id: user._id,
-        },
-      });
-    } catch (error: any) {
-      console.error("Error in user login:", error.message);
-      // If it's an authentication error, return 401 with the real message
-      if (
-        error.message === "Invalid email or password" ||
-        error.message === "Email is not verified"
-      ) {
-        return res.status(401).json({ message: error.message });
-      }
-      // Otherwise, default to 500
-      res.status(500).json({ message: "Server error, please try again" });
+ export const login = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { email, password } = req.body;
+
+    if (!validateEmail(email)) {
+      return res.status(400).json({ message: "Invalid email" });
     }
-  };
+
+    const user = await loginUserService(email, password);
+    if (!user) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    // ✅ At this point, user is verified already (unverified handled inside service)
+    const brandIds = user.brandPoints.map((bp) => bp.brand);
+
+    const token = jwt.sign(
+      {
+        userId: user._id,
+        email: user.email,
+        username: user.name,
+        userRole: user.userRole,
+        brands: brandIds,
+      },
+      process.env.JWT_SECRET || "secret",
+      { expiresIn: "30d" }
+    );
+
+    const totalPoints = user.brandPoints.reduce(
+      (sum, bp) => sum + bp.points,
+      0
+    );
+
+    res.status(200).json({
+      message: "Login successful",
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        points: user.brandPoints,
+        brands: brandIds,
+        address: user.address,
+        userRole: user.userRole,
+        totalPoints,
+      },
+    });
+  } catch (error: any) {
+    console.error("Error in user login:", error.message);
+
+    // ✅ Custom auth errors (like OTP resend)
+    if (
+      error.message === "Invalid email or password" ||
+      error.message.includes("Email not verified")
+    ) {
+      return res.status(401).json({ message: error.message });
+    }
+
+    // ✅ Default fallback
+    res.status(500).json({ message: "Server error, please try again" });
+  }
+};
 
 
 

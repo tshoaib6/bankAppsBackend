@@ -86,16 +86,31 @@ export const loginUserService = async (
   try {
     const user = await User.findOne({ email });
     if (!user) throw new Error("Invalid email or password");
-    if (!user.isVerified) throw new Error("Email is not verified");
+
+    // ✅ Check password first
     const isPasswordMatch = await bcrypt.compare(password, user.password);
     if (!isPasswordMatch) throw new Error("Invalid email or password");
+
+    // ✅ If email not verified, generate OTP and send again
+    if (!user.isVerified) {
+      const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
+      const verificationTokenExpiry = new Date(Date.now() + 1000 * 60 * 10); // 10 min
+
+      user.verificationToken = verificationToken;
+      user.verificationTokenExpiry = verificationTokenExpiry;
+      await user.save();
+
+      await sendVerificationEmail(user.email, verificationToken, user.name);
+
+      throw new Error("Email not verified. A new verification code has been sent.");
+    }
+
     return user;
   } catch (error: any) {
     console.error("Error in loginUserService:", error.message);
-    throw error; // :rocket: don’t replace with generic
+    throw error;
   }
 };
-
  
 /**
  * Get all users
