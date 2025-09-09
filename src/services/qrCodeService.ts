@@ -37,56 +37,126 @@ export const createQRCode = async (data: any): Promise<IQRCode> => {
 /**
  * Get all QR Codes with pagination + stats
  */
-export const getAllQRCodes = async (
-  page: number,
-  limit: number
-): Promise<{
-  qrCodes: IQRCode[];
-  totalCount: number;
-  usedCount: number;
-  unusedCount: number;
-  totalPages: number;
-  currentPage: number;
-}> => {
-  try {
-    // Pagination
-    const { data: qrCodes, totalCount, totalPages, currentPage } =
-      await paginate<IQRCode>(QRCode, {
-        page,
-        limit,
-        sort: { createdAt: -1 },
-      });
+// export const getAllQRCodes = async (
+//   page: number,
+//   limit: number
+// ): Promise<{
+//   qrCodes: IQRCode[];
+//   totalCount: number;
+//   usedCount: number;
+//   unusedCount: number;
+//   totalPages: number;
+//   currentPage: number;
+// }> => {
+//   try {
+//     // Pagination
+//     const { data: qrCodes, totalCount, totalPages, currentPage } =
+//       await paginate<IQRCode>(QRCode, {
+//         page,
+//         limit,
+//         sort: { createdAt: -1 },
+//       });
 
-    // Stats (for dashboard counts)
-    const stats = await QRCode.aggregate([
-      {
-        $group: {
-          _id: null,
-          usedCount: { $sum: { $cond: ["$isUsed", 1, 0] } },
-          unusedCount: { $sum: { $cond: ["$isUsed", 0, 1] } },
+//     // Stats (for dashboard counts)
+//     const stats = await QRCode.aggregate([
+//       {
+//         $group: {
+//           _id: null,
+//           usedCount: { $sum: { $cond: ["$isUsed", 1, 0] } },
+//           unusedCount: { $sum: { $cond: ["$isUsed", 0, 1] } },
+//         },
+//       },
+//     ]);
+
+//     const { usedCount, unusedCount } = stats[0] || {
+//       usedCount: 0,
+//       unusedCount: 0,
+//     };
+
+//     return {
+//       qrCodes,
+//       totalCount,
+//       usedCount,
+//       unusedCount,
+//       totalPages,
+//       currentPage,
+//     };
+//   } catch (error) {
+//     throw new Error(
+//       error instanceof Error ? error.message : "Error fetching QR codes"
+//     );
+//   }
+// };
+
+  export const getAllQRCodes = async (
+    page: number,
+    limit: number,
+    search?: string
+  ): Promise<{
+    qrCodes: IQRCode[];
+    totalCount: number;
+    usedCount: number;
+    unusedCount: number;
+    totalPages: number;
+    currentPage: number;
+  }> => {
+    try {
+      // ✅ Helper to escape regex special characters
+      const escapeRegex = (text: string) =>
+        text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+      // Build filter for searching
+      const filter: any = {};
+    if (search) {
+  const safeSearch = escapeRegex(search); // ✅ sanitize input
+  filter.$or = [
+    { code: { $regex: safeSearch, $options: "i" } },
+    { codeUrl: { $regex: safeSearch, $options: "i" } },
+    { brand: { $regex: safeSearch, $options: "i" } }, // optional if you want to allow brand search
+  ];
+}
+
+      // Pagination with search filter
+      const { data: qrCodes, totalCount, totalPages, currentPage } =
+        await paginate<IQRCode>(QRCode, {
+          page,
+          limit,
+          sort: { createdAt: -1 },
+          filter,
+        });
+
+      // Stats (for dashboard counts) ✅ apply same filter
+      const stats = await QRCode.aggregate([
+        { $match: filter },
+        {
+          $group: {
+            _id: null,
+            usedCount: { $sum: { $cond: ["$isUsed", 1, 0] } },
+            unusedCount: { $sum: { $cond: ["$isUsed", 0, 1] } },
+          },
         },
-      },
-    ]);
+      ]);
 
-    const { usedCount, unusedCount } = stats[0] || {
-      usedCount: 0,
-      unusedCount: 0,
-    };
+      const { usedCount, unusedCount } = stats[0] || {
+        usedCount: 0,
+        unusedCount: 0,
+      };
 
-    return {
-      qrCodes,
-      totalCount,
-      usedCount,
-      unusedCount,
-      totalPages,
-      currentPage,
-    };
-  } catch (error) {
-    throw new Error(
-      error instanceof Error ? error.message : "Error fetching QR codes"
-    );
-  }
-};
+      return {
+        qrCodes,
+        totalCount,
+        usedCount,
+        unusedCount,
+        totalPages,
+        currentPage,
+      };
+    } catch (error) {
+      throw new Error(
+        error instanceof Error ? error.message : "Error fetching QR codes"
+      );
+    }
+  };
+
 
 /**
  * Get a single QR Code by ID

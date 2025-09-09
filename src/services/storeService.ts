@@ -15,9 +15,36 @@ const createStore = async (storeData: Partial<IStore>): Promise<IStore> => {
 };
 
 // ✅ Get stores (with pagination)
+// export const getStores = async (
+//   page: number,
+//   limit: number
+// ): Promise<{
+//   stores: IStore[];
+//   totalCount: number;
+//   totalPages: number;
+//   currentPage: number;
+// }> => {
+//   try {
+//     const { data: stores, totalCount, totalPages, currentPage } =
+//       await paginate<IStore>(Store, {
+//         page,
+//         limit,
+//         sort: { createdAt: -1 },
+//       });
+
+//     return { stores, totalCount, totalPages, currentPage };
+//   } catch (error) {
+//     console.error("Error fetching stores:", error);
+//     throw new Error("Failed to fetch stores. Please try again.");
+//   }
+// };
+
+
+// ✅ Get stores (with search + pagination)
 export const getStores = async (
   page: number,
-  limit: number
+  limit: number,
+  search?: string
 ): Promise<{
   stores: IStore[];
   totalCount: number;
@@ -25,11 +52,24 @@ export const getStores = async (
   currentPage: number;
 }> => {
   try {
+    const filter: any = {};
+
+    if (search && search.trim() !== "") {
+      filter.$or = [
+        { customerNumber: { $regex: search, $options: "i" } },
+        { customerName: { $regex: search, $options: "i" } },
+        { address: { $regex: search, $options: "i" } },
+        { parish: { $regex: search, $options: "i" } },
+        { telephoneNumber: { $regex: search, $options: "i" } },
+      ];
+    }
+
     const { data: stores, totalCount, totalPages, currentPage } =
       await paginate<IStore>(Store, {
         page,
         limit,
         sort: { createdAt: -1 },
+        filter, // ✅ pass search filter here
       });
 
     return { stores, totalCount, totalPages, currentPage };
@@ -38,6 +78,8 @@ export const getStores = async (
     throw new Error("Failed to fetch stores. Please try again.");
   }
 };
+
+
 
 // ✅ Get single store
 const getStoreById = async (storeId: string): Promise<IStore | null> => {

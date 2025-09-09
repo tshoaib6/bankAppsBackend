@@ -51,12 +51,40 @@ export const createStore = async (req: Request, res: Response): Promise<any> => 
 };
 
 // ✅ Get all stores (with pagination)
+// export const getStores = async (req: Request, res: Response): Promise<any> => {
+//   try {
+//     const page = parseInt(req.query.page as string) || 1;
+//     const limit = parseInt(req.query.limit as string) || 20;
+
+//     const { stores, totalCount, totalPages, currentPage } = await StoreService.getStores(page, limit);
+
+//     return res.status(200).json({
+//       stores,
+//       totalCount,
+//       totalPages,
+//       currentPage,
+//       message: "Stores fetched successfully",
+//     });
+//   } catch (error) {
+//     console.error("Error fetching stores:", error);
+//     return res.status(500).json({
+//       message: "Server error while fetching stores",
+//       error: error instanceof Error ? error.message : "Unknown error",
+//     });
+//   }
+// };
+
 export const getStores = async (req: Request, res: Response): Promise<any> => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
+    const search = (req.query.search as string) || ""; // ✅ get search term
 
-    const { stores, totalCount, totalPages, currentPage } = await StoreService.getStores(page, limit);
+    const { stores, totalCount, totalPages, currentPage } = await StoreService.getStores(
+      page,
+      limit,
+      search // ✅ pass search to service
+    );
 
     return res.status(200).json({
       stores,
@@ -73,6 +101,8 @@ export const getStores = async (req: Request, res: Response): Promise<any> => {
     });
   }
 };
+
+
 
 // ✅ Get single store by ID
 export const getStoreById = async (req: Request, res: Response): Promise<any> => {
