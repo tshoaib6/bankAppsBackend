@@ -5,6 +5,7 @@ import { IBrand } from '../models/brand.model';
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 import { Document, Types } from "mongoose";
+import { sendRedeemSuccessEmail } from '../utils/sendRedeemSuccessEmail';
 
 export interface IBrandPoints {
   _id?: Types.ObjectId;
@@ -169,6 +170,13 @@ export const redeemBankPremiumService = async (
       qrCode: code,
     });
     await userHistoryEntry.save();
+      try {
+      await sendRedeemSuccessEmail(user.email, code, user.name);
+    } catch (emailError) {
+      console.error("⚠️ Failed to send redeem success email:", emailError);
+      // ❗ Don’t throw error here because redeem was successful, just log it
+    }
+
     // :small_blue_diamond: Final Response
     return {
       user: {

@@ -3,7 +3,7 @@
     registerUser,
     loginUserService,
     getAllUsers,
-    updateUserStatusService,
+    updateUserStatusService,   
     deleteUserService,
     verifyEmailService,
     // notifyUsersByAddress,
@@ -63,17 +63,6 @@ export const register = async (req: Request, res: Response): Promise<any> => {
     });
   }
 };
-
-
-
-
-
-
-
-
-
-
-
 
 
   // 🔐 Login User
