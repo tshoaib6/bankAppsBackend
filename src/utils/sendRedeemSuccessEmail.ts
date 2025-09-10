@@ -16,7 +16,7 @@ export const sendRedeemSuccessEmail = async (
   const mailOptions = {
     from: `"Banks Team" <${process.env.EMAIL_USER}>`,
     to: email,
-    subject: "🎉 Redeem Successful - Collect Your Premium",
+    subject: "Redeem Successful - Collect Your Premium",
     html: `
       <!DOCTYPE html>
       <html>
@@ -26,11 +26,11 @@ export const sendRedeemSuccessEmail = async (
         </head>
         <body style="font-family: Arial, sans-serif; background: #f9f9f9; padding: 0; margin: 0;">
           <table align="center" border="0" cellpadding="0" cellspacing="0" width="600" 
-            style="background: #ffffff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 40px auto; padding: 20px;">
+            style="background: #ffffff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 20px auto; padding: 0px;">
             
             <tr>
               <td align="center" style="padding: 20px 0;">
-                <h1 style="color: #2d89ef; margin: 0;">🎉 Redeem Successful!</h1>
+                <h1 style="color: #2d89ef; margin: 0;">Redeem Successful!</h1>
               </td>
             </tr>
 
@@ -57,7 +57,7 @@ export const sendRedeemSuccessEmail = async (
             </tr>
 
             <tr>
-              <td align="center" style="padding: 20px; color: #777; font-size: 14px; border-top: 1px solid #eee;">
+              <td align="center" style="padding: 5px; color: #777; font-size: 14px; border-top: 1px solid #eee;">
                 <p>Thank you,<br/>Banks Team</p>
               </td>
             </tr>
