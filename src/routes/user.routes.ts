@@ -13,8 +13,11 @@ import {
   resendForgotPasswordOTP,
   verifyForgotPasswordOTP,
   resetPasswordWithOTP,
-  deleteOwnAccountController,
+  sendDeleteAccountOTPController,
+  verifyDeleteAccountOTPController,
+  // deleteOwnAccountController,
 } from "../controllers/userController";
+import { authMiddleware } from "../middlewares/authMiddleware";
 
 const router = Router();
 
@@ -40,6 +43,10 @@ router.post("/resend-otp-to-email", resendForgotPasswordOTP);
 //opti onal
 router.post("/verify-otpp", verifyForgotPasswordOTP);
 router.post("/reset-password-now", resetPasswordWithOTP);
-router.delete("/delete-account", deleteOwnAccountController);
+// router.delete("/delete-account", authMiddleware, deleteOwnAccountController);
+
+router.post("/send-delete-account-otp", sendDeleteAccountOTPController);
+router.post("/delete-account", verifyDeleteAccountOTPController);
+
 
 export default router;
