@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import User, { IUser } from '../models/user.model';
-import { sendVerificationEmail } from '../utils/emailService';
+import { sendAccountDeletionOTPEmail, sendVerificationEmail } from '../utils/emailService';
 import { logUserActivity } from '../services/userHistory';
 import admin from 'firebase-admin'; // Make sure Firebase Admin SDK is initialized elsewhere
 import { paginate } from '../utils/pagination';
@@ -418,28 +418,86 @@ export const resetPasswordWithOTPService = async (
 
 
 
-/**
- * Delete user's own account after password confirmation
- */
-export const deleteOwnAccountService = async (
-  userId: string,
-  password: string
+// /**
+//  * Delete user's own account after password confirmation
+//  */
+// export const deleteOwnAccountService = async (
+//   userId: string,
+//   password: string
+// ): Promise<{ success: boolean; message: string }> => {
+//   try {
+//     const user = await User.findById(userId);
+//     if (!user) {
+//       return { success: false, message: "User not found" };
+//     }
+
+//     const isPasswordValid = await bcrypt.compare(password, user.password);
+//     if (!isPasswordValid) {
+//       return { success: false, message: "Invalid password" };
+//     }
+
+//     await User.findByIdAndDelete(userId);
+//     return { success: true, message: "Account deleted successfully" };
+//   } catch (error) {
+//     console.error("Error in deleteOwnAccountService:", error);
+//     throw new Error("Error deleting account");
+//   }
+// };
+
+
+export const sendDeleteAccountOTPService = async (
+  email: string
 ): Promise<{ success: boolean; message: string }> => {
   try {
-    const user = await User.findById(userId);
+    const user = await User.findOne({ email });
     if (!user) {
       return { success: false, message: "User not found" };
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      return { success: false, message: "Invalid password" };
+    // ✅ Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // ✅ Save OTP + expiry on the user
+    user.resetOTP = otp;
+    user.otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes validity
+    await user.save();
+
+    // ✅ Send email using your unified template
+    await sendAccountDeletionOTPEmail(user.email, otp, user.name);
+
+    return { success: true, message: "OTP sent to your email address" };
+  } catch (error) {
+    console.error("Error in sendDeleteAccountOTPService:", error);
+    throw new Error("Failed to send OTP for account deletion");
+  }
+};
+
+export const verifyDeleteAccountOTPService = async (
+  email: string,
+  otp: string
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return { success: false, message: "User not found" };
     }
 
-    await User.findByIdAndDelete(userId);
+    // Check OTP validity
+    if (
+      !user.resetOTP ||
+      user.resetOTP !== otp ||
+      !user.otpExpires ||
+      user.otpExpires < new Date()
+    ) {
+      return { success: false, message: "Invalid or expired OTP" };
+    }
+
+    // ✅ OTP valid → delete user
+    await User.findByIdAndDelete(user._id);
+
     return { success: true, message: "Account deleted successfully" };
   } catch (error) {
-    console.error("Error in deleteOwnAccountService:", error);
-    throw new Error("Error deleting account");
+    console.error("Error in verifyDeleteAccountOTPService:", error);
+    throw new Error("Failed to verify OTP or delete account");
   }
 };

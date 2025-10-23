@@ -103,3 +103,47 @@ BanksBeer Promotion Team`,
     throw new Error("Failed to send verification email");
   }
 };
+
+
+
+export const sendAccountDeletionOTPEmail = async (
+  email: string,
+  otp: string,
+  userName?: string
+): Promise<void> => {
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: "⚠️ Confirm Account Deletion - OTP Verification",
+    text: `Hi ${userName || "User"},
+You requested to delete your account.
+
+Your one-time OTP for account deletion is:
+
+${otp}
+
+This code is valid for 10 minutes.
+If you did not request account deletion, please disregard this email.
+
+Thank you,
+BanksBeer Promotion Team`,
+    html: `
+      <p>Hi <strong>${userName || "User"}</strong>,</p>
+      <p>You requested to <strong>delete your account</strong>.</p>
+      <p>Your one-time OTP for account deletion is:</p>
+      <h2 style="letter-spacing: 4px;">🔐 ${otp}</h2>
+      <p>This code is valid for <strong>10 minutes</strong>.</p>
+      <p>If you did not request this deletion, please disregard this email.</p>
+      <br />
+      <p>Thank you,<br/>BanksBeer Promotion Team</p>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log("Account deletion OTP email sent successfully");
+  } catch (error) {
+    console.error("Error sending account deletion OTP email:", error);
+    throw new Error("Failed to send account deletion OTP email");
+  }
+};

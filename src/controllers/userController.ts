@@ -13,7 +13,9 @@
     resendForgotPasswordOTPService,
     verifyForgotPasswordOTPService,
     resetPasswordWithOTPService,
-    deleteOwnAccountService,
+    sendDeleteAccountOTPService,
+    verifyDeleteAccountOTPService,
+    // deleteOwnAccountService,
   } from "../services/userService";
   import {
     validateEmail,
@@ -404,32 +406,53 @@ export const resetPasswordWithOTP = async (req: Request, res: Response) => {
   }
 };
 
-export const deleteOwnAccountController = async (
-  req: Request,
-  res: Response
-): Promise<any> => {
+// export const deleteOwnAccountController = async (
+//   req: Request,
+//   res: Response
+// ): Promise<any> => {
+//   try {
+//     // ✅ Quick fix: cast req to any to bypass TypeScript's missing property check
+//     const userId = (req as any).user?.id;
+//     const { password } = req.body;
+
+//     if (!userId) {
+//       return res.status(401).json({ success: false, message: "Unauthorized" });
+//     }
+
+//     if (!password) {
+//       return res.status(400).json({ success: false, message: "Password is required" });
+//     }
+
+//     const result = await deleteOwnAccountService(userId, password);
+
+//     if (!result.success) {
+//       return res.status(400).json(result);
+//     }
+
+//     return res.status(200).json(result);
+//   } catch (error) {
+//     console.error("Error in deleteOwnAccountController:", error);
+//     return res.status(500).json({ success: false, message: "Internal server error" });
+//   }
+// };
+
+
+export const sendDeleteAccountOTPController = async (req: Request, res: Response) => {
   try {
-    // ✅ Quick fix: cast req to any to bypass TypeScript's missing property check
-    const userId = (req as any).user?.id;
-    const { password } = req.body;
+    const { email } = req.body;
+    const result = await sendDeleteAccountOTPService(email);
+    res.status(result.success ? 200 : 400).json(result);
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
-    if (!userId) {
-      return res.status(401).json({ success: false, message: "Unauthorized" });
-    }
-
-    if (!password) {
-      return res.status(400).json({ success: false, message: "Password is required" });
-    }
-
-    const result = await deleteOwnAccountService(userId, password);
-
-    if (!result.success) {
-      return res.status(400).json(result);
-    }
-
-    return res.status(200).json(result);
-  } catch (error) {
-    console.error("Error in deleteOwnAccountController:", error);
-    return res.status(500).json({ success: false, message: "Internal server error" });
+export const verifyDeleteAccountOTPController = async (req: Request, res: Response) => {
+  try {
+    const { email, otp } = req.body;
+    const result = await verifyDeleteAccountOTPService(email, otp);
+    res.status(result.success ? 200 : 400).json(result);
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
