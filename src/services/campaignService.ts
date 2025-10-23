@@ -115,8 +115,6 @@ const getCampaignsByBrandId = async (brandId: string): Promise<ICampaign[]> => {
     throw new Error('Failed to fetch campaigns by brand ID');
   }
 };
-
-
 export const getCampaignsWithLeaderboard = async () => {
   const campaigns = await Campaign.find()
     .populate("brand")
@@ -127,7 +125,7 @@ export const getCampaignsWithLeaderboard = async () => {
       // Aggregate redemptions for this campaign
       const redemptions = await Campaign.aggregate([
         { $match: { _id: campaign._id } },
-        { $unwind: "$redemptions" }, // assuming redemptions stored in array
+        { $unwind: "$redemptions" },
         {
           $group: {
             _id: "$redemptions.user",
@@ -154,12 +152,19 @@ export const getCampaignsWithLeaderboard = async () => {
             lastRedeemedAt: 1
           }
         },
-        { $sort: { totalRedeems: -1 } } // leaderboard sorted
+        { $sort: { totalRedeems: -1 } }
       ]);
+
+      // 👉 Calculate total campaign redeems (sum of all users’ redeems)
+      const totalCampaignRedeems = redemptions.reduce(
+        (sum, r) => sum + (r.totalRedeems || 0),
+        0
+      );
 
       return {
         ...campaign,
-        leaderboard: redemptions
+        leaderboard: redemptions,
+        totalCampaignRedeems // ✅ added field
       };
     })
   );
