@@ -10,16 +10,13 @@ import {
   getUsersByAddressController,
   exportUsersToCSVController,
   sendForgotPasswordOTP,
-  resendForgotPasswordOTP,
+  resendForgotPasswordOTP,     
   verifyForgotPasswordOTP,
   resetPasswordWithOTP,
-  sendDeleteAccountOTPController,
-  verifyDeleteAccountOTPController,
   // deleteOwnAccountController,
 } from "../controllers/userController";
-import { authMiddleware } from "../middlewares/authMiddleware";
 
-const router = Router();
+const router = Router();    
 
 router.post("/register", register);
 
@@ -43,10 +40,6 @@ router.post("/resend-otp-to-email", resendForgotPasswordOTP);
 //opti onal
 router.post("/verify-otpp", verifyForgotPasswordOTP);
 router.post("/reset-password-now", resetPasswordWithOTP);
-// router.delete("/delete-account", authMiddleware, deleteOwnAccountController);
-
-router.post("/send-delete-account-otp", sendDeleteAccountOTPController);
-router.post("/delete-account", verifyDeleteAccountOTPController);
-
+// router.delete("/delete-account", deleteOwnAccountController);
 
 export default router;

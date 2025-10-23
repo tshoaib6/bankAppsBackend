@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import BankPremiumService, {
+  exportRedemptionsCSVService,
   getAllRedemptionsService,
 } from "../services/bankPremiumService";
 import { uploadToCloudinary } from "../utils/cloudinary";
@@ -295,37 +296,50 @@ export const verifyBankPremiumCode = async (
   }
 };
 
-export const getAllRedemptionsController = async (
-  req: Request,
-  res: Response
-) => {
+// export const getAllRedemptionsController = async (
+//   req: Request,
+//   res: Response
+// ) => {
+//   try {
+//     const redemptions = await getAllRedemptionsService();
+//     res.status(200).json({ success: true, data: redemptions });
+//   } catch (error: any) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+
+
+// new one 
+export const getAllRedemptionsController = async (req: Request, res: Response) => {
   try {
     const redemptions = await getAllRedemptionsService();
-    res.status(200).json({ success: true, data: redemptions });
+    res.status(200).json({
+      success: true,
+      count: redemptions.length, // optional, nice to include
+      data: redemptions
+    });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error("Error fetching redemptions:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to fetch redemptions"
+    });
   }
 };
 
 
-// new one 
-// export const getAllRedemptionsController = async (req: Request, res: Response) => {
-//   try {
-//     const redemptions = await getAllRedemptionsService();
-//     res.status(200).json({
-//       success: true,
-//       count: redemptions.length, // optional, nice to include
-//       data: redemptions
-//     });
-//   } catch (error: any) {
-//     console.error("Error fetching redemptions:", error);
-//     res.status(500).json({
-//       success: false,
-//       message: error.message || "Failed to fetch redemptions"
-//     });
-//   }
-// };
+export const exportRedemptionsCSVController = async (req: Request, res: Response) => {
+  try {
+    const csvData = await exportRedemptionsCSVService();
 
+    res.header("Content-Type", "text/csv");
+    res.attachment("redemptions.csv");
+    return res.send(csvData);
+  } catch (error: any) {
+    console.error("Error exporting redemptions CSV:", error);
+    return res.status(500).json({ success: false, message: "Server error while exporting CSV" });
+  }
+};
 export default {
   createBankPremium,
   updateBankPremium,

@@ -8,6 +8,7 @@ import {
   verifyBankPremiumCode,
   redeemBankPremium,
   getAllRedemptionsController,
+  exportRedemptionsCSVController,
 } from "../controllers/bankPremiumController";
 import { upload } from "../middlewares/multer";
 
@@ -25,6 +26,7 @@ router.get("/getBankPremiumById/:bankPremiumId", getBankPremiumById);
 // User redeem endpoint
 router.post("/redeemBankPremium/:premiumId/redeem", redeemBankPremium);
 router.get("/get-all-bank-premiums-redeemed", getAllRedemptionsController);
+router.get("/exportCSVForBankPrem", exportRedemptionsCSVController);
 
 // Admin verify/update status endpoint
 // Route
