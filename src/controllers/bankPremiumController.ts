@@ -307,6 +307,25 @@ export const getAllRedemptionsController = async (
   }
 };
 
+
+// new one 
+// export const getAllRedemptionsController = async (req: Request, res: Response) => {
+//   try {
+//     const redemptions = await getAllRedemptionsService();
+//     res.status(200).json({
+//       success: true,
+//       count: redemptions.length, // optional, nice to include
+//       data: redemptions
+//     });
+//   } catch (error: any) {
+//     console.error("Error fetching redemptions:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: error.message || "Failed to fetch redemptions"
+//     });
+//   }
+// };
+
 export default {
   createBankPremium,
   updateBankPremium,
