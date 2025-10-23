@@ -376,10 +376,10 @@ export const exportRedemptionsCSVService = async () => {
     "user.email",
     "user.address",
     "user.parish",
-    "stats.totalRedemptions",
-    "stats.deliveredCount",
-    "stats.pendingCount",
-    "stats.redeemedTitles"
+    // "stats.totalRedemptions",
+    // "stats.deliveredCount",
+    // "stats.pendingCount",
+    // "stats.redeemedTitles"
   ];
 
   // Convert to CSV
