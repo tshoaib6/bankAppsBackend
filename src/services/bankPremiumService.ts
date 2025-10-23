@@ -252,87 +252,18 @@ export const verifyBankPremiumCodeService = async (code: string) => {
 
 
 
-// export const   getAllRedemptionsService = async () => {
-//   const result = await BankPremium.aggregate([
-//     { $unwind: "$redemptions" },
-//     {
-//       $lookup: {
-//         from: "users", // 👈 must match your MongoDB collection name for users
-//         localField: "redemptions.user",
-//         foreignField: "_id",
-//         as: "userInfo"
-//       }
-//     },
-//     { $unwind: "$userInfo" }, // ensure userInfo is an object, not array
-//     {
-//       $project: {
-//         _id: 0,
-//         bankPremiumId: "$_id",
-//         title: 1,
-//         code: "$redemptions.code",
-//         status: "$redemptions.status",
-//         redeemedAt: "$redemptions.redeemedAt",
-//         user: {
-//           _id: "$userInfo._id",
-//           name: "$userInfo.name",
-//           email: "$userInfo.email",
-//           address: "$userInfo.address",
-//           parish: "$userInfo.parish"
-//         }
-//       }
-//     }
-//   ]);
-
-//   return result;
-// };
-
-
-
-// new addition 
-export const getAllRedemptionsService = async () => {
+export const   getAllRedemptionsService = async () => {
   const result = await BankPremium.aggregate([
     { $unwind: "$redemptions" },
     {
       $lookup: {
-        from: "users",
+        from: "users", // 👈 must match your MongoDB collection name for users
         localField: "redemptions.user",
         foreignField: "_id",
         as: "userInfo"
       }
     },
-    { $unwind: "$userInfo" },
-    {
-      $lookup: {
-        from: "bankpremia", // 👈 collection name (plural of BankPremium)
-        pipeline: [
-          { $unwind: "$redemptions" },
-          {
-            $group: {
-              _id: "$redemptions.user",
-              totalRedemptions: { $sum: 1 },
-              deliveredCount: {
-                $sum: {
-                  $cond: [{ $eq: ["$redemptions.status", "delivered"] }, 1, 0]
-                }
-              },
-              pendingCount: {
-                $sum: {
-                  $cond: [{ $eq: ["$redemptions.status", "pending"] }, 1, 0]
-                }
-              },
-              redeemedTitles: { $addToSet: "$title" }
-            }
-          }
-        ],
-        as: "userStats"
-      }
-    },
-    {
-      $unwind: {
-        path: "$userStats",
-        preserveNullAndEmptyArrays: true
-      }
-    },
+    { $unwind: "$userInfo" }, // ensure userInfo is an object, not array
     {
       $project: {
         _id: 0,
@@ -347,12 +278,6 @@ export const getAllRedemptionsService = async () => {
           email: "$userInfo.email",
           address: "$userInfo.address",
           parish: "$userInfo.parish"
-        },
-        stats: {
-          totalRedemptions: "$userStats.totalRedemptions",
-          deliveredCount: "$userStats.deliveredCount",
-          pendingCount: "$userStats.pendingCount",
-          redeemedTitles: "$userStats.redeemedTitles"
         }
       }
     }
@@ -360,6 +285,81 @@ export const getAllRedemptionsService = async () => {
 
   return result;
 };
+
+
+
+// new addition 
+// export const getAllRedemptionsService = async () => {
+//   const result = await BankPremium.aggregate([
+//     { $unwind: "$redemptions" },
+//     {
+//       $lookup: {
+//         from: "users",
+//         localField: "redemptions.user",
+//         foreignField: "_id",
+//         as: "userInfo"
+//       }
+//     },
+//     { $unwind: "$userInfo" },
+//     {
+//       $lookup: {
+//         from: "bankpremia", // 👈 collection name (plural of BankPremium)
+//         pipeline: [
+//           { $unwind: "$redemptions" },
+//           {
+//             $group: {
+//               _id: "$redemptions.user",
+//               totalRedemptions: { $sum: 1 },
+//               deliveredCount: {
+//                 $sum: {
+//                   $cond: [{ $eq: ["$redemptions.status", "delivered"] }, 1, 0]
+//                 }
+//               },
+//               pendingCount: {
+//                 $sum: {
+//                   $cond: [{ $eq: ["$redemptions.status", "pending"] }, 1, 0]
+//                 }
+//               },
+//               redeemedTitles: { $addToSet: "$title" }
+//             }
+//           }
+//         ],
+//         as: "userStats"
+//       }
+//     },
+//     {
+//       $unwind: {
+//         path: "$userStats",
+//         preserveNullAndEmptyArrays: true
+//       }
+//     },
+//     {
+//       $project: {
+//         _id: 0,
+//         bankPremiumId: "$_id",
+//         title: 1,
+//         code: "$redemptions.code",
+//         status: "$redemptions.status",
+//         redeemedAt: "$redemptions.redeemedAt",
+//         user: {
+//           _id: "$userInfo._id",
+//           name: "$userInfo.name",
+//           email: "$userInfo.email",
+//           address: "$userInfo.address",
+//           parish: "$userInfo.parish"
+//         },
+//         stats: {
+//           totalRedemptions: "$userStats.totalRedemptions",
+//           deliveredCount: "$userStats.deliveredCount",
+//           pendingCount: "$userStats.pendingCount",
+//           redeemedTitles: "$userStats.redeemedTitles"
+//         }
+//       }
+//     }
+//   ]);
+
+//   return result;
+// };
 
 export const exportRedemptionsCSVService = async () => {
   // Get all redemption data

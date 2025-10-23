@@ -296,36 +296,36 @@ export const verifyBankPremiumCode = async (
   }
 };
 
-// export const getAllRedemptionsController = async (
-//   req: Request,
-//   res: Response
-// ) => {
-//   try {
-//     const redemptions = await getAllRedemptionsService();
-//     res.status(200).json({ success: true, data: redemptions });
-//   } catch (error: any) {
-//     res.status(500).json({ success: false, message: error.message });
-//   }
-// };
+export const getAllRedemptionsController = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const redemptions = await getAllRedemptionsService();
+    res.status(200).json({ success: true, data: redemptions });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
 
 // new one 
-export const getAllRedemptionsController = async (req: Request, res: Response) => {
-  try {
-    const redemptions = await getAllRedemptionsService();
-    res.status(200).json({
-      success: true,
-      count: redemptions.length, // optional, nice to include
-      data: redemptions
-    });
-  } catch (error: any) {
-    console.error("Error fetching redemptions:", error);
-    res.status(500).json({
-      success: false,
-      message: error.message || "Failed to fetch redemptions"
-    });
-  }
-};
+// export const getAllRedemptionsController = async (req: Request, res: Response) => {
+//   try {
+//     const redemptions = await getAllRedemptionsService();
+//     res.status(200).json({
+//       success: true,
+//       count: redemptions.length, // optional, nice to include
+//       data: redemptions
+//     });
+//   } catch (error: any) {
+//     console.error("Error fetching redemptions:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: error.message || "Failed to fetch redemptions"
+//     });
+//   }
+// };
 
 
 export const exportRedemptionsCSVController = async (req: Request, res: Response) => {
