@@ -13,7 +13,7 @@ import {
   resendForgotPasswordOTP,     
   verifyForgotPasswordOTP,
   resetPasswordWithOTP,
-  // deleteOwnAccountController,
+  deleteOwnAccountController,
 } from "../controllers/userController";
 
 const router = Router();    
@@ -40,6 +40,6 @@ router.post("/resend-otp-to-email", resendForgotPasswordOTP);
 //opti onal
 router.post("/verify-otpp", verifyForgotPasswordOTP);
 router.post("/reset-password-now", resetPasswordWithOTP);
-// router.delete("/delete-account", deleteOwnAccountController);
+router.delete("/delete-account", deleteOwnAccountController);
 
 export default router;

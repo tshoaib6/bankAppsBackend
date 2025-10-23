@@ -421,28 +421,28 @@ export const resetPasswordWithOTPService = async (
 // /**
 //  * Delete user's own account after password confirmation
 //  */
-// export const deleteOwnAccountService = async (
-//   userId: string,
-//   password: string
-// ): Promise<{ success: boolean; message: string }> => {
-//   try {
-//     const user = await User.findById(userId);
-//     if (!user) {
-//       return { success: false, message: "User not found" };
-//     }
+export const deleteOwnAccountService = async (
+  userId: string,
+  password: string
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return { success: false, message: "User not found" };
+    }
 
-//     const isPasswordValid = await bcrypt.compare(password, user.password);
-//     if (!isPasswordValid) {
-//       return { success: false, message: "Invalid password" };
-//     }
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return { success: false, message: "Invalid password" };
+    }
 
-//     await User.findByIdAndDelete(userId);
-//     return { success: true, message: "Account deleted successfully" };
-//   } catch (error) {
-//     console.error("Error in deleteOwnAccountService:", error);
-//     throw new Error("Error deleting account");
-//   }
-// };
+    await User.findByIdAndDelete(userId);
+    return { success: true, message: "Account deleted successfully" };
+  } catch (error) {
+    console.error("Error in deleteOwnAccountService:", error);
+    throw new Error("Error deleting account");
+  }
+};
 
 
 export const sendDeleteAccountOTPService = async (
