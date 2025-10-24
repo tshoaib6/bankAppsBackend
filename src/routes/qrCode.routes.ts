@@ -21,4 +21,9 @@ router.post('/qrcodes/upload', upload.single('file'), QRCodeController.bulkUploa
 
 router.get("/qr-code-usage-by-users", QRCodeController.getQRCodeUsageByUsersController);
 
+router.post("/import-optimized", upload.single("file"), QRCodeController.bulkUploadQRCodesOptimized);
+
+router.get("/import-progress", QRCodeController.qrUploadProgressStream);
+
+
 export default router;

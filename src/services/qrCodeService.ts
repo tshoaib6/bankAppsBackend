@@ -1,5 +1,6 @@
 import QRCode, { IQRCode } from "../models/QRCode.model";
 import { paginate } from "../utils/pagination";
+import { EventEmitter } from "events";
 
 /**
  * Create a new QR Code
@@ -314,6 +315,135 @@ export const getQRCodeUsageByUsers = async (): Promise<any[]> => {
       error instanceof Error
         ? error.message
         : "Error fetching QR code usage by users"
+    );
+  }
+};
+
+
+
+
+/**
+ * Optimized bulk insert for extremely large QR Code imports.
+ * Skips existing records (does not modify anything already in DB).
+ */
+interface BulkInsertProgress {
+  percent: number;
+  insertedCount: number;
+  skippedCount: number;
+  total: number;
+  done?: boolean;
+}
+
+interface BulkInsertResult {
+  insertedCount: number;
+  skippedCount: number;
+  errors: any[];
+}
+
+/**
+ * Optimized bulk insert for QR Codes that skips existing codes.
+ * Supports real-time progress tracking via EventEmitter.
+ *
+ * @param qrCodeData - Array of QR code objects to insert
+ * @param progressEmitter - Optional EventEmitter for progress updates
+ */
+export const bulkInsertQRCodesSkipExisting = async (
+  qrCodeData: any[],
+  progressEmitter?: EventEmitter
+): Promise<BulkInsertResult> => {
+  try {
+    if (!Array.isArray(qrCodeData) || qrCodeData.length === 0) {
+      throw new Error("QR Code data must be a non-empty array.");
+    }
+
+    console.log(`📦 Received ${qrCodeData.length} QR codes for optimized insert.`);
+
+    const CHUNK_SIZE = 5000; // Adjust depending on memory & server specs
+    let insertedCount = 0;
+    let skippedCount = 0;
+    const errors: any[] = [];
+
+    // ✅ Ensure unique index on 'code' to avoid duplicates
+    await QRCode.collection.createIndex({ code: 1 }, { unique: true });
+
+    // Process data in chunks to avoid memory pressure
+    for (let i = 0; i < qrCodeData.length; i += CHUNK_SIZE) {
+      const chunk = qrCodeData.slice(i, i + CHUNK_SIZE);
+
+      const docs = chunk.map((item) => ({
+        code: item.code,
+        points: Number(item.points) || 0,
+        isUsed: Boolean(item.isUsed),
+        claimedAt: item.claimedAt,
+        claimedBy: item.claimedBy,
+        codeUrl: item.codeUrl,
+        brand: item.brand,
+      }));
+
+      // Prepare upsert operations (insert only if not exists)
+      const operations = docs.map((doc) => ({
+        updateOne: {
+          filter: { code: doc.code },
+          update: { $setOnInsert: doc },
+          upsert: true,
+        },
+      }));
+
+      try {
+        const result = await QRCode.bulkWrite(operations, { ordered: false });
+
+        const batchInserted = result.upsertedCount || 0;
+        insertedCount += batchInserted;
+        skippedCount += chunk.length - batchInserted;
+
+        // Calculate progress
+        const percent = Math.min(
+          Math.round(((i + CHUNK_SIZE) / qrCodeData.length) * 100),
+          100
+        );
+
+        console.log(
+          `📊 Progress: ${percent}% | Batch ${Math.floor(i / CHUNK_SIZE) + 1} | Inserted: ${batchInserted}, Skipped: ${chunk.length - batchInserted}`
+        );
+
+        // 🔹 Emit progress update (if provided)
+        if (progressEmitter) {
+          const progress: BulkInsertProgress = {
+            percent,
+            insertedCount,
+            skippedCount,
+            total: qrCodeData.length,
+            done: percent === 100,
+          };
+          progressEmitter.emit("progress", progress);
+        }
+      } catch (err: any) {
+        const dupErrors =
+          err?.writeErrors?.filter((e: any) => e.code === 11000)?.length || 0;
+        skippedCount += dupErrors;
+        errors.push(err);
+        console.warn(`⚠️ Batch ${Math.floor(i / CHUNK_SIZE) + 1} failed partially.`);
+      }
+    }
+
+    console.log(`✅ Final Result: Inserted ${insertedCount}, Skipped ${skippedCount}`);
+
+    // Final event emit for completion
+    if (progressEmitter) {
+      progressEmitter.emit("progress", {
+        percent: 100,
+        insertedCount,
+        skippedCount,
+        total: qrCodeData.length,
+        done: true,
+      });
+    }
+
+    return { insertedCount, skippedCount, errors };
+  } catch (error: any) {
+    console.error("❌ Error during optimized bulk insert:", error);
+    throw new Error(
+      error.message || "Error during optimized QR code insertion"
     );
   }
 };

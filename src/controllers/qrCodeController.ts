@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import * as QRCodeService from "../services/qrCodeService";
 import fs from "fs";
 import csv from "csv-parser";
+import { EventEmitter } from "events";
 
 // ✅ Create QR Code
 export const createQRCode = async (req: Request, res: Response): Promise<any> => {
@@ -298,6 +299,85 @@ export const getQRCodeUsageByUsersController = async (req: Request, res: Respons
     return res.status(500).json({
       success: false,
       message: error.message || "Error fetching QR code usage stats",
+    });
+  }
+};
+
+const progressEmitter = new EventEmitter();
+
+// ✅ SSE endpoint to send progress live
+export const qrUploadProgressStream = (req: Request, res: Response) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+
+  const onProgress = (data: any) => {
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+  };
+
+  progressEmitter.on("progress", onProgress);
+
+  req.on("close", () => {
+    progressEmitter.off("progress", onProgress);
+  });
+};
+
+// ✅ Main upload endpoint
+export const bulkUploadQRCodesOptimized = async (req: Request, res: Response): Promise<any> => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "CSV file is required" });
+    }
+
+    const token = req.header("Authorization")?.replace("Bearer ", "");
+    if (!token) {
+      return res.status(401).json({ message: "Authorization token required" });
+    }
+
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
+    const userId = decoded.userId;
+
+    const qrCodeData: any[] = [];
+
+    fs.createReadStream(req.file.path)
+      .pipe(csv({ trim: true } as any))
+      .on("data", (row) => {
+        const extractedCode = row.url.split("/").pop()?.trim() || "";
+
+        if (row.url) {
+          qrCodeData.push({
+            code: extractedCode,
+            codeUrl: row.url,
+            points: Number(row.points) || 20,
+            isUsed: false,
+            claimedAt: null,
+            claimedBy: null,
+            brand: row.brand || "Banks",
+          });
+        }
+      })
+      .on("end", async () => {
+        if (qrCodeData.length === 0) {
+          return res.status(400).json({ message: "No valid QR codes found in CSV" });
+        }
+
+        // ✅ Pass emitter to service
+        const result = await QRCodeService.bulkInsertQRCodesSkipExisting(qrCodeData, progressEmitter);
+
+        return res.status(201).json({
+          message: `✅ ${result.insertedCount} new QR codes inserted. ${result.skippedCount} skipped (already existed).`,
+          insertedCount: result.insertedCount,
+          skippedCount: result.skippedCount,
+          errors: result.errors.length,
+        });
+      })
+      .on("error", (err) => {
+        return res.status(500).json({ message: "Error reading CSV file", error: err });
+      });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Server error while uploading QR codes. Please try again later.",
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 };
