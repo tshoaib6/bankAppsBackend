@@ -413,8 +413,8 @@ export const qrUploadProgressStream = (req: Request, res: Response) => {
 //           return res.status(400).json({ message: "No valid QR codes found in CSV" });
 //         }
 
-//         // ✅ Pass emitter to service
-//         const result = await QRCodeService.bulkInsertQRCodesSkipExisting(qrCodeData, progressEmitter);
+  //         // ✅ Pass emitter to service
+  //         const result = await QRCodeService.bulkInsertQRCodesSkipExisting(qrCodeData, progressEmitter);
 
 //         return res.status(201).json({
 //           message: `✅ ${result.insertedCount} new QR codes inserted. ${result.skippedCount} skipped (already existed).`,
@@ -433,7 +433,6 @@ export const qrUploadProgressStream = (req: Request, res: Response) => {
 //     });
 //   }
 // };
-
 export const bulkUploadQRCodesOptimized = async (
   req: Request,
   res: Response
@@ -452,12 +451,19 @@ export const bulkUploadQRCodesOptimized = async (
     const userId = decoded.userId;
 
     const qrCodeData: any[] = [];
+    const progressEmitter = new EventEmitter();
+
+    // Optional: track real-time progress in logs or broadcast via WebSocket
+    progressEmitter.on("progress", (progress) => {
+      console.log(
+        `📊 Progress: ${progress.percent}% | Inserted: ${progress.insertedCount} | Skipped: ${progress.skippedCount}`
+      );
+    });
 
     fs.createReadStream(req.file.path)
       .pipe(csv({ trim: true } as any))
       .on("data", (row) => {
-        // ✅ Fixed: Parse based on schema columns (code, codeUrl, etc.)
-        // Skip if essential fields missing
+        // ✅ Match structure of service function
         if (
           row.code &&
           row.codeUrl &&
@@ -468,10 +474,12 @@ export const bulkUploadQRCodesOptimized = async (
             code: row.code.trim(),
             codeUrl: row.codeUrl.trim(),
             points: Number(row.points) || 20,
-            isUsed: row.isUsed === "TRUE" || row.isUsed === true, // Handle string/boolean
+            isUsed: row.isUsed === "TRUE" || row.isUsed === true,
             claimedAt:
-              row.claimedAt === "None" ? null : new Date(row.claimedAt), // Parse date or null
-            claimedBy: row.claimedBy ? row.claimedBy.trim() : null, // ObjectId string
+              row.claimedAt && row.claimedAt !== "None"
+                ? new Date(row.claimedAt)
+                : null,
+            claimedBy: row.claimedBy ? row.claimedBy.trim() : null,
             brand: row.brand?.trim() || "Banks",
           });
         }
@@ -483,28 +491,37 @@ export const bulkUploadQRCodesOptimized = async (
             .json({ message: "No valid QR codes found in CSV" });
         }
 
-        // ✅ Pass emitter to service
-        const result = await QRCodeService.bulkInsertQRCodesSkipExisting(
-          qrCodeData,
-          progressEmitter
-        );
+        try {
+          const result = await QRCodeService.bulkInsertQRCodesSkipExisting(
+            qrCodeData,
+            progressEmitter
+          );
 
-        return res.status(201).json({
-          message: `✅ ${result.insertedCount} new QR codes inserted. ${result.skippedCount} skipped (already existed).`,
-          insertedCount: result.insertedCount,
-          skippedCount: result.skippedCount,
-          errors: result.errors.length,
-        });
+          return res.status(201).json({
+            message: `✅ ${result.insertedCount} new QR codes inserted. ${result.skippedCount} skipped (already existed).`,
+            insertedCount: result.insertedCount,
+            skippedCount: result.skippedCount,
+            errors: result.errors.length,
+          });
+        } catch (serviceError: any) {
+          console.error("❌ Service error:", serviceError);
+          return res.status(500).json({
+            message: "Error inserting QR codes.",
+            error: serviceError.message,
+          });
+        }
       })
       .on("error", (err) => {
+        console.error("❌ CSV Read Error:", err);
         return res
           .status(500)
-          .json({ message: "Error reading CSV file", error: err });
+          .json({ message: "Error reading CSV file", error: err.message });
       });
-  } catch (error) {
+  } catch (error: any) {
+    console.error("❌ Controller Error:", error);
     return res.status(500).json({
-      message: "Server error while uploading QR codes. Please try again later.",
-      error: error instanceof Error ? error.message : "Unknown error",
+      message: "Server error while uploading QR codes.",
+      error: error.message || "Unknown error",
     });
   }
 };

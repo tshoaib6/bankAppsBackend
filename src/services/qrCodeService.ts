@@ -321,36 +321,14 @@ export const getQRCodeUsageByUsers = async (): Promise<any[]> => {
 
 
 
-
 /**
- * Optimized bulk insert for extremely large QR Code imports.
- * Skips existing records (does not modify anything already in DB).
- */
-interface BulkInsertProgress {
-  percent: number;
-  insertedCount: number;
-  skippedCount: number;
-  total: number;
-  done?: boolean;
-}
-
-interface BulkInsertResult {
-  insertedCount: number;
-  skippedCount: number;
-  errors: any[];
-}
-
-/**
- * Optimized bulk insert for QR Codes that skips existing codes.
- * Supports real-time progress tracking via EventEmitter.
- *
- * @param qrCodeData - Array of QR code objects to insert
- * @param progressEmitter - Optional EventEmitter for progress updates
+ * Optimized bulk insert for QR Codes (structure matched with old function).
+ * Skips existing QR codes safely and reports progress if EventEmitter provided.
  */
 export const bulkInsertQRCodesSkipExisting = async (
   qrCodeData: any[],
   progressEmitter?: EventEmitter
-): Promise<BulkInsertResult> => {
+): Promise<{ insertedCount: number; skippedCount: number; errors: any[] }> => {
   try {
     if (!Array.isArray(qrCodeData) || qrCodeData.length === 0) {
       throw new Error("QR Code data must be a non-empty array.");
@@ -358,15 +336,19 @@ export const bulkInsertQRCodesSkipExisting = async (
 
     console.log(`📦 Received ${qrCodeData.length} QR codes for optimized insert.`);
 
-    const CHUNK_SIZE = 5000; // Adjust depending on memory & server specs
+    const CHUNK_SIZE = 5000; // Adjust as per memory & performance
     let insertedCount = 0;
     let skippedCount = 0;
     const errors: any[] = [];
 
-    // ✅ Ensure unique index on 'code' to avoid duplicates
-    await QRCode.collection.createIndex({ code: 1 }, { unique: true });
+    // ✅ Safe index creation (won’t break if duplicates exist)
+    try {
+      await QRCode.collection.createIndex({ code: 1 }, { unique: true });
+    } catch (indexErr: any) {
+      console.warn("⚠️ Index creation skipped or already exists:", indexErr.message);
+    }
 
-    // Process data in chunks to avoid memory pressure
+    // ✅ Match old structure for QRCode documents
     for (let i = 0; i < qrCodeData.length; i += CHUNK_SIZE) {
       const chunk = qrCodeData.slice(i, i + CHUNK_SIZE);
 
@@ -380,7 +362,7 @@ export const bulkInsertQRCodesSkipExisting = async (
         brand: item.brand,
       }));
 
-      // Prepare upsert operations (insert only if not exists)
+      // Use upsert (insert only if code doesn’t exist)
       const operations = docs.map((doc) => ({
         updateOne: {
           filter: { code: doc.code },
@@ -391,12 +373,12 @@ export const bulkInsertQRCodesSkipExisting = async (
 
       try {
         const result = await QRCode.bulkWrite(operations, { ordered: false });
-
         const batchInserted = result.upsertedCount || 0;
+
         insertedCount += batchInserted;
         skippedCount += chunk.length - batchInserted;
 
-        // Calculate progress
+        // Calculate progress percentage
         const percent = Math.min(
           Math.round(((i + CHUNK_SIZE) / qrCodeData.length) * 100),
           100
@@ -406,23 +388,24 @@ export const bulkInsertQRCodesSkipExisting = async (
           `📊 Progress: ${percent}% | Batch ${Math.floor(i / CHUNK_SIZE) + 1} | Inserted: ${batchInserted}, Skipped: ${chunk.length - batchInserted}`
         );
 
-        // 🔹 Emit progress update (if provided)
+        // 🔹 Emit progress if listener provided
         if (progressEmitter) {
-          const progress: BulkInsertProgress = {
+          progressEmitter.emit("progress", {
             percent,
             insertedCount,
             skippedCount,
             total: qrCodeData.length,
             done: percent === 100,
-          };
-          progressEmitter.emit("progress", progress);
+          });
         }
       } catch (err: any) {
         const dupErrors =
           err?.writeErrors?.filter((e: any) => e.code === 11000)?.length || 0;
         skippedCount += dupErrors;
         errors.push(err);
-        console.warn(`⚠️ Batch ${Math.floor(i / CHUNK_SIZE) + 1} failed partially.`);
+        console.warn(
+          `⚠️ Batch ${Math.floor(i / CHUNK_SIZE) + 1} failed partially with ${dupErrors} duplicate errors.`
+        );
       }
     }
 
