@@ -523,3 +523,143 @@ export const bulkUploadQRCodesOptimized = async (
     });
   }
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// let latestProgress: any = { percent: 0, insertedCount: 0, skippedCount: 0, done: false };
+
+// // 🔹 SSE progress stream endpoint (frontend can subscribe to it)
+// export const streamQRCodesUploadProgress = (req: Request, res: Response) => {
+//   res.setHeader("Content-Type", "text/event-stream");
+//   res.setHeader("Cache-Control", "no-cache");
+//   res.setHeader("Connection", "keep-alive");
+
+//   // Immediately send current progress
+//   res.write(`data: ${JSON.stringify(latestProgress)}\n\n`);
+
+//   // Periodically send updates
+//   const interval = setInterval(() => {
+//     res.write(`data: ${JSON.stringify(latestProgress)}\n\n`);
+//   }, 1000);
+
+//   req.on("close", () => {
+//     clearInterval(interval);
+//   });
+// };
+
+// export const bulkUploadQRCodesOptimized = async (
+//   req: Request,
+//   res: Response
+// ): Promise<any> => {
+//   try {
+//     if (!req.file) {
+//       return res.status(400).json({ message: "CSV file is required" });
+//     }
+
+//     const token = req.header("Authorization")?.replace("Bearer ", "");
+//     if (!token) {
+//       return res.status(401).json({ message: "Authorization token required" });
+//     }
+
+//     const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
+//     const userId = decoded.userId;
+
+//     const qrCodeData: any[] = [];
+//     const progressEmitter = new EventEmitter();
+
+//     // 🔹 Update latest progress when emitted from service
+//     progressEmitter.on("progress", (progress) => {
+//       latestProgress = progress; // Keep most recent status for frontend
+//       console.log(
+//         `📊 Progress: ${progress.percent}% | Inserted: ${progress.insertedCount} | Skipped: ${progress.skippedCount}`
+//       );
+//     });
+
+//     fs.createReadStream(req.file.path)
+//       .pipe(csv({ trim: true } as any))
+//       .on("data", (row) => {
+//         // ✅ Only `codeUrl` expected in CSV
+//         if (row.codeUrl && typeof row.codeUrl === "string" && row.codeUrl.trim().length > 0) {
+//           const cleanUrl = row.codeUrl.trim();
+//           const extractedCode = cleanUrl.split("/").pop()?.trim().slice(-6) || "";
+
+//           if (extractedCode.length === 0) return; // skip invalid URLs
+
+//           qrCodeData.push({
+//             code: extractedCode,
+//             codeUrl: cleanUrl,
+//             points: Number(row.points) || 20,
+//             isUsed: false,
+//             claimedAt: null,
+//             claimedBy: null,
+//             brand: row.brand?.trim() || "Banks",
+//           });
+//         }
+//       })
+//       .on("end", async () => {
+//         if (qrCodeData.length === 0) {
+//           latestProgress = { percent: 100, insertedCount: 0, skippedCount: 0, done: true };
+//           return res
+//             .status(400)
+//             .json({ message: "No valid QR codes found in CSV" });
+//         }
+
+//         try {
+//           const result = await QRCodeService.bulkInsertQRCodesSkipExisting(
+//             qrCodeData,
+//             progressEmitter
+//           );
+
+//           latestProgress = {
+//             percent: 100,
+//             insertedCount: result.insertedCount,
+//             skippedCount: result.skippedCount,
+//             done: true,
+//           };
+
+//           return res.status(201).json({
+//             message: `✅ ${result.insertedCount} new QR codes inserted. ${result.skippedCount} skipped (already existed).`,
+//             insertedCount: result.insertedCount,
+//             skippedCount: result.skippedCount,
+//             errors: result.errors.length,
+//           });
+//         } catch (serviceError: any) {
+//           latestProgress = { ...latestProgress, done: true };
+//           console.error("❌ Service error:", serviceError);
+//           return res.status(500).json({
+//             message: "Error inserting QR codes.",
+//             error: serviceError.message,
+//           });
+//         }
+//       })
+//       .on("error", (err) => {
+//         latestProgress = { ...latestProgress, done: true };
+//         console.error("❌ CSV Read Error:", err);
+//         return res
+//           .status(500)
+//           .json({ message: "Error reading CSV file", error: err.message });
+//       });
+//   } catch (error: any) {
+//     latestProgress = { ...latestProgress, done: true };
+//     console.error("❌ Controller Error:", error);
+//     return res.status(500).json({
+//       message: "Server error while uploading QR codes.",
+//       error: error.message || "Unknown error",
+//     });
+//   }
+// };
+
+
+// router.get("/stream-progress", streamQRCodesUploadProgress);
