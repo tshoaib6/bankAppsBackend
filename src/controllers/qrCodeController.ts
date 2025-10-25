@@ -453,7 +453,6 @@ export const bulkUploadQRCodesOptimized = async (
     const qrCodeData: any[] = [];
     const progressEmitter = new EventEmitter();
 
-    // Optional: track real-time progress in logs or broadcast via WebSocket
     progressEmitter.on("progress", (progress) => {
       console.log(
         `📊 Progress: ${progress.percent}% | Inserted: ${progress.insertedCount} | Skipped: ${progress.skippedCount}`
@@ -463,23 +462,22 @@ export const bulkUploadQRCodesOptimized = async (
     fs.createReadStream(req.file.path)
       .pipe(csv({ trim: true } as any))
       .on("data", (row) => {
-        // ✅ Match structure of service function
-        if (
-          row.code &&
-          row.codeUrl &&
-          typeof row.codeUrl === "string" &&
-          row.codeUrl.trim().length > 0
-        ) {
+        // ✅ Only `codeUrl` is expected in CSV
+        if (row.codeUrl && typeof row.codeUrl === "string" && row.codeUrl.trim().length > 0) {
+          const cleanUrl = row.codeUrl.trim();
+
+          // Extract last 6 characters from codeUrl (you can adjust length)
+          const extractedCode = cleanUrl.split("/").pop()?.trim().slice(-6) || "";
+
+          if (extractedCode.length === 0) return; // skip if invalid
+
           qrCodeData.push({
-            code: row.code.trim(),
-            codeUrl: row.codeUrl.trim(),
+            code: extractedCode,            // auto-generated from URL
+            codeUrl: cleanUrl,              // stored as provided
             points: Number(row.points) || 20,
-            isUsed: row.isUsed === "TRUE" || row.isUsed === true,
-            claimedAt:
-              row.claimedAt && row.claimedAt !== "None"
-                ? new Date(row.claimedAt)
-                : null,
-            claimedBy: row.claimedBy ? row.claimedBy.trim() : null,
+            isUsed: false,                  // default false
+            claimedAt: null,
+            claimedBy: null,
             brand: row.brand?.trim() || "Banks",
           });
         }
