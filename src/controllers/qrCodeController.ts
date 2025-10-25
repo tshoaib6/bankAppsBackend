@@ -6,7 +6,10 @@ import csv from "csv-parser";
 import { EventEmitter } from "events";
 
 // ✅ Create QR Code
-export const createQRCode = async (req: Request, res: Response): Promise<any> => {
+export const createQRCode = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
   try {
     const token = req.header("Authorization")?.replace("Bearer ", "");
     if (!token) {
@@ -32,10 +35,19 @@ export const createQRCode = async (req: Request, res: Response): Promise<any> =>
     }
 
     // ✅ match service: codeUrl is required
-    const qrCodeData = { code, codeUrl, points, isUsed, createdBy: userId, brand };
+    const qrCodeData = {
+      code,
+      codeUrl,
+      points,
+      isUsed,
+      createdBy: userId,
+      brand,
+    };
     const qrCode = await QRCodeService.createQRCode(qrCodeData);
 
-    return res.status(201).json({ message: "QR Code created successfully", qrCode });
+    return res
+      .status(201)
+      .json({ message: "QR Code created successfully", qrCode });
   } catch (error) {
     return res.status(500).json({
       message: "Server error while creating QR code. Please try again later.",
@@ -70,15 +82,23 @@ export const createQRCode = async (req: Request, res: Response): Promise<any> =>
 //   }
 // };
 
-
-export const getAllQRCodes = async (req: Request, res: Response): Promise<any> => {
+export const getAllQRCodes = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
     const search = (req.query.search as string) || ""; // ✅ capture search term
 
-    const { qrCodes, totalCount, usedCount, unusedCount, totalPages, currentPage } =
-      await QRCodeService.getAllQRCodes(page, limit, search); // ✅ pass search to service
+    const {
+      qrCodes,
+      totalCount,
+      usedCount,
+      unusedCount,
+      totalPages,
+      currentPage,
+    } = await QRCodeService.getAllQRCodes(page, limit, search); // ✅ pass search to service
 
     return res.status(200).json({
       qrCodes,
@@ -98,7 +118,10 @@ export const getAllQRCodes = async (req: Request, res: Response): Promise<any> =
 };
 
 // ✅ Get QR Code by ID
-export const getQRCodeById = async (req: Request, res: Response): Promise<any> => {
+export const getQRCodeById = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
   try {
     const { qrCodeId } = req.params;
     const qrCode = await QRCodeService.getQRCodeById(qrCodeId);
@@ -107,7 +130,9 @@ export const getQRCodeById = async (req: Request, res: Response): Promise<any> =
       return res.status(404).json({ message: "QR Code not found" });
     }
 
-    return res.status(200).json({ qrCode, message: "QR Code fetched successfully" });
+    return res
+      .status(200)
+      .json({ qrCode, message: "QR Code fetched successfully" });
   } catch (error) {
     return res.status(500).json({
       message: "Server error while fetching QR code. Please try again later.",
@@ -117,7 +142,10 @@ export const getQRCodeById = async (req: Request, res: Response): Promise<any> =
 };
 
 // ✅ Update QR Code (only admins allowed)
-export const updateQRCode = async (req: Request, res: Response): Promise<any> => {
+export const updateQRCode = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
   try {
     const token = req.header("Authorization")?.replace("Bearer ", "");
     if (!token) {
@@ -162,7 +190,9 @@ export const updateQRCode = async (req: Request, res: Response): Promise<any> =>
       brand,
     });
 
-    return res.status(200).json({ message: "QR Code updated successfully", updatedQRCode });
+    return res
+      .status(200)
+      .json({ message: "QR Code updated successfully", updatedQRCode });
   } catch (error) {
     return res.status(500).json({
       message: "Server error while updating QR code. Please try again later.",
@@ -172,7 +202,10 @@ export const updateQRCode = async (req: Request, res: Response): Promise<any> =>
 };
 
 // ✅ Delete QR Code (admins only)
-export const deleteQRCode = async (req: Request, res: Response): Promise<any> => {
+export const deleteQRCode = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
   try {
     const token = req.header("Authorization")?.replace("Bearer ", "");
     if (!token) {
@@ -206,7 +239,10 @@ export const deleteQRCode = async (req: Request, res: Response): Promise<any> =>
 };
 
 // ✅ Get QR Codes by Brand (brand is string now)
-export const getQRCodesByBrandId = async (req: Request, res: Response): Promise<any> => {
+export const getQRCodesByBrandId = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
   try {
     const { brandId } = req.params;
 
@@ -217,10 +253,17 @@ export const getQRCodesByBrandId = async (req: Request, res: Response): Promise<
     const qrCodes = await QRCodeService.getQRCodesByBrandId(brandId);
 
     if (!qrCodes || qrCodes.length === 0) {
-      return res.status(404).json({ message: "No QR Codes found for this brand" });
+      return res
+        .status(404)
+        .json({ message: "No QR Codes found for this brand" });
     }
 
-    return res.status(200).json({ qrCodes, message: "QR Codes fetched successfully for the brand" });
+    return res
+      .status(200)
+      .json({
+        qrCodes,
+        message: "QR Codes fetched successfully for the brand",
+      });
   } catch (error) {
     return res.status(500).json({
       message: "Server error while fetching QR codes by brand",
@@ -230,7 +273,10 @@ export const getQRCodesByBrandId = async (req: Request, res: Response): Promise<
 };
 
 // ✅ Bulk Upload QR Codes (CSV import)
-export const bulkUploadQRCodes = async (req: Request, res: Response): Promise<any> => {
+export const bulkUploadQRCodes = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: "CSV file is required" });
@@ -265,7 +311,9 @@ export const bulkUploadQRCodes = async (req: Request, res: Response): Promise<an
       })
       .on("end", async () => {
         if (qrCodeData.length === 0) {
-          return res.status(400).json({ message: "No valid QR codes found in CSV" });
+          return res
+            .status(400)
+            .json({ message: "No valid QR codes found in CSV" });
         }
 
         const result = await QRCodeService.bulkInsertQRCodes(qrCodeData);
@@ -276,7 +324,9 @@ export const bulkUploadQRCodes = async (req: Request, res: Response): Promise<an
         });
       })
       .on("error", (err) => {
-        return res.status(500).json({ message: "Error reading CSV file", error: err });
+        return res
+          .status(500)
+          .json({ message: "Error reading CSV file", error: err });
       });
   } catch (error) {
     return res.status(500).json({
@@ -286,8 +336,10 @@ export const bulkUploadQRCodes = async (req: Request, res: Response): Promise<an
   }
 };
 
-
-export const getQRCodeUsageByUsersController = async (req: Request, res: Response) => {
+export const getQRCodeUsageByUsersController = async (
+  req: Request,
+  res: Response
+) => {
   try {
     const data = await QRCodeService.getQRCodeUsageByUsers();
     return res.status(200).json({
@@ -323,7 +375,69 @@ export const qrUploadProgressStream = (req: Request, res: Response) => {
 };
 
 // ✅ Main upload endpoint
-export const bulkUploadQRCodesOptimized = async (req: Request, res: Response): Promise<any> => {
+// export const bulkUploadQRCodesOptimized = async (req: Request, res: Response): Promise<any> => {
+//   try {
+//     if (!req.file) {
+//       return res.status(400).json({ message: "CSV file is required" });
+//     }
+
+//     const token = req.header("Authorization")?.replace("Bearer ", "");
+//     if (!token) {
+//       return res.status(401).json({ message: "Authorization token required" });
+//     }
+
+//     const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
+//     const userId = decoded.userId;
+
+//     const qrCodeData: any[] = [];
+
+//     fs.createReadStream(req.file.path)
+//       .pipe(csv({ trim: true } as any))
+//       .on("data", (row) => {
+//         const extractedCode = row.url.split("/").pop()?.trim() || "";
+
+//         if (row.url) {
+//           qrCodeData.push({
+//             code: extractedCode,
+//             codeUrl: row.url,
+//             points: Number(row.points) || 20,
+//             isUsed: false,
+//             claimedAt: null,
+//             claimedBy: null,
+//             brand: row.brand || "Banks",
+//           });
+//         }
+//       })
+//       .on("end", async () => {
+//         if (qrCodeData.length === 0) {
+//           return res.status(400).json({ message: "No valid QR codes found in CSV" });
+//         }
+
+//         // ✅ Pass emitter to service
+//         const result = await QRCodeService.bulkInsertQRCodesSkipExisting(qrCodeData, progressEmitter);
+
+//         return res.status(201).json({
+//           message: `✅ ${result.insertedCount} new QR codes inserted. ${result.skippedCount} skipped (already existed).`,
+//           insertedCount: result.insertedCount,
+//           skippedCount: result.skippedCount,
+//           errors: result.errors.length,
+//         });
+//       })
+//       .on("error", (err) => {
+//         return res.status(500).json({ message: "Error reading CSV file", error: err });
+//       });
+//   } catch (error) {
+//     return res.status(500).json({
+//       message: "Server error while uploading QR codes. Please try again later.",
+//       error: error instanceof Error ? error.message : "Unknown error",
+//     });
+//   }
+// };
+
+export const bulkUploadQRCodesOptimized = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: "CSV file is required" });
@@ -342,27 +456,38 @@ export const bulkUploadQRCodesOptimized = async (req: Request, res: Response): P
     fs.createReadStream(req.file.path)
       .pipe(csv({ trim: true } as any))
       .on("data", (row) => {
-        const extractedCode = row.url.split("/").pop()?.trim() || "";
-
-        if (row.url) {
+        // ✅ Fixed: Parse based on schema columns (code, codeUrl, etc.)
+        // Skip if essential fields missing
+        if (
+          row.code &&
+          row.codeUrl &&
+          typeof row.codeUrl === "string" &&
+          row.codeUrl.trim().length > 0
+        ) {
           qrCodeData.push({
-            code: extractedCode,
-            codeUrl: row.url,
+            code: row.code.trim(),
+            codeUrl: row.codeUrl.trim(),
             points: Number(row.points) || 20,
-            isUsed: false,
-            claimedAt: null,
-            claimedBy: null,
-            brand: row.brand || "Banks",
+            isUsed: row.isUsed === "TRUE" || row.isUsed === true, // Handle string/boolean
+            claimedAt:
+              row.claimedAt === "None" ? null : new Date(row.claimedAt), // Parse date or null
+            claimedBy: row.claimedBy ? row.claimedBy.trim() : null, // ObjectId string
+            brand: row.brand?.trim() || "Banks",
           });
         }
       })
       .on("end", async () => {
         if (qrCodeData.length === 0) {
-          return res.status(400).json({ message: "No valid QR codes found in CSV" });
+          return res
+            .status(400)
+            .json({ message: "No valid QR codes found in CSV" });
         }
 
         // ✅ Pass emitter to service
-        const result = await QRCodeService.bulkInsertQRCodesSkipExisting(qrCodeData, progressEmitter);
+        const result = await QRCodeService.bulkInsertQRCodesSkipExisting(
+          qrCodeData,
+          progressEmitter
+        );
 
         return res.status(201).json({
           message: `✅ ${result.insertedCount} new QR codes inserted. ${result.skippedCount} skipped (already existed).`,
@@ -372,7 +497,9 @@ export const bulkUploadQRCodesOptimized = async (req: Request, res: Response): P
         });
       })
       .on("error", (err) => {
-        return res.status(500).json({ message: "Error reading CSV file", error: err });
+        return res
+          .status(500)
+          .json({ message: "Error reading CSV file", error: err });
       });
   } catch (error) {
     return res.status(500).json({

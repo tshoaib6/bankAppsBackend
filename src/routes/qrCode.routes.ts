@@ -1,29 +1,42 @@
-import express from 'express';
-import * as QRCodeController from '../controllers/qrCodeController';
-import multer from 'multer';
+import express from "express";
+import * as QRCodeController from "../controllers/qrCodeController";
+import multer from "multer";
 
 const router = express.Router();
-const upload = multer({ dest: 'uploads/' });
+const upload = multer({ dest: "uploads/" });
 
-router.post('/createqrCode', QRCodeController.createQRCode);
+router.post("/createqrCode", QRCodeController.createQRCode);
 
-router.get('/getqrCode', QRCodeController.getAllQRCodes);
+router.get("/getqrCode", QRCodeController.getAllQRCodes);
 
-router.get('/getqrCodeById:qrCodeId', QRCodeController.getQRCodeById);
+router.get("/getqrCodeById:qrCodeId", QRCodeController.getQRCodeById);
 
-router.put('/updateqrCode/:qrCodeId', QRCodeController.updateQRCode);
+router.put("/updateqrCode/:qrCodeId", QRCodeController.updateQRCode);
 
-router.delete('/deleteqrCode/:qrCodeId', QRCodeController.deleteQRCode);
+router.delete("/deleteqrCode/:qrCodeId", QRCodeController.deleteQRCode);
 
-router.get('/getQRCodeBybrandId/:brandId', QRCodeController.getQRCodesByBrandId);
+router.get(
+  "/getQRCodeBybrandId/:brandId",
+  QRCodeController.getQRCodesByBrandId
+);
 
-router.post('/qrcodes/upload', upload.single('file'), QRCodeController.bulkUploadQRCodes);
+router.post(
+  "/qrcodes/upload",
+  upload.single("file"),
+  QRCodeController.bulkUploadQRCodes
+);
 
-router.get("/qr-code-usage-by-users", QRCodeController.getQRCodeUsageByUsersController);
+router.get(
+  "/qr-code-usage-by-users",
+  QRCodeController.getQRCodeUsageByUsersController
+);
 
-router.post("/import-optimized", upload.single("file"), QRCodeController.bulkUploadQRCodesOptimized);
+router.post(
+  "/import-optimized",
+  upload.single("file"),
+  QRCodeController.bulkUploadQRCodesOptimized
+);
 
 router.get("/import-progress", QRCodeController.qrUploadProgressStream);
-
 
 export default router;
