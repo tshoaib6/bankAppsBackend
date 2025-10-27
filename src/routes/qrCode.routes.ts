@@ -38,5 +38,7 @@ router.post(
 );
 
 router.get("/import-progress", QRCodeController.qrUploadProgressStream);
+// router.get("/stream-progress", streamQRCodesUploadProgress);
+
 
 export default router;

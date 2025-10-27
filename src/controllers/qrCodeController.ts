@@ -57,31 +57,6 @@ export const createQRCode = async (
   }
 };
 
-// ✅ Get All QR Codes
-// export const getAllQRCodes = async (req: Request, res: Response): Promise<any> => {
-//   try {
-//     const page = parseInt(req.query.page as string) || 1;
-//     const limit = parseInt(req.query.limit as string) || 20;
-
-//     const { qrCodes, totalCount, usedCount, unusedCount, totalPages, currentPage } =
-//       await QRCodeService.getAllQRCodes(page, limit);
-
-//     return res.status(200).json({
-//       qrCodes,
-//       totalCount,
-//       usedCount,
-//       unusedCount,
-//       totalPages,
-//       currentPage,
-//       message: "QR Codes fetched successfully",
-//     });
-//   } catch (error) {
-//     return res.status(500).json({
-//       message: "Server error while fetching QR codes. Please try again later.",
-//       error: error instanceof Error ? error.message : "Unknown error",
-//     });
-//   }
-// };
 
 export const getAllQRCodes = async (
   req: Request,
