@@ -4,6 +4,7 @@ import * as QRCodeService from "../services/qrCodeService";
 import fs from "fs";
 import csv from "csv-parser";
 import { EventEmitter } from "events";
+export const progressEmitter = new EventEmitter();
 
 // ✅ Create QR Code
 export const createQRCode = async (
@@ -355,7 +356,7 @@ export const getQRCodeUsageByUsersController = async (
   }
 };
 
-const progressEmitter = new EventEmitter();
+// const progressEmitter = new EventEmitter();
 
 // ✅ SSE endpoint to send progress live
 export const qrUploadProgressStream = (req: Request, res: Response) => {
@@ -438,10 +439,12 @@ export const bulkUploadQRCodesOptimized = async (
   res: Response
 ): Promise<any> => {
   try {
+    // 🧾 1. File Validation
     if (!req.file) {
       return res.status(400).json({ message: "CSV file is required" });
     }
 
+    // 🔐 2. Token Validation
     const token = req.header("Authorization")?.replace("Bearer ", "");
     if (!token) {
       return res.status(401).json({ message: "Authorization token required" });
@@ -450,32 +453,39 @@ export const bulkUploadQRCodesOptimized = async (
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
     const userId = decoded.userId;
 
+    // 📦 3. Prepare Data Array
     const qrCodeData: any[] = [];
-    const progressEmitter = new EventEmitter();
 
+    // 🟢 Log progress locally (optional for backend logs)
     progressEmitter.on("progress", (progress) => {
       console.log(
         `📊 Progress: ${progress.percent}% | Inserted: ${progress.insertedCount} | Skipped: ${progress.skippedCount}`
       );
     });
 
+    // 🧠 4. Parse CSV File Stream
     fs.createReadStream(req.file.path)
       .pipe(csv({ trim: true } as any))
       .on("data", (row) => {
         // ✅ Only `codeUrl` is expected in CSV
-        if (row.codeUrl && typeof row.codeUrl === "string" && row.codeUrl.trim().length > 0) {
+        if (
+          row.codeUrl &&
+          typeof row.codeUrl === "string" &&
+          row.codeUrl.trim().length > 0
+        ) {
           const cleanUrl = row.codeUrl.trim();
 
-          // Extract last 6 characters from codeUrl (you can adjust length)
-          const extractedCode = cleanUrl.split("/").pop()?.trim().slice(-6) || "";
+          // Extract last 6 characters from codeUrl (adjustable)
+          const extractedCode =
+            cleanUrl.split("/").pop()?.trim().slice(-6) || "";
 
           if (extractedCode.length === 0) return; // skip if invalid
 
           qrCodeData.push({
-            code: extractedCode,            // auto-generated from URL
-            codeUrl: cleanUrl,              // stored as provided
+            code: extractedCode, // auto-generated from URL
+            codeUrl: cleanUrl, // stored as provided
             points: Number(row.points) || 20,
-            isUsed: false,                  // default false
+            isUsed: false, // default false
             claimedAt: null,
             claimedBy: null,
             brand: row.brand?.trim() || "Banks",
@@ -483,6 +493,7 @@ export const bulkUploadQRCodesOptimized = async (
         }
       })
       .on("end", async () => {
+        // 🚫 Handle empty data
         if (qrCodeData.length === 0) {
           return res
             .status(400)
@@ -490,11 +501,13 @@ export const bulkUploadQRCodesOptimized = async (
         }
 
         try {
+          // 🚀 5. Bulk Insert & Skip Existing
           const result = await QRCodeService.bulkInsertQRCodesSkipExisting(
             qrCodeData,
             progressEmitter
           );
 
+          // ✅ 6. Send Final Response
           return res.status(201).json({
             message: `✅ ${result.insertedCount} new QR codes inserted. ${result.skippedCount} skipped (already existed).`,
             insertedCount: result.insertedCount,
@@ -510,12 +523,14 @@ export const bulkUploadQRCodesOptimized = async (
         }
       })
       .on("error", (err) => {
+        // ⚠️ Handle CSV Read Errors
         console.error("❌ CSV Read Error:", err);
         return res
           .status(500)
           .json({ message: "Error reading CSV file", error: err.message });
       });
   } catch (error: any) {
+    // 🔴 Global Catch
     console.error("❌ Controller Error:", error);
     return res.status(500).json({
       message: "Server error while uploading QR codes.",
@@ -523,8 +538,6 @@ export const bulkUploadQRCodesOptimized = async (
     });
   }
 };
-
-
 
 
 
