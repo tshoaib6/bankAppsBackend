@@ -74,7 +74,7 @@ const deleteBankPremium = async (
 
 export const getAllBankPremiums = async (): Promise<IBankPremium[]> => {
   try {
-    return await BankPremium.find().populate('enrolled_users');
+    return await BankPremium.find({ active: true }).populate('enrolled_users');
   } catch (error) {
     console.error('Error fetching BankPremiums from the database:', error);
     throw new Error('Error fetching BankPremiums');

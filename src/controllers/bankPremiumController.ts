@@ -162,24 +162,26 @@ export const getAllBankPremiums = async (
   res: Response
 ): Promise<any> => {
   try {
-    const bankPremiums = await BankPremiumService.getAllBankPremiums();
+    // ✅ Fetch only active bank premiums from the service
+    const activeBankPremiums = await BankPremiumService.getAllBankPremiums();
 
-    if (!bankPremiums || bankPremiums.length === 0) {
-      return res.status(404).json({ message: "No BankPremiums found" });
+    if (!activeBankPremiums || activeBankPremiums.length === 0) {
+      return res.status(404).json({ message: "No active BankPremiums found" });
     }
 
     return res.status(200).json({
-      message: "BankPremiums fetched successfully",
-      bankPremiums,
+      message: "Active BankPremiums fetched successfully",
+      bankPremiums: activeBankPremiums,
     });
   } catch (error: any) {
-    console.error("Error fetching BankPremiums:", error);
+    console.error("Error fetching active BankPremiums:", error);
     return res.status(500).json({
-      message: "An error occurred while fetching BankPremiums",
+      message: "An error occurred while fetching active BankPremiums",
       error: error.message,
     });
   }
 };
+
 
 /**
  * Get a BankPremium by ID
