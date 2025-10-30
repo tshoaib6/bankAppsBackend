@@ -157,7 +157,7 @@ export const getAllBankPremiums = async (): Promise<IBankPremium[]> => {
     return await BankPremium.find(
       { active: true }
     ).select(
-      "_id title description points_required start_date end_date image_url active qty brandId"
+      "_id title description points_required start_date end_date image_url active qty brand"
     );
   } catch (error) {
     console.error("Error fetching BankPremiums from the database:", error);
