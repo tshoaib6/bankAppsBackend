@@ -65,23 +65,17 @@ export const getAllQRCodes = async (
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
-    const search = (req.query.search as string) || ""; // ✅ capture search term
+    const search = (req.query.search as string) || "";
 
-    const {
-      qrCodes,
-      totalCount,
-      usedCount,
-      unusedCount,
-      totalPages,
-      currentPage,
-    } = await QRCodeService.getAllQRCodes(page, limit, search); // ✅ pass search to service
+    // ✅ Fetch paginated data only (no counts)
+    const { qrCodes, currentPage } = await QRCodeService.getAllQRCodes(
+      page,
+      limit,
+      search
+    );
 
     return res.status(200).json({
       qrCodes,
-      totalCount,
-      usedCount,
-      unusedCount,
-      totalPages,
       currentPage,
       message: "QR Codes fetched successfully",
     });
@@ -92,6 +86,7 @@ export const getAllQRCodes = async (
     });
   }
 };
+
 
 // ✅ Get QR Code by ID
 export const getQRCodeById = async (

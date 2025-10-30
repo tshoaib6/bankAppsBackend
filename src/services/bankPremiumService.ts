@@ -134,14 +134,27 @@ const deleteBankPremium = async (
   return bankPremium;
 };
 
+// export const getAllBankPremiums = async (): Promise<IBankPremium[]> => {
+//   try {
+//     return await BankPremium.find({ active: true }).populate('enrolled_users');
+//   } catch (error) {
+//     console.error('Error fetching BankPremiums from the database:', error);
+//     throw new Error('Error fetching BankPremiums');
+//   }
+// };
 export const getAllBankPremiums = async (): Promise<IBankPremium[]> => {
   try {
-    return await BankPremium.find({ active: true }).populate('enrolled_users');
+    return await BankPremium.find(
+      { active: true }
+    ).select(
+      "_id title description points_required start_date end_date image_url active"
+    );
   } catch (error) {
-    console.error('Error fetching BankPremiums from the database:', error);
-    throw new Error('Error fetching BankPremiums');
+    console.error("Error fetching BankPremiums from the database:", error);
+    throw new Error("Error fetching BankPremiums");
   }
 };
+
 
 /**
  * Redeem a BankPremium for a user.
@@ -321,7 +334,7 @@ export const redeemBankPremiumService = async (
     const totalPoints = brandPointsEntries.reduce(
       (sum, entry) => sum + entry.points,
       0
-    );
+    );  
     if (totalPoints < pointsRequired) {
       throw new Error("You need to collect more points to redeem.");
     }

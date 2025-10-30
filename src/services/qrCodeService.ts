@@ -109,7 +109,7 @@ export const createQRCode = async (data: any): Promise<IQRCode> => {
 
 
 
-  export const getAllQRCodes = async (
+export const getAllQRCodes = async (
   page: number,
   limit: number,
   search?: string
@@ -137,7 +137,7 @@ export const createQRCode = async (data: any): Promise<IQRCode> => {
       ];
     }
 
-    // ✅ Step 1: Fetch only paginated data first (fast)
+    // ✅ Fetch only paginated data
     const { data: qrCodes } = await paginate<IQRCode>(QRCode, {
       page,
       limit,
@@ -145,51 +145,13 @@ export const createQRCode = async (data: any): Promise<IQRCode> => {
       filter,
     });
 
-    // ✅ Step 2: Prepare promises for counts/stats
-    // Use estimated count (fast) instead of full countDocuments
-    const totalCountPromise = QRCode.estimatedDocumentCount();
-
-    // Only run heavy stats aggregation for first page (optional)
-    const statsPromise =
-      page === 1
-        ? QRCode.aggregate([
-            { $match: filter },
-            {
-              $group: {
-                _id: null,
-                usedCount: { $sum: { $cond: ["$isUsed", 1, 0] } },
-                unusedCount: { $sum: { $cond: ["$isUsed", 0, 1] } },
-              },
-            },
-          ])
-        : Promise.resolve([]);
-
-    // ✅ Step 3: Run both in parallel (non-blocking)
-    const [totalCountResult, statsResult] = await Promise.allSettled([
-      totalCountPromise,
-      statsPromise,
-    ]);
-
-    // ✅ Step 4: Safely extract results
-    const totalCount =
-      totalCountResult.status === "fulfilled"
-        ? totalCountResult.value
-        : qrCodes.length;
-
-    const { usedCount, unusedCount } =
-      statsResult.status === "fulfilled" && statsResult.value[0]
-        ? statsResult.value[0]
-        : { usedCount: 0, unusedCount: 0 };
-
-    const totalPages = Math.ceil(totalCount / limit);
-
-    // ✅ Step 5: Return response
+    // ✅ Return response without heavy counts
     return {
       qrCodes,
-      totalCount,
-      usedCount,
-      unusedCount,
-      totalPages,
+      totalCount: 0,
+      usedCount: 0,
+      unusedCount: 0,
+      totalPages: 0,
       currentPage: page,
     };
   } catch (error) {
