@@ -18,70 +18,6 @@ interface DecodedToken extends JwtPayload {
   userRole: string;
 }
 
-// /**
-//  * Create a new BankPremium
-//  */
-// export const createBankPremium = async (
-//   req: Request,
-//   res: Response
-// ): Promise<any> => {
-//   try {
-//     const token = req.header("Authorization")?.replace("Bearer ", "");
-//     if (!token)
-//       return res.status(401).json({ message: "Authorization token required" });
-
-//     const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
-//     const userId = decoded.userId;
-
-//     const {
-//       title,
-//       description,
-//       points_required,
-//       start_date,
-//       end_date,
-//       active,
-//       brand,
-//     } = req.body;
-
-//     if (!req.file)
-//       return res.status(400).json({ message: "Image is required" });
-
-//     const imageUrl = await uploadToCloudinary(
-//       req.file.buffer,
-//       "bankpremium_images"
-//     );
-
-//     const bankPremiumData = {
-//       title,
-//       description,
-//       points_required,
-//       start_date: new Date(start_date),
-//       end_date: new Date(end_date),
-//       image_url: imageUrl,
-//       active: active ?? true,
-//       enrolled_users: [],
-//       brand: brand || null,
-//     };
-
-//     const newBankPremium = await BankPremiumService.createBankPremium(
-//       userId,
-//       bankPremiumData
-//     );
-
-//     return res.status(201).json({
-//       message: "BankPremium created successfully",
-//       bankPremium: newBankPremium,
-//     });
-//   } catch (error: any) {
-//     console.error("Error creating BankPremium:", error);
-//     return res.status(500).json({
-//       message: "An error occurred while creating BankPremium",
-//       error: error.message,
-//     });
-//   }
-// };
-
-
 /**
  * Create a new BankPremium
  */
@@ -304,6 +240,31 @@ export const getAllBankPremiums = async (
   }
 };
 
+export const getAllBankPremiumsControllerForAdmin = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  try {
+    // ✅ Fetch only active bank premiums from the service
+    const activeBankPremiums = await BankPremiumService.getAllBankPremiumsForAdmin();
+
+    if (!activeBankPremiums || activeBankPremiums.length === 0) {
+      return res.status(404).json({ message: "No active BankPremiums found" });
+    }
+
+    return res.status(200).json({
+      message: "Active BankPremiums fetched successfully",
+      bankPremiums: activeBankPremiums,
+    });
+  } catch (error: any) {
+    console.error("Error fetching active BankPremiums:", error);
+    return res.status(500).json({
+      message: "An error occurred while fetching active BankPremiums",
+      error: error.message,
+    });
+  }
+};
+
 
 /**
  * Get a BankPremium by ID
@@ -488,23 +449,6 @@ export const getAllRedemptionsController = async (
 };
 
 
-// new one 
-// export const getAllRedemptionsController = async (req: Request, res: Response) => {
-//   try {
-//     const redemptions = await getAllRedemptionsService();
-//     res.status(200).json({
-//       success: true,
-//       count: redemptions.length, // optional, nice to include
-//       data: redemptions
-//     });
-//   } catch (error: any) {
-//     console.error("Error fetching redemptions:", error);
-//     res.status(500).json({
-//       success: false,
-//       message: error.message || "Failed to fetch redemptions"
-//     });
-//   }
-// };
 
 
 export const exportRedemptionsCSVController = async (req: Request, res: Response) => {

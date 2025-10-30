@@ -134,14 +134,24 @@ const deleteBankPremium = async (
   return bankPremium;
 };
 
-// export const getAllBankPremiums = async (): Promise<IBankPremium[]> => {
-//   try {
-//     return await BankPremium.find({ active: true }).populate('enrolled_users');
-//   } catch (error) {
-//     console.error('Error fetching BankPremiums from the database:', error);
-//     throw new Error('Error fetching BankPremiums');
-//   }
-// };
+export const getAllBankPremiumsForAdmin = async (): Promise<IBankPremium[]> => {
+  try {
+    return await BankPremium.find(
+      { active: true }
+    )
+      .select("_id title description points_required start_date end_date image_url active")
+      .populate({
+        path: "enrolled_users",
+        select: "_id name email", // ✅ only fetch needed fields
+        options: { limit: 5 } // ✅ optional limit to avoid large payload
+      })
+      .lean(); // ✅ returns plain JS objects, skips Mongoose overhead
+  } catch (error) {
+    console.error("Error fetching BankPremiums:", error);
+    throw new Error("Error fetching BankPremiums");
+  }
+};
+
 export const getAllBankPremiums = async (): Promise<IBankPremium[]> => {
   try {
     return await BankPremium.find(
@@ -633,5 +643,7 @@ export default {
   getAllBankPremiums,
   redeemBankPremiumService,
   verifyBankPremiumCodeService,
-  getAllRedemptionsService
+  getAllRedemptionsService,
+  getAllBankPremiumsForAdmin
+
 };
