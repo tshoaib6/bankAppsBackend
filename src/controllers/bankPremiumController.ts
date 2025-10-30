@@ -18,6 +18,70 @@ interface DecodedToken extends JwtPayload {
   userRole: string;
 }
 
+// /**
+//  * Create a new BankPremium
+//  */
+// export const createBankPremium = async (
+//   req: Request,
+//   res: Response
+// ): Promise<any> => {
+//   try {
+//     const token = req.header("Authorization")?.replace("Bearer ", "");
+//     if (!token)
+//       return res.status(401).json({ message: "Authorization token required" });
+
+//     const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
+//     const userId = decoded.userId;
+
+//     const {
+//       title,
+//       description,
+//       points_required,
+//       start_date,
+//       end_date,
+//       active,
+//       brand,
+//     } = req.body;
+
+//     if (!req.file)
+//       return res.status(400).json({ message: "Image is required" });
+
+//     const imageUrl = await uploadToCloudinary(
+//       req.file.buffer,
+//       "bankpremium_images"
+//     );
+
+//     const bankPremiumData = {
+//       title,
+//       description,
+//       points_required,
+//       start_date: new Date(start_date),
+//       end_date: new Date(end_date),
+//       image_url: imageUrl,
+//       active: active ?? true,
+//       enrolled_users: [],
+//       brand: brand || null,
+//     };
+
+//     const newBankPremium = await BankPremiumService.createBankPremium(
+//       userId,
+//       bankPremiumData
+//     );
+
+//     return res.status(201).json({
+//       message: "BankPremium created successfully",
+//       bankPremium: newBankPremium,
+//     });
+//   } catch (error: any) {
+//     console.error("Error creating BankPremium:", error);
+//     return res.status(500).json({
+//       message: "An error occurred while creating BankPremium",
+//       error: error.message,
+//     });
+//   }
+// };
+
+
 /**
  * Create a new BankPremium
  */
@@ -26,6 +90,7 @@ export const createBankPremium = async (
   res: Response
 ): Promise<any> => {
   try {
+    // 🔹 Verify Authorization Token
     const token = req.header("Authorization")?.replace("Bearer ", "");
     if (!token)
       return res.status(401).json({ message: "Authorization token required" });
@@ -33,6 +98,7 @@ export const createBankPremium = async (
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
     const userId = decoded.userId;
 
+    // 🔹 Extract data from request body
     const {
       title,
       description,
@@ -41,16 +107,20 @@ export const createBankPremium = async (
       end_date,
       active,
       brand,
+      qty, // ✅ new optional field
     } = req.body;
 
+    // 🔹 Validate required fields
     if (!req.file)
       return res.status(400).json({ message: "Image is required" });
 
+    // 🔹 Upload image to Cloudinary
     const imageUrl = await uploadToCloudinary(
       req.file.buffer,
       "bankpremium_images"
     );
 
+    // 🔹 Prepare data object for service
     const bankPremiumData = {
       title,
       description,
@@ -61,13 +131,16 @@ export const createBankPremium = async (
       active: active ?? true,
       enrolled_users: [],
       brand: brand || null,
+  qty: qty !== undefined ? Number(qty) : undefined, // ✅ fixed here
     };
 
+    // 🔹 Create new record using service
     const newBankPremium = await BankPremiumService.createBankPremium(
       userId,
       bankPremiumData
     );
 
+    // 🔹 Return success response
     return res.status(201).json({
       message: "BankPremium created successfully",
       bankPremium: newBankPremium,
@@ -81,9 +154,45 @@ export const createBankPremium = async (
   }
 };
 
+
 /**
  * Update an existing BankPremium
  */
+// export const updateBankPremium = async (
+//   req: Request,
+//   res: Response
+// ): Promise<any> => {
+//   try {
+//     const { bankPremiumId } = req.params;
+//     const updates = req.body;
+
+//     if (req.file) {
+//       const imageUrl = await uploadToCloudinary(
+//         req.file.buffer,
+//         "bankpremium_images"
+//       );
+//       updates.image_url = imageUrl;
+//     }
+
+//     const updatedBankPremium = await BankPremiumService.updateBankPremium(
+//       bankPremiumId,
+//       updates
+//     );
+
+//     return res.status(200).json({
+//       message: "BankPremium updated successfully",
+//       bankPremium: updatedBankPremium,
+//     });
+//   } catch (error: any) {
+//     console.error("Error updating BankPremium:", error);
+//     return res.status(500).json({
+//       message: "An error occurred while updating BankPremium",
+//       error: error.message,
+//     });
+//   }
+// };
+
+
 export const updateBankPremium = async (
   req: Request,
   res: Response
@@ -92,6 +201,7 @@ export const updateBankPremium = async (
     const { bankPremiumId } = req.params;
     const updates = req.body;
 
+    // ✅ If image is provided, upload it to Cloudinary
     if (req.file) {
       const imageUrl = await uploadToCloudinary(
         req.file.buffer,
@@ -100,6 +210,18 @@ export const updateBankPremium = async (
       updates.image_url = imageUrl;
     }
 
+    // ✅ Optional qty validation before passing to service
+    if (updates.qty !== undefined) {
+      const qty = Number(updates.qty);
+      if (isNaN(qty) || qty < 0) {
+        return res
+          .status(400)
+          .json({ message: "Quantity (qty) must be a non-negative number" });
+      }
+      updates.qty = qty;
+    }
+
+    // ✅ Call service to handle update
     const updatedBankPremium = await BankPremiumService.updateBankPremium(
       bankPremiumId,
       updates

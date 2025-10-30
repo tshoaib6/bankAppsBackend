@@ -22,19 +22,44 @@ export interface IUser extends Document {
   brandPoints: IBrandPoints[];   // 🔹 Add this
   brands: (Types.ObjectId | string)[];
 }
+// const createBankPremium = async (
+//   userId: string,
+//   data: Partial<IBankPremium>
+// ): Promise<IBankPremium> => {
+//   const newBankPremium = new BankPremium({
+//     ...data,
+//     enrolled_users: [],
+//     brand: data.brand || null,
+//     redemptions: []
+//   });
+
+//   return await newBankPremium.save();
+// };
+
+
 const createBankPremium = async (
   userId: string,
   data: Partial<IBankPremium>
 ): Promise<IBankPremium> => {
+  // ✅ Prepare the new BankPremium object
   const newBankPremium = new BankPremium({
-    ...data,
+    title: data.title,
+    description: data.description,
+    points_required: data.points_required,
+    start_date: data.start_date,
+    end_date: data.end_date,
+    image_url: data.image_url,
+    active: data.active !== undefined ? data.active : true,
     enrolled_users: [],
     brand: data.brand || null,
-    redemptions: []
+    redemptions: [],
+    qty: data.qty !== undefined ? data.qty : null,  // ✅ Optional qty
   });
 
+  // ✅ Save and return the created document
   return await newBankPremium.save();
 };
+
 
 const getBankPremiumById = async (
   bankPremiumId: string
@@ -44,25 +69,62 @@ const getBankPremiumById = async (
   return bankPremium;
 };
 
+// const updateBankPremium = async (
+//   bankPremiumId: string,
+//   updates: Partial<IBankPremium>
+// ): Promise<IBankPremium> => {
+//   const existingBankPremium = await BankPremium.findById(bankPremiumId);
+//   if (!existingBankPremium) throw new Error('BankPremium not found');
+
+//   Object.keys(updates).forEach((key) => {
+//     if (
+//       key !== 'enrolled_users' &&
+//       key !== 'redemptions' && // prevent overwriting redemptions manually
+//       updates[key as keyof IBankPremium] !== undefined
+//     ) {
+//       existingBankPremium.set(key, updates[key as keyof IBankPremium]);
+//     }
+//   });
+
+//   return await existingBankPremium.save();
+// };
+
+
+
+
+
 const updateBankPremium = async (
   bankPremiumId: string,
   updates: Partial<IBankPremium>
 ): Promise<IBankPremium> => {
   const existingBankPremium = await BankPremium.findById(bankPremiumId);
-  if (!existingBankPremium) throw new Error('BankPremium not found');
+  if (!existingBankPremium) throw new Error("BankPremium not found");
 
   Object.keys(updates).forEach((key) => {
-    if (
-      key !== 'enrolled_users' &&
-      key !== 'redemptions' && // prevent overwriting redemptions manually
-      updates[key as keyof IBankPremium] !== undefined
-    ) {
-      existingBankPremium.set(key, updates[key as keyof IBankPremium]);
+    // Skip fields that should not be manually updated
+    if (key === "enrolled_users" || key === "redemptions") return;
+
+    const value = updates[key as keyof IBankPremium];
+
+    // ✅ Handle qty specifically
+    if (key === "qty") {
+      if (value === undefined) return; // ignore if not provided
+      if (typeof value !== "number" || value < 0) {
+        throw new Error("Quantity (qty) must be a non-negative number");
+      }
+      existingBankPremium.set("qty", value);
+      return;
+    }
+
+    // ✅ Normal update for all other fields
+    if (value !== undefined) {
+      existingBankPremium.set(key, value);
     }
   });
 
   return await existingBankPremium.save();
 };
+
 
 const deleteBankPremium = async (
   bankPremiumId: string
