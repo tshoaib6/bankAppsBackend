@@ -216,7 +216,62 @@ export const getBankPremiumById = async (
 /**
  * Redeem a BankPremium (User)
  */
-export const redeemBankPremium = async (
+  // export const redeemBankPremium = async (
+  //   req: Request<{}, {}, RedeemRequestBody>,
+  //   res: Response
+  // ): Promise<Response> => {
+  //   try {
+  //     // 🔹 Extract and verify token
+  //     const token = req.header("Authorization")?.replace("Bearer ", "");
+  //     if (!token) {
+  //       return res.status(401).json({ message: "Authorization token required" });
+  //     }
+
+  //     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
+  //     const userId = decoded.userId;
+
+  //     // 🔹 Validate request body
+  //     const { premiumId } = req.body;
+  //     if (!premiumId) {
+  //       return res.status(400).json({ message: "premiumId is required" });
+  //     }
+
+  //     // 🔹 Call service
+  //     const result = await BankPremiumService.redeemBankPremiumService(
+  //       userId,
+  //       premiumId
+  //     );
+
+  //     // 🔹 Return success response
+  //     return res.status(200).json({
+  //       message: "BankPremium redeemed successfully",
+  //       ...result,
+  //     });
+  //   } catch (error: any) {
+  //     console.error("Error redeeming BankPremium:", error);
+
+  //     // 🔹 Known validation/user errors
+  //     const knownErrors = [
+  //       "  cient points",
+  //       "not found",
+  //       "Invalid",
+  //       "required",
+  //     ];
+
+  //     if (knownErrors.some((msg) => error.message.includes(msg))) {
+  //       return res.status(400).json({ message: error.message });
+  //     }
+
+  //     // 🔹 Unknown/internal error
+  //     return res.status(500).json({
+  //       message: "An error occurred while redeeming BankPremium",
+  //       error: error.message,
+  //     });
+  //   }
+  // };
+
+
+  export const redeemBankPremium = async (
   req: Request<{}, {}, RedeemRequestBody>,
   res: Response
 ): Promise<Response> => {
@@ -252,13 +307,14 @@ export const redeemBankPremium = async (
 
     // 🔹 Known validation/user errors
     const knownErrors = [
-      "  cient points",
       "not found",
       "Invalid",
       "required",
+      "out of stock", // ✅ added for stock depletion
+      "earn more points",
     ];
 
-    if (knownErrors.some((msg) => error.message.includes(msg))) {
+    if (knownErrors.some((msg) => error.message.toLowerCase().includes(msg))) {
       return res.status(400).json({ message: error.message });
     }
 
@@ -268,8 +324,7 @@ export const redeemBankPremium = async (
       error: error.message,
     });
   }
-};
-
+}; 
 /**
  * Verify redemption code (Admin) → Mark as delivered
  */

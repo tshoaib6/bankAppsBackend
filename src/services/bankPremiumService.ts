@@ -87,27 +87,164 @@ export const getAllBankPremiums = async (): Promise<IBankPremium[]> => {
  * @param premiumId - ID of the premium to redeem.
  * @returns user info + premium info + unique code
  */
+// export const redeemBankPremiumService = async (
+//   userId: string,
+//   premiumId: string
+// ): Promise<any> => {
+//   try {
+//     // :small_blue_diamond: Fetch premium and populate brand
+//     const bankPremium = await BankPremium.findById(premiumId)
+//       .populate<{ brand: IBrand }>("brand")
+//       .exec();
+//     if (!bankPremium) throw new Error("BankPremium not found");
+//     const pointsRequired: number = Number(bankPremium.points_required);
+//     if (!pointsRequired || isNaN(pointsRequired)) {
+//       throw new Error("Invalid points requirement for this premium");
+//     }
+//     // :small_blue_diamond: Fetch user
+//     const user = (await User.findById(userId).exec()) as IUser | null;
+//     if (!user) throw new Error("User not found");
+//     if (!bankPremium.brand)
+//       throw new Error("BankPremium brand not properly set");
+//     const brandId = bankPremium.brand.toString();
+//     // :white_check_mark: Use correct field (brandPoints) instead of points
+//     const brandPointsEntries: IBrandPoints[] = (user.brandPoints || []).filter(
+//       (entry: IBrandPoints) =>
+//         entry.brand instanceof mongoose.Types.ObjectId
+//           ? entry.brand.toString() === brandId
+//           : (entry.brand as any)._id?.toString() === brandId
+//     );
+//     if (brandPointsEntries.length === 0) {
+//       throw new Error("You need to earn more points to redeem.");
+//     }
+//     // :small_blue_diamond: Sum all points
+//     const totalPoints = brandPointsEntries.reduce(
+//       (sum, entry) => sum + entry.points,
+//       0
+//     );
+//     if (totalPoints < pointsRequired) {
+//       throw new Error(
+//         "You need to collect more points to redeem."
+//       );
+//     }
+//     // :small_blue_diamond: Deduct points across entries
+//     let pointsToDeduct = pointsRequired;
+//     for (const entry of brandPointsEntries) {
+//       if (pointsToDeduct <= 0) break;
+//       if (entry.points <= pointsToDeduct) {
+//         pointsToDeduct -= entry.points;
+//         entry.points = 0;
+//       } else {
+//         entry.points -= pointsToDeduct;
+//         pointsToDeduct = 0;
+//       }
+//     }
+//     await user.save();
+//     // :small_blue_diamond: Ensure user is enrolled
+//     if (
+//       !bankPremium.enrolled_users.some(
+//         (id) => id.toString() === user._id.toString()
+//       )
+//     ) {
+//       bankPremium.enrolled_users.push(user._id);
+//     }
+//     // :small_blue_diamond: Generate unique redemption code
+//     const code = uuidv4().split("-")[0].toUpperCase();
+//     // :small_blue_diamond: Add redemption entry
+//     bankPremium.redemptions.push({
+//       user: user._id,
+//       code,
+//       status: "pending",
+//       redeemedAt: new Date(),
+//     });
+//     await bankPremium.save();
+//     // :small_blue_diamond: Log user history
+//     const userHistoryEntry = new UserHistory({
+//       user_id: user._id,
+//       date: new Date(),
+//       description: `Redeemed bank premium: ${bankPremium.title}`,
+//       points_used: pointsRequired.toString(),
+//       type: "bank_premium_purchase",
+//       reference_id: premiumId,
+//       brand: brandId,
+//       points_earned: 0,
+//       qrCode: code,
+//     });
+//     await userHistoryEntry.save();
+//       try {
+//       await sendRedeemSuccessEmail(user.email, code, user.name);
+//     } catch (emailError) {
+//       console.error("⚠️ Failed to send redeem success email:", emailError);
+//       // ❗ Don’t throw error here because redeem was successful, just log it
+//     }
+
+//     // :small_blue_diamond: Final Response
+//     return {
+//       user: {
+//         userId: user._id,
+//         username: user.name,
+//         remaining_total_brand_points: totalPoints - pointsRequired,
+//         brandId: brandId,
+//         updatedPoints: (user.brandPoints || []).filter((p) =>
+//           p.brand instanceof mongoose.Types.ObjectId
+//             ? p.brand.toString() === brandId
+//             : (p.brand as any)._id?.toString() === brandId
+//         ),
+//       },
+//       bankPremium: {
+//         title: bankPremium.title,
+//         points_required: bankPremium.points_required,
+//         enrolled_users: bankPremium.enrolled_users,
+//         redemptions: bankPremium.redemptions,
+//         brand: bankPremium.brand,
+//       },
+//       receipt: { code, status: "pending" },
+//       userHistory: {
+//         description: userHistoryEntry.description,
+//         points_used: userHistoryEntry.points_used,
+//         type: userHistoryEntry.type,
+//       },
+//     };
+//   } catch (error: any) {
+//     console.error("Error redeeming bank premium service:", error);
+//     throw new Error(
+//       error.message || "An error occurred during bank premium redemption"
+//     );
+//   }
+// };
+
+
+/**
+ * Redeem a BankPremium for a user.
+ * @param userId - ID of the user redeeming the premium.
+ * @param premiumId - ID of the premium to redeem.
+ * @returns user info + premium info + unique code
+ */
 export const redeemBankPremiumService = async (
   userId: string,
   premiumId: string
 ): Promise<any> => {
   try {
-    // :small_blue_diamond: Fetch premium and populate brand
+    // 🔹 Fetch premium and populate brand
     const bankPremium = await BankPremium.findById(premiumId)
       .populate<{ brand: IBrand }>("brand")
       .exec();
     if (!bankPremium) throw new Error("BankPremium not found");
+
     const pointsRequired: number = Number(bankPremium.points_required);
     if (!pointsRequired || isNaN(pointsRequired)) {
       throw new Error("Invalid points requirement for this premium");
     }
-    // :small_blue_diamond: Fetch user
+
+    // 🔹 Fetch user
     const user = (await User.findById(userId).exec()) as IUser | null;
     if (!user) throw new Error("User not found");
     if (!bankPremium.brand)
       throw new Error("BankPremium brand not properly set");
+
     const brandId = bankPremium.brand.toString();
-    // :white_check_mark: Use correct field (brandPoints) instead of points
+
+    // 🔹 Check user's brand points
     const brandPointsEntries: IBrandPoints[] = (user.brandPoints || []).filter(
       (entry: IBrandPoints) =>
         entry.brand instanceof mongoose.Types.ObjectId
@@ -117,17 +254,32 @@ export const redeemBankPremiumService = async (
     if (brandPointsEntries.length === 0) {
       throw new Error("You need to earn more points to redeem.");
     }
-    // :small_blue_diamond: Sum all points
+
+    // 🔹 Calculate total points
     const totalPoints = brandPointsEntries.reduce(
       (sum, entry) => sum + entry.points,
       0
     );
     if (totalPoints < pointsRequired) {
-      throw new Error(
-        "You need to collect more points to redeem."
-      );
+      throw new Error("You need to collect more points to redeem.");
     }
-    // :small_blue_diamond: Deduct points across entries
+
+    // 🔹 Check and update quantity if applicable
+    if (typeof bankPremium.qty === "number") {
+      if (bankPremium.qty <= 0) {
+        throw new Error("This premium item is out of stock.");
+      }
+
+      bankPremium.qty -= 1; // ✅ Decrease available quantity
+
+      // 🔹 If qty has reached zero after redemption → deactivate
+      if (bankPremium.qty === 0) {
+        bankPremium.active = false;
+        console.log(`⚠️ ${bankPremium.title} is now out of stock.`);
+      }
+    }
+
+    // 🔹 Deduct points
     let pointsToDeduct = pointsRequired;
     for (const entry of brandPointsEntries) {
       if (pointsToDeduct <= 0) break;
@@ -140,7 +292,8 @@ export const redeemBankPremiumService = async (
       }
     }
     await user.save();
-    // :small_blue_diamond: Ensure user is enrolled
+
+    // 🔹 Ensure user is enrolled
     if (
       !bankPremium.enrolled_users.some(
         (id) => id.toString() === user._id.toString()
@@ -148,17 +301,21 @@ export const redeemBankPremiumService = async (
     ) {
       bankPremium.enrolled_users.push(user._id);
     }
-    // :small_blue_diamond: Generate unique redemption code
+
+    // 🔹 Generate unique redemption code
     const code = uuidv4().split("-")[0].toUpperCase();
-    // :small_blue_diamond: Add redemption entry
+
+    // 🔹 Add redemption entry
     bankPremium.redemptions.push({
       user: user._id,
       code,
       status: "pending",
       redeemedAt: new Date(),
     });
+
     await bankPremium.save();
-    // :small_blue_diamond: Log user history
+
+    // 🔹 Log user history
     const userHistoryEntry = new UserHistory({
       user_id: user._id,
       date: new Date(),
@@ -171,14 +328,15 @@ export const redeemBankPremiumService = async (
       qrCode: code,
     });
     await userHistoryEntry.save();
-      try {
+
+    // 🔹 Attempt email
+    try {
       await sendRedeemSuccessEmail(user.email, code, user.name);
     } catch (emailError) {
       console.error("⚠️ Failed to send redeem success email:", emailError);
-      // ❗ Don’t throw error here because redeem was successful, just log it
     }
 
-    // :small_blue_diamond: Final Response
+    // 🔹 Final Response
     return {
       user: {
         userId: user._id,
@@ -193,10 +351,12 @@ export const redeemBankPremiumService = async (
       },
       bankPremium: {
         title: bankPremium.title,
+        qty: bankPremium.qty ?? null, // ✅ include qty in response
         points_required: bankPremium.points_required,
         enrolled_users: bankPremium.enrolled_users,
         redemptions: bankPremium.redemptions,
         brand: bankPremium.brand,
+        active: bankPremium.active,
       },
       receipt: { code, status: "pending" },
       userHistory: {

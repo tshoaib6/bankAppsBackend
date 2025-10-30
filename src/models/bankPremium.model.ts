@@ -18,6 +18,7 @@ export interface IBankPremium extends Document {
   enrolled_users: mongoose.Types.ObjectId[];
   brand?: string;
   redemptions: IRedemption[];
+  qty?: number; // ✅ optional quantity field
 }
 
 const RedemptionSchema = new Schema<IRedemption>({
@@ -50,7 +51,12 @@ const BankPremiumSchema: Schema<IBankPremium> = new Schema(
       default: null
     },
 
-    redemptions: [RedemptionSchema]  // ✅ new field
+    qty: {
+      type: Number,       // ✅ quantity
+      default: null       // optional
+    },
+
+    redemptions: [RedemptionSchema]
   },
   { timestamps: true }
 );
