@@ -500,7 +500,7 @@ export const getAllRedemptionsService = async (page = 1, limit = 10) => {
   const skip = (page - 1) * limit;
 
   const aggregationPipeline = [
-    { $unwind: "$redemptions" },
+    { $unwind: "$redemptions" }, // for individual redemption data
     {
       $lookup: {
         from: "users",
@@ -533,14 +533,9 @@ export const getAllRedemptionsService = async (page = 1, limit = 10) => {
 
   const data = await BankPremium.aggregate(aggregationPipeline);
 
-  // Count total items (without pagination)
-  const totalCountAggregation = [
-    { $unwind: "$redemptions" },
-    { $count: "totalCount" },
-  ];
+  // ✅ Total unique BankPremium documents
+  const totalCount = await BankPremium.countDocuments(); 
 
-  const countResult = await BankPremium.aggregate(totalCountAggregation);
-  const totalCount = countResult[0]?.totalCount || 0;
   const totalPages = Math.ceil(totalCount / limit);
 
   return {
@@ -550,6 +545,7 @@ export const getAllRedemptionsService = async (page = 1, limit = 10) => {
     currentPage: page,
   };
 };
+
 
 
 

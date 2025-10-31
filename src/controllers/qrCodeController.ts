@@ -58,7 +58,7 @@ export const createQRCode = async (
 };
 
 
-export const getAllQRCodes = async (
+export const getAllQRCodesController = async (
   req: Request,
   res: Response
 ): Promise<any> => {
@@ -67,15 +67,14 @@ export const getAllQRCodes = async (
     const limit = parseInt(req.query.limit as string) || 20;
     const search = (req.query.search as string) || "";
 
-    // ✅ Fetch paginated data only (no counts)
-    const { qrCodes, currentPage } = await QRCodeService.getAllQRCodes(
-      page,
-      limit,
-      search
-    );
+    // ✅ Call the service function
+    const { qrCodes, totalCount, totalPages, currentPage } =
+      await QRCodeService.getAllQRCodes(page, limit, search);
 
     return res.status(200).json({
       qrCodes,
+      totalCount,
+      totalPages,
       currentPage,
       message: "QR Codes fetched successfully",
     });

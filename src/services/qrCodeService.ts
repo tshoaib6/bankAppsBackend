@@ -114,19 +114,15 @@ export const getAllQRCodes = async (
   limit: number,
   search?: string
 ): Promise<{
-  qrCodes: IQRCode[];
+  qrCodes: any[];
   totalCount: number;
-  usedCount: number;
-  unusedCount: number;
   totalPages: number;
   currentPage: number;
 }> => {
   try {
-    // ✅ Escape regex special characters
     const escapeRegex = (text: string) =>
       text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-    // ✅ Build search filter
     const filter: any = {};
     if (search) {
       const safeSearch = escapeRegex(search);
@@ -137,22 +133,19 @@ export const getAllQRCodes = async (
       ];
     }
 
-    // ✅ Fetch only paginated data
-    const { data: qrCodes } = await paginate<IQRCode>(QRCode, {
+    // ✅ Use paginate utility
+    const paginatedResult = await paginate(QRCode, {
       page,
       limit,
       sort: { createdAt: -1 },
       filter,
     });
 
-    // ✅ Return response without heavy counts
     return {
-      qrCodes,
-      totalCount: 0,
-      usedCount: 0,
-      unusedCount: 0,
-      totalPages: 0,
-      currentPage: page,
+      qrCodes: paginatedResult.data,
+      totalCount: paginatedResult.totalCount,
+      totalPages: paginatedResult.totalPages,
+      currentPage: paginatedResult.currentPage,
     };
   } catch (error) {
     throw new Error(

@@ -7,7 +7,7 @@ const upload = multer({ dest: "uploads/" });
 
 router.post("/createqrCode", QRCodeController.createQRCode);
 
-router.get("/getqrCode", QRCodeController.getAllQRCodes);
+router.get("/getqrCode", QRCodeController.getAllQRCodesController);
 
 router.get("/getqrCodeById:qrCodeId", QRCodeController.getQRCodeById);
 
