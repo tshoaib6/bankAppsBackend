@@ -499,8 +499,9 @@ export const verifyBankPremiumCodeService = async (code: string) => {
 export const getAllRedemptionsService = async (page = 1, limit = 10) => {
   const skip = (page - 1) * limit;
 
-  const aggregationPipeline = [
-    { $unwind: "$redemptions" }, // for individual redemption data
+  // ✅ Shared base stages (same as data pipeline before skip/limit)
+  const baseStages = [
+    { $unwind: "$redemptions" },
     {
       $lookup: {
         from: "users",
@@ -509,7 +510,7 @@ export const getAllRedemptionsService = async (page = 1, limit = 10) => {
         as: "userInfo",
       },
     },
-    { $unwind: "$userInfo" },
+    { $unwind: { path: "$userInfo", preserveNullAndEmptyArrays: false } },
     {
       $project: {
         _id: 0,
@@ -527,16 +528,23 @@ export const getAllRedemptionsService = async (page = 1, limit = 10) => {
         },
       },
     },
-    { $skip: skip },
-    { $limit: limit },
   ];
 
-  const data = await BankPremium.aggregate(aggregationPipeline);
+  // ✅ Count pipeline (no skip/limit)
+  const totalCountResult = await BankPremium.aggregate([
+    ...baseStages,
+    { $count: "totalCount" },
+  ]);
 
-  // ✅ Total unique BankPremium documents
-  const totalCount = await BankPremium.countDocuments(); 
-
+  const totalCount = totalCountResult[0]?.totalCount || 0;
   const totalPages = Math.ceil(totalCount / limit);
+
+  // ✅ Data pipeline (with skip/limit)
+  const data = await BankPremium.aggregate([
+    ...baseStages,
+    { $skip: skip },
+    { $limit: limit },
+  ]);
 
   return {
     data,
@@ -545,6 +553,7 @@ export const getAllRedemptionsService = async (page = 1, limit = 10) => {
     currentPage: page,
   };
 };
+
 
 
 

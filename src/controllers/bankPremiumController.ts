@@ -441,15 +441,24 @@ export const getAllRedemptionsController = async (
   res: Response
 ) => {
   try {
-    // Get page and limit from query params, default to 1 and 10
+    // ✅ Parse page and limit from query params, default values if not provided
     const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
     const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
 
-    const redemptions = await getAllRedemptionsService(page, limit);
+    // ✅ Call service to get paginated redemptions and total count/pages
+    const redemptionsResult = await getAllRedemptionsService(page, limit);
 
-    res.status(200).json({ success: true, data: redemptions });
+    // ✅ Return structured response
+    res.status(200).json({
+      success: true,
+      data: redemptionsResult,
+      message: "Redemptions fetched successfully",
+    });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message || "Server error while fetching redemptions",
+    });
   }
 };
 
