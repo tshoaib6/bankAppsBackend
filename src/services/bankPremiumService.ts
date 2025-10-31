@@ -496,19 +496,20 @@ export const verifyBankPremiumCodeService = async (code: string) => {
 };
 
 
+export const getAllRedemptionsService = async (page = 1, limit = 10) => {
+  const skip = (page - 1) * limit;
 
-export const   getAllRedemptionsService = async () => {
-  const result = await BankPremium.aggregate([
+  const aggregationPipeline = [
     { $unwind: "$redemptions" },
     {
       $lookup: {
-        from: "users", // 👈 must match your MongoDB collection name for users
+        from: "users",
         localField: "redemptions.user",
         foreignField: "_id",
-        as: "userInfo"
-      }
+        as: "userInfo",
+      },
     },
-    { $unwind: "$userInfo" }, // ensure userInfo is an object, not array
+    { $unwind: "$userInfo" },
     {
       $project: {
         _id: 0,
@@ -522,13 +523,32 @@ export const   getAllRedemptionsService = async () => {
           name: "$userInfo.name",
           email: "$userInfo.email",
           address: "$userInfo.address",
-          parish: "$userInfo.parish"
-        }
-      }
-    }
-  ]);
+          parish: "$userInfo.parish",
+        },
+      },
+    },
+    { $skip: skip },
+    { $limit: limit },
+  ];
 
-  return result;
+  const data = await BankPremium.aggregate(aggregationPipeline);
+
+  // Count total items (without pagination)
+  const totalCountAggregation = [
+    { $unwind: "$redemptions" },
+    { $count: "totalCount" },
+  ];
+
+  const countResult = await BankPremium.aggregate(totalCountAggregation);
+  const totalCount = countResult[0]?.totalCount || 0;
+  const totalPages = Math.ceil(totalCount / limit);
+
+  return {
+    data,
+    totalCount,
+    totalPages,
+    currentPage: page,
+  };
 };
 
 

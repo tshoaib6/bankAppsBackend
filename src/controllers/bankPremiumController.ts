@@ -441,13 +441,17 @@ export const getAllRedemptionsController = async (
   res: Response
 ) => {
   try {
-    const redemptions = await getAllRedemptionsService();
+    // Get page and limit from query params, default to 1 and 10
+    const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
+    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
+
+    const redemptions = await getAllRedemptionsService(page, limit);
+
     res.status(200).json({ success: true, data: redemptions });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
 
 
 
