@@ -14,6 +14,53 @@ const createCampaign = async (
   return await newCampaign.save()
 }
 
+// // 🔍 Get a single campaign
+// const getCampaignById = async (campaignId: string) => {
+//   const campaign = await Campaign.findById(campaignId).populate('brand');
+//   if (!campaign) throw new Error('Campaign not found');
+
+//   // total redemption count for this campaign
+//   const totalRedemptions = await UserHistory.countDocuments({
+//     reference_id: campaignId,
+//     type: 'Dmax Campagin Entry',
+//   });
+
+//   // per-user redemption stats
+//   const userRedemptions = await UserHistory.aggregate([
+//     { $match: { reference_id: campaignId, type: 'campaign_purchase' } },
+//     {
+//       $group: {
+//         _id: "$user_id",
+//         redemptionCount: { $sum: 1 }
+//       }
+//     },
+//     {
+//       $lookup: {
+//         from: "users",
+//         localField: "_id",
+//         foreignField: "_id",
+//         as: "user"
+//       }
+//     },
+//     { $unwind: "$user" },
+//     {
+//       $project: {
+//         userId: "$user._id",
+//         username: "$user.username",
+//         redemptionCount: 1
+//       }
+//     }
+//   ]);
+
+//   return {
+//     ...campaign.toObject(),
+//     totalRedemptions,
+//     userRedemptions
+//   };
+// };
+
+
+
 // 🔍 Get a single campaign
 const getCampaignById = async (campaignId: string) => {
   const campaign = await Campaign.findById(campaignId).populate('brand');
@@ -58,6 +105,7 @@ const getCampaignById = async (campaignId: string) => {
     userRedemptions
   };
 };
+
 
 
 
