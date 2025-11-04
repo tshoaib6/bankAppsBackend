@@ -24,7 +24,10 @@ export const registerUser = async (
   userRole: 'user' | 'admin' = 'user'
 ): Promise<IUser | null> => {
   try {
-    const existingUser = await User.findOne({ email });
+    // ✅ Convert email to lowercase before anything else
+    const normalizedEmail = email.toLowerCase();
+
+    const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       throw new Error("This email is already registered. Please try logging in.");
     }
@@ -36,7 +39,7 @@ export const registerUser = async (
 
     const userPayload: Partial<IUser> = {
       name,
-      email,
+      email: normalizedEmail, // ✅ Always store lowercase email
       date_of_birth,
       is_over_18,
       parish,
@@ -53,13 +56,12 @@ export const registerUser = async (
     const newUser: IUser = new User(userPayload);
 
     await newUser.save();
-    await sendVerificationEmail(email, verificationToken, name);
+    await sendVerificationEmail(normalizedEmail, verificationToken, name);
 
     return newUser;
   } catch (error: any) {
     console.error("Error in registerUser service:", error);
 
-    // ✅ Pass specific error messages to frontend
     if (error.message.includes("already registered")) {
       throw new Error("This email is already registered. Please use another email.");
     }
@@ -76,6 +78,7 @@ export const registerUser = async (
 
 
 
+
 /**
  * Login user
  */
@@ -84,7 +87,10 @@ export const loginUserService = async (
   password: string
 ): Promise<IUser | null> => {
   try {
-    const user = await User.findOne({ email });
+    // ✅ Convert email to lowercase before querying
+    const normalizedEmail = email.toLowerCase();
+
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) throw new Error("Invalid email or password");
 
     // ✅ Check password first
@@ -111,6 +117,7 @@ export const loginUserService = async (
     throw error;
   }
 };
+
  
 /**
  * Get all users
