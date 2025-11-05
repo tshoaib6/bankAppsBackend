@@ -1,12 +1,12 @@
-import BankPremium, { IBankPremium } from '../models/bankPremium.model';
-import User from '../models/user.model';
-import UserHistory from '../models/userHistory.model';
-import { IBrand } from '../models/brand.model';
-import mongoose from 'mongoose';
-import { v4 as uuidv4 } from 'uuid';
+import BankPremium, { IBankPremium } from "../models/bankPremium.model";
+import User from "../models/user.model";
+import UserHistory from "../models/userHistory.model";
+import { IBrand } from "../models/brand.model";
+import mongoose from "mongoose";
+import { v4 as uuidv4 } from "uuid";
 import { Document, Types } from "mongoose";
-import { sendRedeemSuccessEmail } from '../utils/sendRedeemSuccessEmail';
-import { Parser } from 'json2csv';
+import { sendRedeemSuccessEmail } from "../utils/sendRedeemSuccessEmail";
+import { Parser } from "json2csv";
 
 export interface IBrandPoints {
   _id?: Types.ObjectId;
@@ -19,7 +19,7 @@ export interface IUser extends Document {
   name: string;
   email: string;
   userRole: string;
-  brandPoints: IBrandPoints[];   // 🔹 Add this
+  brandPoints: IBrandPoints[]; // 🔹 Add this
   brands: (Types.ObjectId | string)[];
 }
 // const createBankPremium = async (
@@ -35,7 +35,6 @@ export interface IUser extends Document {
 
 //   return await newBankPremium.save();
 // };
-
 
 const createBankPremium = async (
   userId: string,
@@ -53,19 +52,30 @@ const createBankPremium = async (
     enrolled_users: [],
     brand: data.brand || null,
     redemptions: [],
-    qty: data.qty !== undefined ? data.qty : null,  // ✅ Optional qty
+    qty: data.qty !== undefined ? data.qty : null, // ✅ Optional qty
   });
 
   // ✅ Save and return the created document
   return await newBankPremium.save();
 };
 
+// const getBankPremiumById = async (
+//   bankPremiumId: string
+// ): Promise<IBankPremium> => {
+//   const bankPremium = await BankPremium.findById(bankPremiumId).populate('enrolled_users');
+//   if (!bankPremium) throw new Error('BankPremium not found');
+//   return bankPremium;
+// };
 
 const getBankPremiumById = async (
   bankPremiumId: string
-): Promise<IBankPremium> => {
-  const bankPremium = await BankPremium.findById(bankPremiumId).populate('enrolled_users');
-  if (!bankPremium) throw new Error('BankPremium not found');
+): Promise<IBankPremium | null> => {
+  const bankPremium = await BankPremium.findById(bankPremiumId)
+    .select("-redemptions -enrolled_users") // 🧹 exclude fields directly
+    .populate("brand"); // optional, if you want brand info
+
+  if (!bankPremium) throw new Error("BankPremium not found");
+
   return bankPremium;
 };
 
@@ -88,10 +98,6 @@ const getBankPremiumById = async (
 
 //   return await existingBankPremium.save();
 // };
-
-
-
-
 
 const updateBankPremium = async (
   bankPremiumId: string,
@@ -125,25 +131,24 @@ const updateBankPremium = async (
   return await existingBankPremium.save();
 };
 
-
 const deleteBankPremium = async (
   bankPremiumId: string
 ): Promise<IBankPremium> => {
   const bankPremium = await BankPremium.findByIdAndDelete(bankPremiumId);
-  if (!bankPremium) throw new Error('BankPremium not found');
+  if (!bankPremium) throw new Error("BankPremium not found");
   return bankPremium;
 };
 
 export const getAllBankPremiumsForAdmin = async (): Promise<IBankPremium[]> => {
   try {
-    return await BankPremium.find(
-      { active: true }
-    )
-      .select("_id title description points_required start_date end_date image_url active")
+    return await BankPremium.find({ active: true })
+      .select(
+        "_id title description points_required start_date end_date image_url active"
+      )
       .populate({
         path: "enrolled_users",
         select: "_id name email", // ✅ only fetch needed fields
-        options: { limit: 5 } // ✅ optional limit to avoid large payload
+        options: { limit: 5 }, // ✅ optional limit to avoid large payload
       })
       .lean(); // ✅ returns plain JS objects, skips Mongoose overhead
   } catch (error) {
@@ -154,9 +159,7 @@ export const getAllBankPremiumsForAdmin = async (): Promise<IBankPremium[]> => {
 
 export const getAllBankPremiums = async (): Promise<IBankPremium[]> => {
   try {
-    return await BankPremium.find(
-      { active: true }
-    ).select(
+    return await BankPremium.find({ active: true }).select(
       "_id title description points_required start_date end_date image_url active qty brand"
     );
   } catch (error) {
@@ -164,7 +167,6 @@ export const getAllBankPremiums = async (): Promise<IBankPremium[]> => {
     throw new Error("Error fetching BankPremiums");
   }
 };
-
 
 /**
  * Redeem a BankPremium for a user.
@@ -298,7 +300,6 @@ export const getAllBankPremiums = async (): Promise<IBankPremium[]> => {
 //   }
 // };
 
-
 /**
  * Redeem a BankPremium for a user.
  * @param userId - ID of the user redeeming the premium.
@@ -344,7 +345,7 @@ export const redeemBankPremiumService = async (
     const totalPoints = brandPointsEntries.reduce(
       (sum, entry) => sum + entry.points,
       0
-    );  
+    );
     if (totalPoints < pointsRequired) {
       throw new Error("You need to collect more points to redeem.");
     }
@@ -458,8 +459,6 @@ export const redeemBankPremiumService = async (
   }
 };
 
-
-
 /**
  * Verify redemption code (Admin use).
  */
@@ -467,7 +466,7 @@ export const verifyBankPremiumCodeService = async (code: string) => {
   const bankPremium = await BankPremium.findOne({ "redemptions.code": code });
   if (!bankPremium) throw new Error("Invalid code");
 
-  const redemption = bankPremium.redemptions.find(r => r.code === code);
+  const redemption = bankPremium.redemptions.find((r) => r.code === code);
   if (!redemption) throw new Error("Invalid redemption code");
 
   if (redemption.status === "delivered") {
@@ -494,7 +493,6 @@ export const verifyBankPremiumCodeService = async (code: string) => {
     },
   };
 };
-
 
 export const getAllRedemptionsService = async (page = 1, limit = 10) => {
   const skip = (page - 1) * limit;
@@ -553,12 +551,8 @@ export const getAllRedemptionsService = async (page = 1, limit = 10) => {
     currentPage: page,
   };
 };
-  
 
-
-
-
-// new addition 
+// new addition
 // export const getAllRedemptionsService = async () => {
 //   const result = await BankPremium.aggregate([
 //     { $unwind: "$redemptions" },
@@ -659,7 +653,6 @@ export const exportRedemptionsCSVService = async () => {
   return csv;
 };
 
-
 export default {
   createBankPremium,
   updateBankPremium,
@@ -669,6 +662,5 @@ export default {
   redeemBankPremiumService,
   verifyBankPremiumCodeService,
   getAllRedemptionsService,
-  getAllBankPremiumsForAdmin
-
+  getAllBankPremiumsForAdmin,
 };

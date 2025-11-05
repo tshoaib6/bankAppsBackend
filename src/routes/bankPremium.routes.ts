@@ -25,7 +25,6 @@ router.delete("/deleteBankPremiums/:bankPremiumId", deleteBankPremium);
 router.get("/getBankPremiums", getAllBankPremiums);
 router.get("/getBankPremiumsForAdmin", getAllBankPremiumsControllerForAdmin);
 
-
 router.get("/getBankPremiumById/:bankPremiumId", getBankPremiumById);
 // User redeem endpoint
 router.post("/redeemBankPremium/:premiumId/redeem", redeemBankPremium);
