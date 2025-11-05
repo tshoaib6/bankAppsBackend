@@ -98,10 +98,130 @@ const deleteAdditionalItem = async (
   return deletedItem;
 };
 
+
+
+/**
+ * Redeem an additional item for a user.
+ * @param userId - ID of the user redeeming the item.
+ * @param itemId - ID of the additional item to redeem.
+ * @returns Updated user data and item details including brand info.
+ * @throws Error if item or user not found or points insufficient.
+ */
+export const redeemAdditionalItemService = async (userId: string, itemId: string) => {
+  try {
+    const item = await AdditionalItem.findById(itemId)
+      .populate<{ brand: IBrand }>('brand')
+      .exec();
+
+    if (!item) {
+      throw new Error('Item not found');
+    }
+
+    const pointsRequired = parseInt(item.points_required, 10);
+    if (isNaN(pointsRequired)) {
+      throw new Error('Invalid points requirement for the item');
+    }
+
+    const user = await User.findById(userId).exec();
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    if (!item.brand || !item.brand._id) {
+      throw new Error('Item brand not properly populated');
+    }
+
+    const brandId = item.brand._id.toString();
+
+    // 🔍 Find user's points for that brand
+    const brandPointsEntry = user.brandPoints.find(
+      (entry) => entry.brand.toString() === brandId
+    );
+
+    if (!brandPointsEntry || brandPointsEntry.points < pointsRequired) {
+      throw new Error('You need to collect more points to redeem this item.');
+    }
+
+    // 💰 Deduct brand points
+    brandPointsEntry.points -= pointsRequired;
+    await user.save();
+
+    // ✅ Update redemptions (type-safe, without changing schema)
+    const redemption = item.redemptions.find(
+      (r: any) => r.user.toString() === user._id.toString()
+    );
+
+    const now = new Date();
+
+    if (redemption) {
+      // If the model doesn’t have `count` or `lastRedeemedAt`, store locally only
+      (redemption as any).count = ((redemption as any).count || 0) + 1;
+      (redemption as any).redeemedAt = now; // Use existing field from schema
+    } else {
+      // Add a new redemption entry safely using existing schema fields
+      item.redemptions.push({
+        user: user._id,
+        redeemedAt: now,
+      } as any);
+    }
+
+    await item.save();
+
+    // 🧾 Log user history
+    const userHistoryEntry = new UserHistory({
+      user_id: user._id,
+      date: new Date(),
+      description: `Redeemed additional item: ${item.title}`,
+      points_used: pointsRequired.toString(),
+      type: 'additional_item_purchase',
+      reference_id: itemId,
+      brand: item.brand._id,
+      points_earned: 0,
+      qrCode: null,
+    });
+
+    await userHistoryEntry.save();
+
+    // ✅ Return formatted response
+    return {
+      user: {
+        userId: user._id,
+        username: user.name,
+        remaining_brand_points: brandPointsEntry.points,
+        brandId: item.brand._id,
+      },
+      additionalItem: {
+        title: item.title,
+        points_required: item.points_required,
+        redemptions: item.redemptions.map((r: any) => ({
+          user: r.user,
+          redeemedAt: r.redeemedAt,
+          count: (r.count || 1), // optional: safe fallback
+        })),
+        brand: {
+          _id: item.brand._id,
+          brandName: item.brand.brandName,
+          description: item.brand.description,
+          logo: item.brand.logo,
+          isActive: item.brand.isActive,
+        },
+      },
+      userHistory: {
+        description: userHistoryEntry.description,
+        points_used: userHistoryEntry.points_used,
+        type: userHistoryEntry.type,
+      },
+    };
+  } catch (error: any) {
+    console.error('Error redeeming additional item:', error);
+    throw new Error(error.message || 'An error occurred during item redemption');
+  }
+};
 export {
   createAdditionalItem,
   getAllAdditionalItems,
   getAdditionalItemById,
   updateAdditionalItem,
   deleteAdditionalItem,
+  
 };

@@ -6,6 +6,7 @@ import {
   getAdditionalItemById,
   updateAdditionalItem,
   deleteAdditionalItem,
+  redeemAdditionalItemService,
 } from "../services/additionalItem.service";
 import { uploadToCloudinary } from "../utils/cloudinary";
 
@@ -166,6 +167,27 @@ export const deleteAdditionalItemController = async (
       success: false,
       message: "Failed to delete additional item",
       error: error.message,
+    });
+  }
+};
+
+export const redeemAdditionalItem = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { itemId } = req.params;
+    const token = req.header("Authorization")?.replace("Bearer ", "");
+    if (!token) {
+      return res.status(401).json({ message: "Authorization token required" });
+    }
+
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
+    const userId = decoded.userId;
+
+    const result = await redeemAdditionalItemService(userId, itemId);
+    return res.status(200).json(result);
+  } catch (error: any) {
+    console.error("Error redeeming additional item:", error);
+    return res.status(500).json({
+      message: error.message || "Server error while redeeming additional item",
     });
   }
 };
