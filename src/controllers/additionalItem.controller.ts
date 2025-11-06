@@ -87,9 +87,28 @@ export const getAllAdditionalItemsController = async (
   res: Response
 ): Promise<any> => {
   try {
-    const items = await getAllAdditionalItems();
-    res.status(200).json({ success: true, data: items });
+    const { page, limit, sortBy, sortOrder } = req.query;
+
+    const sort: Record<string, 1 | -1> =
+      typeof sortBy === "string"
+        ? { [sortBy]: sortOrder === "asc" ? 1 : -1 }
+        : { createdAt: -1 };
+
+    const options = {
+      page: Number(page) || 1,
+      limit: Number(limit) || 10,
+      sort,
+    };
+
+    const items = await getAllAdditionalItems(options);
+
+    res.status(200).json({
+      success: true,
+      message: "Additional items fetched successfully",
+      ...items, // includes data, totalCount, totalPages, currentPage
+    });
   } catch (error: any) {
+    console.error("❌ Error fetching additional items:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch additional items",
@@ -97,6 +116,7 @@ export const getAllAdditionalItemsController = async (
     });
   }
 };
+
 
 // ✅ Get an Additional Item by ID
 export const getAdditionalItemByIdController = async (
@@ -127,7 +147,7 @@ export const updateAdditionalItemController = async (
   res: Response
 ): Promise<any> => {
   try {
-    const { id } = req.params;
+    const { itemId } = req.params; // 👈 FIXED PARAM NAME
     const updates = { ...req.body };
 
     if (req.file) {
@@ -135,7 +155,14 @@ export const updateAdditionalItemController = async (
       updates.image_url = imageUrl;
     }
 
-    const updatedItem = await updateAdditionalItem(id, updates);
+    const updatedItem = await updateAdditionalItem(itemId, updates);
+
+    if (!updatedItem) {
+      return res.status(404).json({
+        success: false,
+        message: "Additional item not found",
+      });
+    }
 
     res.status(200).json({
       success: true,
@@ -152,19 +179,23 @@ export const updateAdditionalItemController = async (
   }
 };
 
+
 // ✅ Delete an Additional Item
 export const deleteAdditionalItemController = async (
   req: Request,
   res: Response
 ): Promise<any> => {
   try {
-    const { id } = req.params;
-    const deletedItem = await deleteAdditionalItem(id);
+    const { itemId } = req.params; // 👈 FIXED: must match route param
 
-    if (!deletedItem)
-      return res
-        .status(404)
-        .json({ success: false, message: "Additional item not found" });
+    const deletedItem = await deleteAdditionalItem(itemId);
+
+    if (!deletedItem) {
+      return res.status(404).json({
+        success: false,
+        message: "Additional item not found",
+      });
+    }
 
     res.status(200).json({
       success: true,
@@ -181,22 +212,57 @@ export const deleteAdditionalItemController = async (
   }
 };
 
-export const redeemAdditionalItem = async (req: Request, res: Response): Promise<any> => {
+
+export const redeemAdditionalItem = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
   try {
     const { itemId } = req.params;
-    const token = req.header("Authorization")?.replace("Bearer ", "");
-    if (!token) {
-      return res.status(401).json({ message: "Authorization token required" });
+
+    // ✅ Check token presence
+    const authHeader = req.header("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
+        success: false,
+        message: "Authorization token missing or invalid format",
+      });
     }
 
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
-    const userId = decoded.userId;
+    const token = authHeader.replace("Bearer ", "");
 
+    // ✅ Verify token safely
+    let decoded: any;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET!);
+    } catch {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid or expired authorization token",
+      });
+    }
+
+    const userId = decoded.userId;
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid token payload: userId missing",
+      });
+    }
+
+    // ✅ Perform service call
     const result = await redeemAdditionalItemService(userId, itemId);
-    return res.status(200).json(result);
+
+    // ✅ Return structured response
+    return res.status(200).json({
+      success: true,
+      message: "Item redeemed successfully",
+      data: result,
+    });
   } catch (error: any) {
-    console.error("Error redeeming additional item:", error);
+    console.error("❌ Error redeeming additional item:", error);
     return res.status(500).json({
+      success: false,
       message: error.message || "Server error while redeeming additional item",
     });
   }
