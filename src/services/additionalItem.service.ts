@@ -217,6 +217,62 @@ export const redeemAdditionalItemService = async (userId: string, itemId: string
     throw new Error(error.message || 'An error occurred during item redemption');
   }
 };
+
+
+export const getAdditionalItemsWithLeaderboard = async () => {
+  const items = await AdditionalItem.find().populate("brand").lean();
+
+  const itemData = await Promise.all(
+    items.map(async (item) => {
+      // Aggregate redemptions for this additional item
+      const redemptions = await AdditionalItem.aggregate([
+        { $match: { _id: item._id } },
+        { $unwind: "$redemptions" },
+        {
+          $group: {
+            _id: "$redemptions.user",
+            totalRedeems: { $sum: 1 }, // since each redemption is one record
+            lastRedeemedAt: { $max: "$redemptions.redeemedAt" }, // existing field
+          },
+        },
+        {
+          $lookup: {
+            from: "users",
+            localField: "_id",
+            foreignField: "_id",
+            as: "userInfo",
+          },
+        },
+        { $unwind: "$userInfo" },
+        {
+          $project: {
+            userId: "$userInfo._id",
+            username: "$userInfo.username",
+            email: "$userInfo.email",
+            fullName: "$userInfo.name",
+            totalRedeems: 1,
+            lastRedeemedAt: 1,
+          },
+        },
+        { $sort: { totalRedeems: -1 } },
+      ]);
+
+      // Calculate total item redemptions (sum of all users’ redeems)
+      const totalItemRedeems = redemptions.reduce(
+        (sum, r) => sum + (r.totalRedeems || 0),
+        0
+      );
+
+      return {
+        ...item,
+        leaderboard: redemptions,
+        totalItemRedeems,
+      };
+    })
+  );
+
+  return itemData;
+};
 export {
   createAdditionalItem,
   getAllAdditionalItems,

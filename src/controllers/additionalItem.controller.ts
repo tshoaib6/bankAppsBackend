@@ -7,6 +7,7 @@ import {
   updateAdditionalItem,
   deleteAdditionalItem,
   redeemAdditionalItemService,
+  getAdditionalItemsWithLeaderboard,
 } from "../services/additionalItem.service";
 import { uploadToCloudinary } from "../utils/cloudinary";
 
@@ -17,40 +18,44 @@ export const createAdditionalItemController = async (
 ): Promise<any> => {
   try {
     const token = req.header("Authorization")?.replace("Bearer ", "");
-    if (!token)
+    if (!token) {
       return res.status(401).json({
         success: false,
         message: "Authorization token required",
       });
+    }
 
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
     const userId = decoded.userId;
 
-    if (!req.file)
+    if (!req.file) {
       return res
         .status(400)
         .json({ success: false, message: "Image is required" });
+    }
 
     const imageUrl = await uploadToCloudinary(req.file.buffer, "additional_items");
 
     const {
       title,
       description,
-      price,
-      category,
+      points_required,
+      start_date,
+      end_date,
       active,
-      stock,
+      qty,
       brand,
     } = req.body;
 
     const newItemData = {
       title,
       description,
-      price: Number(price),
-      category,
+      points_required,
+      start_date,
+      end_date,
       image_url: imageUrl,
-      active: active ?? true,
-      stock: stock !== undefined ? Number(stock) : undefined,
+      active: active !== undefined ? active : true,
+  qty: qty !== undefined ? Number(qty) : undefined, // ✅ changed null → undefined
       brand: brand || null,
     };
 
@@ -189,5 +194,14 @@ export const redeemAdditionalItem = async (req: Request, res: Response): Promise
     return res.status(500).json({
       message: error.message || "Server error while redeeming additional item",
     });
+  }
+};
+export const getAdditionalItemsLeaderboard = async (req: Request, res: Response) => {
+  try {
+    const items = await getAdditionalItemsWithLeaderboard();
+    return res.status(200).json(items);
+  } catch (error) {
+    console.error("Error fetching additional items leaderboard:", error);
+    return res.status(500).json({ message: "Server error while fetching leaderboard" });
   }
 };

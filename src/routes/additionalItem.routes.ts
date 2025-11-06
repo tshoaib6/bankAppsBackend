@@ -6,6 +6,7 @@ import {
   deleteAdditionalItemController,
   getAllAdditionalItemsController,
   redeemAdditionalItem,
+  getAdditionalItemsLeaderboard,
 } from "../controllers/additionalItem.controller";
 import { upload } from "../middlewares/multer";
 
@@ -17,6 +18,8 @@ router.delete("/deleteAdditionalItems/:itemId", deleteAdditionalItemController);
 router.get("/getAdditionalItemById/:itemId", getAdditionalItemByIdController);
 router.get("/getAllAdditionalItems", getAllAdditionalItemsController);
 router.post("/redeemAdditionalItem:itemId/redeem", redeemAdditionalItem);
+router.get("/additional-items-leadboard", getAdditionalItemsLeaderboard);
+
 
 
 export default router;

@@ -75,3 +75,4 @@ export const sendRedeemSuccessEmail = async (
     throw new Error("Failed to send redeem success email");
   }
 };
+
