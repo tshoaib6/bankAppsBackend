@@ -5,7 +5,7 @@ import { Parser } from "json2csv";
 import { sendRedeemSuccessEmail } from "../utils/sendRedeemSuccessEmail";
 import User from "../models/user.model";
 import UserHistory from "../models/userHistory.model";
-import { IBrand } from "../models/brand.model";
+import Brand, { IBrand } from "../models/brand.model";
 
 export interface IBrandPoints {
   _id?: Types.ObjectId;
@@ -54,8 +54,12 @@ const getAllAdditionalItems = async (): Promise<IAdditionalItem[]> => {
 const getAdditionalItemById = async (
   itemId: string
 ): Promise<IAdditionalItem> => {
-  const additionalItem = await AdditionalItem.findById(itemId).populate("enrolled_users");
+  const additionalItem = await AdditionalItem.findById(itemId)
+    .select("-enrolled_users -redemptions") // ❌ exclude fields
+    .populate("brand"); // ✅ only populate brand
+
   if (!additionalItem) throw new Error("Additional item not found");
+  
   return additionalItem;
 };
 
@@ -109,107 +113,118 @@ const deleteAdditionalItem = async (
  */
 export const redeemAdditionalItemService = async (userId: string, itemId: string) => {
   try {
+    // 🔹 Step 1: Fetch the additional item and try to populate brand
     const item = await AdditionalItem.findById(itemId)
-      .populate<{ brand: IBrand }>('brand')
+      .populate('brand', 'brandName description logo isActive')
       .exec();
 
-    if (!item) {
-      throw new Error('Item not found');
-    }
+    if (!item) throw new Error('Item not found');
 
+    // 🔹 Step 2: Validate points
     const pointsRequired = parseInt(item.points_required, 10);
-    if (isNaN(pointsRequired)) {
-      throw new Error('Invalid points requirement for the item');
-    }
+    if (isNaN(pointsRequired)) throw new Error('Invalid points requirement for the item');
 
+    // 🔹 Step 3: Get the user
     const user = await User.findById(userId).exec();
-    if (!user) {
-      throw new Error('User not found');
+    if (!user) throw new Error('User not found');
+
+    // 🔹 Step 4: Ensure brand reference is valid
+    let brandId: string;
+
+    if (item.brand) {
+      brandId =
+        typeof item.brand === 'object' && '_id' in item.brand
+          ? (item.brand as any)._id.toString()
+          : (item.brand as any).toString();
+    } else {
+      throw new Error('Item brand not properly populated or missing');
     }
 
-    if (!item.brand || !item.brand._id) {
-      throw new Error('Item brand not properly populated');
-    }
+    // ✅ Define a proper type for brandPoints entries
+    const brandPointsArray = user.brandPoints as Array<{ brand: any; points: number }>;
 
-    const brandId = item.brand._id.toString();
-
-    // 🔍 Find user's points for that brand
-    const brandPointsEntry = user.brandPoints.find(
-      (entry) => entry.brand.toString() === brandId
+    // 🔹 Step 5: Check user’s brand points
+    const brandPointsEntry = brandPointsArray.find(
+      (entry) => entry.brand?.toString() === brandId
     );
 
     if (!brandPointsEntry || brandPointsEntry.points < pointsRequired) {
       throw new Error('You need to collect more points to redeem this item.');
     }
 
-    // 💰 Deduct brand points
+    // 🔹 Step 6: Deduct brand points
     brandPointsEntry.points -= pointsRequired;
     await user.save();
 
-    // ✅ Update redemptions (type-safe, without changing schema)
-    const redemption = item.redemptions.find(
-      (r: any) => r.user.toString() === user._id.toString()
+    // ✅ Also type redemptions array safely
+    const redemptionsArray = item.redemptions as Array<{
+      user: any;
+      code: string;
+      status: string;
+      redeemedAt: Date;
+    }>;
+
+    // 🔹 Step 7: Handle redemption logic
+    const existingRedemption = redemptionsArray.find(
+      (r) => r.user?.toString() === user._id.toString()
     );
 
     const now = new Date();
+    const redemptionCode = Math.random().toString(36).substring(2, 10).toUpperCase();
 
-    if (redemption) {
-      // If the model doesn’t have `count` or `lastRedeemedAt`, store locally only
-      (redemption as any).count = ((redemption as any).count || 0) + 1;
-      (redemption as any).redeemedAt = now; // Use existing field from schema
+    if (existingRedemption) {
+      existingRedemption.redeemedAt = now;
+      existingRedemption.status = 'pending';
+      existingRedemption.code = redemptionCode;
     } else {
-      // Add a new redemption entry safely using existing schema fields
       item.redemptions.push({
         user: user._id,
+        code: redemptionCode,
+        status: 'pending',
         redeemedAt: now,
       } as any);
     }
 
     await item.save();
 
-    // 🧾 Log user history
+    // 🔹 Step 8: Add to user history
     const userHistoryEntry = new UserHistory({
       user_id: user._id,
-      date: new Date(),
+      date: now,
       description: `Redeemed additional item: ${item.title}`,
       points_used: pointsRequired.toString(),
       type: 'additional_item_purchase',
       reference_id: itemId,
-      brand: item.brand._id,
+      brand: brandId,
       points_earned: 0,
       qrCode: null,
     });
 
     await userHistoryEntry.save();
 
-    // ✅ Return formatted response
+    // 🔹 Step 9: Build formatted response
     return {
-      user: {
-        userId: user._id,
-        username: user.name,
-        remaining_brand_points: brandPointsEntry.points,
-        brandId: item.brand._id,
-      },
-      additionalItem: {
-        title: item.title,
-        points_required: item.points_required,
-        redemptions: item.redemptions.map((r: any) => ({
-          user: r.user,
-          redeemedAt: r.redeemedAt,
-          count: (r.count || 1), // optional: safe fallback
-        })),
-        brand: {
-          _id: item.brand._id,
-          brandName: item.brand.brandName,
-          description: item.brand.description,
-          logo: item.brand.logo,
-          isActive: item.brand.isActive,
+      success: true,
+      message: 'Item redeemed successfully',
+      data: {
+        user: {
+          id: user._id,
+          name: user.name,
+          remaining_brand_points: brandPointsEntry.points,
         },
-      },
-      userHistory: {
-        description: userHistoryEntry.description,
-        points_used: userHistoryEntry.points_used,
-        type: userHistoryEntry.type,
+        item: {
+          id: item._id,
+          title: item.title,
+          points_required: item.points_required,
+          redemption_code: redemptionCode,
+          brand: {
+            id: brandId,
+            name:
+              typeof item.brand === 'object' && 'brandName' in item.brand
+                ? (item.brand as any).brandName
+                : 'Unknown Brand',
+          },
+        },
       },
     };
   } catch (error: any) {
@@ -217,6 +232,9 @@ export const redeemAdditionalItemService = async (userId: string, itemId: string
     throw new Error(error.message || 'An error occurred during item redemption');
   }
 };
+
+
+
 
 
 export const getAdditionalItemsWithLeaderboard = async () => {

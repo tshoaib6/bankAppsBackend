@@ -17,7 +17,7 @@ router.put("/updateAdditionalItems/:itemId", upload.single("image"), updateAddit
 router.delete("/deleteAdditionalItems/:itemId", deleteAdditionalItemController);
 router.get("/getAdditionalItemById/:itemId", getAdditionalItemByIdController);
 router.get("/getAllAdditionalItems", getAllAdditionalItemsController);
-router.post("/redeemAdditionalItem:itemId/redeem", redeemAdditionalItem);
+router.post("/redeemAdditionalItemRedeem/:itemId", redeemAdditionalItem);
 router.get("/additional-items-leadboard", getAdditionalItemsLeaderboard);
 
 

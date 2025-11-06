@@ -55,16 +55,19 @@ export const createAdditionalItemController = async (
       end_date,
       image_url: imageUrl,
       active: active !== undefined ? active : true,
-  qty: qty !== undefined ? Number(qty) : undefined, // ✅ changed null → undefined
+      qty: qty !== undefined ? Number(qty) : undefined,
       brand: brand || null,
     };
 
     const newItem = await createAdditionalItem(userId, newItemData);
 
+    // ✅ Exclude both `enrolled_users` and `redemptions` from response
+    const { enrolled_users, redemptions, ...filteredItem } = newItem.toObject();
+
     res.status(201).json({
       success: true,
       message: "Additional item created successfully",
-      data: newItem,
+      data: filteredItem, // 👈 cleaned response
     });
   } catch (error: any) {
     console.error("❌ Error creating Additional Item:", error);
@@ -75,6 +78,8 @@ export const createAdditionalItemController = async (
     });
   }
 };
+
+
 
 // ✅ Get all Additional Items
 export const getAllAdditionalItemsController = async (
@@ -99,8 +104,8 @@ export const getAdditionalItemByIdController = async (
   res: Response
 ): Promise<any> => {
   try {
-    const { id } = req.params;
-    const item = await getAdditionalItemById(id);
+    const { itemId } = req.params;
+    const item = await getAdditionalItemById(itemId);
     if (!item)
       return res
         .status(404)
