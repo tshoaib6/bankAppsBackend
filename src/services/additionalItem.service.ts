@@ -26,7 +26,8 @@ export interface IUser extends Document {
 interface GetAllAdditionalItemsOptions {
   page?: number;
   limit?: number;
-  sort?: Record<string, 1 | -1>;
+  sort?: any;
+  search?: string;
   filter?: Record<string, any>;
 }
 interface GetLeaderboardOptions {
@@ -34,6 +35,8 @@ interface GetLeaderboardOptions {
   limit?: number;
   sort?: Record<string, 1 | -1>;
   filter?: Record<string, any>;
+  search?: string;
+
 }
 // ✅ Create a new Additional Item
 const createAdditionalItem = async (
@@ -57,27 +60,44 @@ const createAdditionalItem = async (
 
   return await newAdditionalItem.save();
 };
-
+const escapeRegExp = (text: string): string =>
+  text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 // ✅ Get all Additional Items
- const getAllAdditionalItems = async (
+const getAllAdditionalItems = async (
   options: GetAllAdditionalItemsOptions
 ): Promise<any> => {
-  const { page = 1, limit = 10, sort = { createdAt: -1 }, filter = {} } = options;
+  const { page = 1, limit = 10, sort = { createdAt: -1 }, search, filter = {} } = options;
 
+  // ✅ Build optimized search filter
+  const query: any = { ...filter };
+
+  if (search && search.trim() !== "") {
+    // Escape special regex characters
+    const safeSearch = escapeRegExp(search.trim());
+
+    // Use regex only on indexed or commonly searched fields
+    query.$or = [
+      { itemName: { $regex: safeSearch, $options: "i" } },
+      { description: { $regex: safeSearch, $options: "i" } },
+      { "brand.brandName": { $regex: safeSearch, $options: "i" } },
+    ];
+  }
+
+  // ✅ Fetch paginated data
   const result = await paginate(AdditionalItem, {
     page,
     limit,
     sort,
-    filter,
+    filter: query,
     populate: [
       {
         path: "brand",
-        select: "_id brandName", // only keep _id and brandName
+        select: "_id brandName", // Only what is needed
       } as any,
     ],
   });
 
-  // Remove sensitive fields like enrolled_users, redemptions
+  // ✅ Remove sensitive fields
   const cleanedData = result.data.map((item) => {
     const obj = item.toObject();
     delete obj.enrolled_users;
@@ -90,7 +110,6 @@ const createAdditionalItem = async (
     data: cleanedData,
   };
 };
-
 
 // ✅ Get an Additional Item by ID
 const getAdditionalItemById = async (
@@ -171,22 +190,28 @@ const deleteAdditionalItem = async (
  */
 export const redeemAdditionalItemService = async (userId: string, itemId: string) => {
   try {
-    // 🔹 Step 1: Fetch the additional item and populate brand
+    // 🔹 Step 1: Fetch the item and populate brand
     const item = await AdditionalItem.findById(itemId)
       .populate('brand', 'brandName description logo isActive')
       .exec();
 
     if (!item) throw new Error('Item not found');
 
-    // 🔹 Step 2: Validate points requirement
+    // 🔹 Step 2: Check qty (stock availability) - TypeScript safe
+    const currentQty = item.qty ?? 0; // ensures it's never undefined
+    if (currentQty <= 0) {
+      throw new Error('This item is out of stock.');
+    }
+
+    // 🔹 Step 3: Validate points requirement
     const pointsRequired = parseInt(item.points_required, 10);
     if (isNaN(pointsRequired)) throw new Error('Invalid points requirement for this item');
 
-    // 🔹 Step 3: Fetch the user
+    // 🔹 Step 4: Fetch user
     const user = await User.findById(userId).exec();
     if (!user) throw new Error('User not found');
 
-    // 🔹 Step 4: Ensure brand reference is valid
+    // 🔹 Step 5: Ensure brand reference
     let brandId: string;
     if (item.brand) {
       brandId =
@@ -197,7 +222,7 @@ export const redeemAdditionalItemService = async (userId: string, itemId: string
       throw new Error('Item brand not properly populated or missing');
     }
 
-    // 🔹 Step 5: Locate the user's brand points entry
+    // 🔹 Step 6: Find user's brand points entry
     const brandPointsEntry = user.brandPoints.find(
       (entry) =>
         entry.brand.toString() === brandId ||
@@ -210,25 +235,20 @@ export const redeemAdditionalItemService = async (userId: string, itemId: string
     if (brandPointsEntry.points < pointsRequired)
       throw new Error('You need to collect more points to redeem this item.');
 
-    // 🔹 Step 6: Deduct brand points safely
+    // 🔹 Step 7: Deduct points and save user
     brandPointsEntry.points -= pointsRequired;
-    user.markModified('brandPoints'); // ✅ Force Mongoose to detect nested array change
+    user.markModified('brandPoints');
     await user.save();
 
-    // 🔹 Step 7: Handle redemption logic
+    // 🔹 Step 8: Deduct item qty (inventory control)
+    item.qty = Math.max(0, currentQty - 1);
+
     const now = new Date();
     const redemptionCode = Math.random().toString(36).substring(2, 10).toUpperCase();
 
-    // Type-safe array access
-    const redemptionsArray = item.redemptions as Array<{
-      user: any;
-      code: string;
-      status: string;
-      redeemedAt: Date;
-    }>;
-
-    const existingRedemption = redemptionsArray.find(
-      (r) => r.user?.toString() === user._id.toString()
+    // 🔹 Step 9: Handle redemption logic
+    const existingRedemption = item.redemptions.find(
+      (r: any) => r.user?.toString() === user._id.toString()
     );
 
     if (existingRedemption) {
@@ -246,7 +266,7 @@ export const redeemAdditionalItemService = async (userId: string, itemId: string
 
     await item.save();
 
-    // 🔹 Step 8: Add to user history
+    // 🔹 Step 10: Add to user history
     const userHistoryEntry = new UserHistory({
       user_id: user._id,
       date: now,
@@ -261,7 +281,7 @@ export const redeemAdditionalItemService = async (userId: string, itemId: string
 
     await userHistoryEntry.save();
 
-    // 🔹 Step 9: Return a clean formatted response
+    // 🔹 Step 11: Return formatted response
     return {
       success: true,
       message: 'Item redeemed successfully',
@@ -275,6 +295,7 @@ export const redeemAdditionalItemService = async (userId: string, itemId: string
           id: item._id,
           title: item.title,
           points_required: item.points_required,
+          remaining_qty: item.qty, // ✅ updated after redemption
           redemption_code: redemptionCode,
           brand: {
             id: brandId,
@@ -297,6 +318,7 @@ export const redeemAdditionalItemService = async (userId: string, itemId: string
 
 
 
+
 export const getAdditionalItemsWithLeaderboard = async (
   options: GetLeaderboardOptions = {}
 ): Promise<any> => {
@@ -305,32 +327,57 @@ export const getAdditionalItemsWithLeaderboard = async (
     limit = 10,
     sort = { createdAt: -1 },
     filter = {},
+    search,
   } = options;
 
-  // ✅ Use your shared pagination utility
+  // ✅ Escape regex safely
+  const escapeRegExp = (text: string) =>
+    text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  // ✅ Build search filter
+  const searchFilter =
+    search && search.trim()
+      ? {
+          $or: [
+            { title: { $regex: escapeRegExp(search.trim()), $options: "i" } },
+            { description: { $regex: escapeRegExp(search.trim()), $options: "i" } },
+            { "brand.brandName": { $regex: escapeRegExp(search.trim()), $options: "i" } },
+          ],
+        }
+      : {};
+
+  const combinedFilter = { ...filter, ...searchFilter };
+
+  // ✅ Fetch items with pagination + brand
   const result = await paginate(AdditionalItem as Model<IAdditionalItem>, {
     page,
     limit,
     sort,
-    filter,
+    filter: combinedFilter,
     populate: [
-  {
-    path: "brand",
-    select: "_id brandName",
-  } as any,
-],
+      {
+        path: "brand",
+        select: "_id brandName",
+      } as any,
+    ],
   });
 
-  // ✅ Compute leaderboard for each additional item
+  // ✅ Compute leaderboard for each item
   const dataWithLeaderboard = await Promise.all(
     result.data.map(async (item) => {
+      const itemId =
+        typeof item._id === "string"
+          ? new Types.ObjectId(item._id)
+          : (item._id as Types.ObjectId);
+
       const redemptions = await AdditionalItem.aggregate([
-        { $match: { _id: item._id } },
+        { $match: { _id: itemId } },
         { $unwind: "$redemptions" },
         {
           $group: {
             _id: "$redemptions.user",
-            totalRedeems: { $sum: 1 },
+            // ✅ Sum quantity instead of counting once per redeem
+            totalRedeems: { $sum: "$redemptions.qty" },
             lastRedeemedAt: { $max: "$redemptions.redeemedAt" },
           },
         },
@@ -378,6 +425,7 @@ export const getAdditionalItemsWithLeaderboard = async (
     data: dataWithLeaderboard,
   };
 };
+
 export {
   createAdditionalItem,
   getAllAdditionalItems,

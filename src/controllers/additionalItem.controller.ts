@@ -87,35 +87,40 @@ export const getAllAdditionalItemsController = async (
   res: Response
 ): Promise<any> => {
   try {
-    const { page, limit, sortBy, sortOrder } = req.query;
+    const { page, limit, sortBy, sortOrder, search, ...filters } = req.query;
 
+    // ✅ Build sort object dynamically
     const sort: Record<string, 1 | -1> =
       typeof sortBy === "string"
         ? { [sortBy]: sortOrder === "asc" ? 1 : -1 }
         : { createdAt: -1 };
 
+    // ✅ Prepare options to send to service layer
     const options = {
       page: Number(page) || 1,
       limit: Number(limit) || 10,
       sort,
+      search: typeof search === "string" ? search : undefined,
+      filter: filters, // optional additional filters
     };
 
-    const items = await getAllAdditionalItems(options);
+    // ✅ Call service layer
+    const result = await getAllAdditionalItems(options);
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "Additional items fetched successfully",
-      ...items, // includes data, totalCount, totalPages, currentPage
+      data: result,
     });
   } catch (error: any) {
     console.error("❌ Error fetching additional items:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: "Failed to fetch additional items",
-      error: error.message,
+      message: error.message || "Server error while fetching additional items",
     });
   }
 };
+
 
 
 // ✅ Get an Additional Item by ID
@@ -253,12 +258,8 @@ export const redeemAdditionalItem = async (
     // ✅ Perform service call
     const result = await redeemAdditionalItemService(userId, itemId);
 
-    // ✅ Return structured response
-    return res.status(200).json({
-      success: true,
-      message: "Item redeemed successfully",
-      data: result,
-    });
+    // ✅ Return response from service directly
+    return res.status(200).json(result);
   } catch (error: any) {
     console.error("❌ Error redeeming additional item:", error);
     return res.status(500).json({
@@ -267,12 +268,44 @@ export const redeemAdditionalItem = async (
     });
   }
 };
-export const getAdditionalItemsLeaderboard = async (req: Request, res: Response) => {
+
+export const getAdditionalItemsLeaderboard = async (
+  req: Request,
+  res: Response
+) => {
   try {
-    const items = await getAdditionalItemsWithLeaderboard();
-    return res.status(200).json(items);
-  } catch (error) {
-    console.error("Error fetching additional items leaderboard:", error);
-    return res.status(500).json({ message: "Server error while fetching leaderboard" });
+    const { page, limit, sortBy, sortOrder, search } = req.query;
+
+    // ✅ Handle sorting logic
+    const sort: Record<string, 1 | -1> =
+      typeof sortBy === "string"
+        ? { [sortBy]: sortOrder === "asc" ? 1 : -1 }
+        : { createdAt: -1 };
+
+    // ✅ Prepare options for service function
+    const options = {
+      page: Number(page) || 1,
+      limit: Number(limit) || 10,
+      sort,
+      search: typeof search === "string" ? search : undefined,
+    };
+
+    // ✅ Call service with options
+    const result = await getAdditionalItemsWithLeaderboard(options);
+
+    // ✅ Return structured response
+    return res.status(200).json({
+      success: true,
+      message: "Leaderboard data fetched successfully",
+      ...result,
+    });
+  } catch (error: any) {
+    console.error("❌ Error fetching additional items leaderboard:", error);
+    return res.status(500).json({
+      success: false,
+      message:
+        error.message ||
+        "Server error while fetching leaderboard data",
+    });
   }
 };
