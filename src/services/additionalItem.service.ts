@@ -318,7 +318,6 @@ export const redeemAdditionalItemService = async (userId: string, itemId: string
 
 
 
-
 export const getAdditionalItemsWithLeaderboard = async (
   options: GetLeaderboardOptions = {}
 ): Promise<any> => {
@@ -346,9 +345,10 @@ export const getAdditionalItemsWithLeaderboard = async (
         }
       : {};
 
+  // ✅ Combine filters
   const combinedFilter = { ...filter, ...searchFilter };
 
-  // ✅ Fetch items with pagination + brand
+  // ✅ Fetch paginated items
   const result = await paginate(AdditionalItem as Model<IAdditionalItem>, {
     page,
     limit,
@@ -376,8 +376,8 @@ export const getAdditionalItemsWithLeaderboard = async (
         {
           $group: {
             _id: "$redemptions.user",
-            // ✅ Sum quantity instead of counting once per redeem
-            totalRedeems: { $sum: "$redemptions.qty" },
+            // ✅ Sum qty if exists; fallback to 1
+            userRedeemCount: { $sum: { $ifNull: ["$redemptions.qty", 1] } },
             lastRedeemedAt: { $max: "$redemptions.redeemedAt" },
           },
         },
@@ -396,26 +396,29 @@ export const getAdditionalItemsWithLeaderboard = async (
             username: "$userInfo.username",
             email: "$userInfo.email",
             fullName: "$userInfo.name",
-            totalRedeems: 1,
+            userRedeemCount: 1,
             lastRedeemedAt: 1,
           },
         },
-        { $sort: { totalRedeems: -1 } },
+        { $sort: { userRedeemCount: -1 } },
       ]);
 
+      // ✅ Total item redeems across all users
       const totalItemRedeems = redemptions.reduce(
-        (sum, r) => sum + (r.totalRedeems || 0),
+        (sum, r) => sum + (r.userRedeemCount || 0),
         0
       );
 
+      // ✅ Clean object before returning
       const itemObj = item.toObject ? item.toObject() : item;
       delete itemObj.enrolled_users;
       delete itemObj.redemptions;
+      delete itemObj.qty; // 🚫 don't send qty to frontend
 
       return {
         ...itemObj,
-        leaderboard: redemptions,
         totalItemRedeems,
+        leaderboard: redemptions, // each entry = user + count
       };
     })
   );
