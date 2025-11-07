@@ -12,21 +12,12 @@ export const sendPushNotificationToCity = async (
   body: string
 ) => {
   try {
-    console.log(`Looking for users in ${city} with FCM tokens`);
     const normalizedCity = city.trim().toLowerCase();
     const users: IUser[] = await User.find({
       address: { $regex: `^${normalizedCity}$`, $options: "i" },
       fcmToken: { $exists: true, $ne: null },
     });
-    console.log(`Found ${users.length} users with FCM tokens in ${city}`);
-    console.log(
-      "Users:",
-      users.map((u) => ({
-        id: u._id,
-        address: u.address,
-        fcmToken: u.fcmToken,
-      }))
-    );
+  
 
     if (!users.length) {
       return {
@@ -46,7 +37,6 @@ export const sendPushNotificationToCity = async (
       };
     }
 
-    console.log("Sending notifications to tokens:", tokens);
 
     const payload = {
       notification: {
@@ -61,21 +51,11 @@ export const sendPushNotificationToCity = async (
       ...payload,
     });
 
-    console.log("Firebase response:", {
-      successCount: response.successCount,
-      failureCount: response.failureCount,
-      responses: response.responses.map((res, index) => ({
-        token: tokens[index],
-        success: res.success,
-        error: res.error ? res.error.message : null,
-      })),
-    });
-
+ 
     if (response.failureCount > 0) {
       const failedTokens = response.responses
         .map((res, index) => (res.success ? null : tokens[index]))
         .filter(Boolean);
-      console.log("Removing failed tokens:", failedTokens);
       await User.updateMany(
         { fcmToken: { $in: failedTokens } },
         { $unset: { fcmToken: "" } }

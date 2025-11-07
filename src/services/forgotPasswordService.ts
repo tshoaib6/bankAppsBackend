@@ -30,16 +30,13 @@ export const forgotPasswordService = {
     const user = await User.findOne({ email, resetOTP: otp })
 
     if (!user) {
-      console.log('No user found with this OTP.')
       return false // Invalid OTP
     }
 
-    console.log('OTP expires at:', user.otpExpires)
-    console.log('Current time:', new Date())
+    
 
     // Check if OTP has expired
     if (user.otpExpires && user.otpExpires.getTime() < new Date().getTime()) {
-      console.log('OTP has expired.')
       return false // OTP expired
     }
 
@@ -48,7 +45,6 @@ export const forgotPasswordService = {
     user.otpExpires = undefined
     await user.save()
 
-    console.log('OTP verified successfully.')
     return true // OTP verified successfully
   },
 
