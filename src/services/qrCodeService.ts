@@ -238,8 +238,6 @@ export const bulkInsertQRCodes = async (
       brand: item.brand,
     }));
 
-    console.log("Valid QR CODES ", validQRCodes.length)
-    console.log("Valid QR  ", validQRCodes[0])
 
 
 
@@ -330,7 +328,6 @@ export const bulkInsertQRCodesSkipExisting = async (
       throw new Error("QR Code data must be a non-empty array.");
     }
 
-    console.log(`📦 Received ${qrCodeData.length} QR codes for optimized insert.`);
 
     const CHUNK_SIZE = 5000; // Adjust as per memory & performance
     let insertedCount = 0;
@@ -380,9 +377,7 @@ export const bulkInsertQRCodesSkipExisting = async (
           100
         );
 
-        console.log(
-          `📊 Progress: ${percent}% | Batch ${Math.floor(i / CHUNK_SIZE) + 1} | Inserted: ${batchInserted}, Skipped: ${chunk.length - batchInserted}`
-        );
+
 
         // 🔹 Emit progress if listener provided
         if (progressEmitter) {
@@ -405,7 +400,6 @@ export const bulkInsertQRCodesSkipExisting = async (
       }
     }
 
-    console.log(`✅ Final Result: Inserted ${insertedCount}, Skipped ${skippedCount}`);
 
     // Final event emit for completion
     if (progressEmitter) {

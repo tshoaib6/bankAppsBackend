@@ -361,7 +361,6 @@ export const redeemBankPremiumService = async (
       // 🔹 If qty has reached zero after redemption → deactivate
       // if (bankPremium.qty === 0) {
       //   bankPremium.active = false;
-      //   console.log(`⚠️ ${bankPremium.title} is now out of stock.`);
       // }
     }
 

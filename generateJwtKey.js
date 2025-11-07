@@ -13,5 +13,4 @@ const payload = {
 // Generate JWT token with the payload and secret key
 const token = jwt.sign(payload, secretKey, { expiresIn: '1h' });
 
-console.log('JWT Token:', token);
-console.log('Secret Key:', secretKey);
+

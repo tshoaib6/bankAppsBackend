@@ -6,11 +6,9 @@ import mongoose from 'mongoose';
 
 export const handleQRCodeScan = async (userId: string, scannedCode: string) => {
   try {
-    console.log("📌 handleQRCodeScan called with:", { userId, scannedCode });
 
     // Find QR code
     const qrCodeDoc = await QRCode.findOne({ code: scannedCode });
-    console.log("🔍 QRCode.findOne result:", qrCodeDoc);
 
     const qrCode = qrCodeDoc as (any & { _id: mongoose.Types.ObjectId });
 
@@ -27,7 +25,6 @@ export const handleQRCodeScan = async (userId: string, scannedCode: string) => {
 
     // Find user
     const user = await User.findById(userId);
-    console.log("👤 User found:", user);
 
     if (!user) {
       console.error("❌ User not found for ID:", userId);
@@ -35,19 +32,15 @@ export const handleQRCodeScan = async (userId: string, scannedCode: string) => {
     }
 
     // Prevent scanning same QR multiple times
-    console.log("🔎 Checking if user already scanned this QR...");
-    console.log("User scanned_qr_codes:", user.scanned_qr_codes);
     if (user.scanned_qr_codes.includes(qrCode._id.toString())) {
       console.error("QR Code already scanned by this user:", qrCode._id);
       throw new Error("QR Code has already been used. Please scan a new code");
     }
 
     const pointsEarned = qrCode.points;
-    console.log("⭐ Points earned from QR:", pointsEarned);
 
     // Add scanned QR to user history
     user.scanned_qr_codes.push(qrCode._id.toString());
-    console.log("📥 Updated scanned_qr_codes:", user.scanned_qr_codes);
 
     // 🏷️ Resolve brand (always store ObjectId, return string)
     const BANKS_BRAND_ID = new mongoose.Types.ObjectId("68ad2f87cfdd5f2ad515f188");
@@ -70,7 +63,6 @@ export const handleQRCodeScan = async (userId: string, scannedCode: string) => {
       brandName = qrCode.brand.toString();
     }
 
-    console.log("🏷️ Brand resolved:", { brandId, brandName });
 
     // Update user.brandPoints
     const existingBrandEntry = user.brandPoints.find(
@@ -79,17 +71,12 @@ export const handleQRCodeScan = async (userId: string, scannedCode: string) => {
 
     if (existingBrandEntry) {
       existingBrandEntry.points += pointsEarned;
-      console.log("📈 Updated brand points:", existingBrandEntry);
     } else {
       user.brandPoints.push({ brand: brandId, points: pointsEarned });
-      console.log("🆕 Added new brand entry:", { brand: brandId, points: pointsEarned });
     }
 
     await user.save();
-    console.log("✅ User saved successfully:", {
-      userId: user._id,
-      brandPoints: user.brandPoints,
-    });
+
 
     // Log to user history
     const userHistory = new UserHistory({
@@ -103,12 +90,10 @@ export const handleQRCodeScan = async (userId: string, scannedCode: string) => {
     });
 
     await userHistory.save();
-    console.log("📝 User history saved:", userHistory);
 
     // Mark QR as used globally
     qrCode.isUsed = true;
     await qrCode.save();
-    console.log("✅ QR code marked as used and saved:", qrCode);
 
     // Final return
     const result = {
@@ -125,7 +110,6 @@ export const handleQRCodeScan = async (userId: string, scannedCode: string) => {
       },
     };
 
-    console.log("🎉 Final result:", result);
     return result;
   } catch (error) {
     console.error("🔥 Error in handleQRCodeScan:", error);

@@ -21,7 +21,6 @@ export const uploadToCloudinary = async (fileInput: Buffer | string, folder: str
             reject(error); 
           } else {
             if (result) {
-              console.log('Cloudinary upload result:', result);
               resolve(result.secure_url || '');
             } else {
               reject(new Error('No result returned from Cloudinary'));

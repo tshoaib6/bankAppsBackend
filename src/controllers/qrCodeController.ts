@@ -426,11 +426,7 @@ export const bulkUploadQRCodesOptimized = async (
     const qrCodeData: any[] = [];
 
     // 🟢 Log progress locally (optional for backend logs)
-    progressEmitter.on("progress", (progress) => {
-      console.log(
-        `📊 Progress: ${progress.percent}% | Inserted: ${progress.insertedCount} | Skipped: ${progress.skippedCount}`
-      );
-    });
+   
 
     // 🧠 4. Parse CSV File Stream
     fs.createReadStream(req.file.path)
@@ -564,9 +560,7 @@ export const bulkUploadQRCodesOptimized = async (
 //     // 🔹 Update latest progress when emitted from service
 //     progressEmitter.on("progress", (progress) => {
 //       latestProgress = progress; // Keep most recent status for frontend
-//       console.log(
-//         `📊 Progress: ${progress.percent}% | Inserted: ${progress.insertedCount} | Skipped: ${progress.skippedCount}`
-//       );
+//    
 //     });
 
 //     fs.createReadStream(req.file.path)
