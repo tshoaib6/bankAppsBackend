@@ -10,7 +10,7 @@ import {
   getUsersByAddressController,
   exportUsersToCSVController,
   sendForgotPasswordOTP,
-  resendForgotPasswordOTP,     
+  resendForgotPasswordOTP,
   verifyForgotPasswordOTP,
   resetPasswordWithOTP,
   deleteOwnAccountController,
@@ -18,7 +18,7 @@ import {
   verifyDeleteAccountOTPController,
 } from "../controllers/userController";
 
-const router = Router();    
+const router = Router();
 
 router.post("/register", register);
 
@@ -38,14 +38,11 @@ router.put("/user/:userId/fcm-token", updateFcmToken);
 router.get("/export-users-csv", exportUsersToCSVController);
 
 router.post("/send-otp-forgot-password", sendForgotPasswordOTP);
+router.post("/send-delete-account-otp", sendDeleteAccountOTPController);
 router.post("/resend-otp-to-email", resendForgotPasswordOTP);
 //opti onal
 router.post("/verify-otpp", verifyForgotPasswordOTP);
 router.post("/reset-password-now", resetPasswordWithOTP);
-router.delete("/delete-account", deleteOwnAccountController);
-router.post("/send-delete-account-otp", sendDeleteAccountOTPController);
-
 router.post("/delete-account", verifyDeleteAccountOTPController);
-
 
 export default router;

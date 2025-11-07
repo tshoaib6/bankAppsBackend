@@ -378,14 +378,12 @@ export const verifyForgotPasswordOTP = async (req: Request, res: Response) => {
  * OTP is already verified in previous step, so no need to re-check
  */
 export const resetPasswordWithOTP = async (req: Request, res: Response) => {
-  console.log("📩 Incoming request to resetPasswordWithOTP");
-  console.log("👉 Request body:", req.body);
+ 
 
   try {
     const { email, newPassword } = req.body;
 
     if (!email || !newPassword) {
-      console.warn("⚠️ Missing email or newPassword in request");
       return res
         .status(400)
         .json({ message: "Email and new password are required" });
@@ -393,7 +391,6 @@ export const resetPasswordWithOTP = async (req: Request, res: Response) => {
 
     const msg = await resetPasswordWithOTPService(email, newPassword);
 
-    console.log("✅ Password reset successful for user:", email);
 
     return res.status(200).json({ message: msg });
   } catch (error: any) {
