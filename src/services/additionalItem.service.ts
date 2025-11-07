@@ -171,24 +171,23 @@ const deleteAdditionalItem = async (
  */
 export const redeemAdditionalItemService = async (userId: string, itemId: string) => {
   try {
-    // 🔹 Step 1: Fetch the additional item and try to populate brand
+    // 🔹 Step 1: Fetch the additional item and populate brand
     const item = await AdditionalItem.findById(itemId)
       .populate('brand', 'brandName description logo isActive')
       .exec();
 
     if (!item) throw new Error('Item not found');
 
-    // 🔹 Step 2: Validate points
+    // 🔹 Step 2: Validate points requirement
     const pointsRequired = parseInt(item.points_required, 10);
-    if (isNaN(pointsRequired)) throw new Error('Invalid points requirement for the item');
+    if (isNaN(pointsRequired)) throw new Error('Invalid points requirement for this item');
 
-    // 🔹 Step 3: Get the user
+    // 🔹 Step 3: Fetch the user
     const user = await User.findById(userId).exec();
     if (!user) throw new Error('User not found');
 
     // 🔹 Step 4: Ensure brand reference is valid
     let brandId: string;
-
     if (item.brand) {
       brandId =
         typeof item.brand === 'object' && '_id' in item.brand
@@ -198,23 +197,29 @@ export const redeemAdditionalItemService = async (userId: string, itemId: string
       throw new Error('Item brand not properly populated or missing');
     }
 
-    // ✅ Define a proper type for brandPoints entries
-    const brandPointsArray = user.brandPoints as Array<{ brand: any; points: number }>;
-
-    // 🔹 Step 5: Check user’s brand points
-    const brandPointsEntry = brandPointsArray.find(
-      (entry) => entry.brand?.toString() === brandId
+    // 🔹 Step 5: Locate the user's brand points entry
+    const brandPointsEntry = user.brandPoints.find(
+      (entry) =>
+        entry.brand.toString() === brandId ||
+        (entry.brand?._id && entry.brand._id.toString() === brandId)
     );
 
-    if (!brandPointsEntry || brandPointsEntry.points < pointsRequired) {
-      throw new Error('You need to collect more points to redeem this item.');
-    }
+    if (!brandPointsEntry)
+      throw new Error('Brand points entry not found for this brand.');
 
-    // 🔹 Step 6: Deduct brand points
+    if (brandPointsEntry.points < pointsRequired)
+      throw new Error('You need to collect more points to redeem this item.');
+
+    // 🔹 Step 6: Deduct brand points safely
     brandPointsEntry.points -= pointsRequired;
+    user.markModified('brandPoints'); // ✅ Force Mongoose to detect nested array change
     await user.save();
 
-    // ✅ Also type redemptions array safely
+    // 🔹 Step 7: Handle redemption logic
+    const now = new Date();
+    const redemptionCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+
+    // Type-safe array access
     const redemptionsArray = item.redemptions as Array<{
       user: any;
       code: string;
@@ -222,13 +227,9 @@ export const redeemAdditionalItemService = async (userId: string, itemId: string
       redeemedAt: Date;
     }>;
 
-    // 🔹 Step 7: Handle redemption logic
     const existingRedemption = redemptionsArray.find(
       (r) => r.user?.toString() === user._id.toString()
     );
-
-    const now = new Date();
-    const redemptionCode = Math.random().toString(36).substring(2, 10).toUpperCase();
 
     if (existingRedemption) {
       existingRedemption.redeemedAt = now;
@@ -260,7 +261,7 @@ export const redeemAdditionalItemService = async (userId: string, itemId: string
 
     await userHistoryEntry.save();
 
-    // 🔹 Step 9: Build formatted response
+    // 🔹 Step 9: Return a clean formatted response
     return {
       success: true,
       message: 'Item redeemed successfully',
@@ -290,6 +291,7 @@ export const redeemAdditionalItemService = async (userId: string, itemId: string
     throw new Error(error.message || 'An error occurred during item redemption');
   }
 };
+
 
 
 
