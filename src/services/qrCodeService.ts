@@ -115,7 +115,6 @@ export const getAllQRCodes = async (
   search?: string
 ): Promise<{
   qrCodes: any[];
-  totalCount: number;
   totalPages: number;
   currentPage: number;
 }> => {
@@ -143,7 +142,6 @@ export const getAllQRCodes = async (
 
     return {
       qrCodes: paginatedResult.data,
-      totalCount: paginatedResult.totalCount,
       totalPages: paginatedResult.totalPages,
       currentPage: paginatedResult.currentPage,
     };
@@ -153,6 +151,7 @@ export const getAllQRCodes = async (
     );
   }
 };
+
 
 
 /**
