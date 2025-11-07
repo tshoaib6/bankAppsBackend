@@ -82,32 +82,24 @@ export const registerUser = async (
 /**
  * Login user
  */
-export const loginUserService = async (
-  email: string,
-  password: string
-): Promise<IUser | null> => {
+export const loginUserService = async (email: string, password: string): Promise<IUser | null> => {
   try {
-    // ✅ Convert email to lowercase before querying
-    const normalizedEmail = email.toLowerCase();
-
-    const user = await User.findOne({ email: normalizedEmail });
+    // ✅ Search case-insensitively (handles old users)
+    const user = await User.findOne({ email: { $regex: new RegExp(`^${email}$`, "i") } });
     if (!user) throw new Error("Invalid email or password");
 
-    // ✅ Check password first
     const isPasswordMatch = await bcrypt.compare(password, user.password);
     if (!isPasswordMatch) throw new Error("Invalid email or password");
 
-    // ✅ If email not verified, generate OTP and send again
     if (!user.isVerified) {
       const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
-      const verificationTokenExpiry = new Date(Date.now() + 1000 * 60 * 10); // 10 min
+      const verificationTokenExpiry = new Date(Date.now() + 1000 * 60 * 10);
 
       user.verificationToken = verificationToken;
       user.verificationTokenExpiry = verificationTokenExpiry;
       await user.save();
 
       await sendVerificationEmail(user.email, verificationToken, user.name);
-
       throw new Error("Email not verified. A new verification code has been sent.");
     }
 
@@ -117,6 +109,7 @@ export const loginUserService = async (
     throw error;
   }
 };
+
 
  
 /**
