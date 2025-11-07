@@ -311,7 +311,6 @@ export const redeemBankPremiumService = async (
   premiumId: string
 ): Promise<any> => {
   try {
-    // 🔹 Fetch premium and populate brand
     const bankPremium = await BankPremium.findById(premiumId)
       .populate<{ brand: IBrand }>("brand")
       .exec();
@@ -322,49 +321,38 @@ export const redeemBankPremiumService = async (
       throw new Error("Invalid points requirement for this premium");
     }
 
-    // 🔹 Fetch user
-    const user = (await User.findById(userId).exec()) as IUser | null;
+    const user = await User.findById(userId).exec();
     if (!user) throw new Error("User not found");
     if (!bankPremium.brand)
       throw new Error("BankPremium brand not properly set");
 
     const brandId = bankPremium.brand.toString();
 
-    // 🔹 Check user's brand points
-    const brandPointsEntries: IBrandPoints[] = (user.brandPoints || []).filter(
-      (entry: IBrandPoints) =>
-        entry.brand instanceof mongoose.Types.ObjectId
-          ? entry.brand.toString() === brandId
-          : (entry.brand as any)._id?.toString() === brandId
+    const brandPointsEntries = (user.brandPoints || []).filter((entry: any) =>
+      entry.brand instanceof mongoose.Types.ObjectId
+        ? entry.brand.toString() === brandId
+        : (entry.brand as any)._id?.toString() === brandId
     );
-    if (brandPointsEntries.length === 0) {
-      throw new Error("You need to earn more points to redeem.");
-    }
 
-    // 🔹 Calculate total points
+    if (brandPointsEntries.length === 0)
+      throw new Error("You need to earn more points to redeem.");
+
     const totalPoints = brandPointsEntries.reduce(
       (sum, entry) => sum + entry.points,
       0
     );
-    if (totalPoints < pointsRequired) {
+    if (totalPoints < pointsRequired)
       throw new Error("You need to collect more points to redeem.");
-    }
 
-    // 🔹 Check and update quantity if applicable
+    // 🔹 Handle quantity
     if (typeof bankPremium.qty === "number") {
       if (bankPremium.qty <= 0) {
         throw new Error("This premium item is out of stock.");
       }
-
-      bankPremium.qty -= 1; // ✅ Decrease available quantity
-
-      // 🔹 If qty has reached zero after redemption → deactivate
-      // if (bankPremium.qty === 0) {
-      //   bankPremium.active = false;
-      // }
+      bankPremium.qty -= 1;
     }
 
-    // 🔹 Deduct points
+    // 🔹 Deduct user points
     let pointsToDeduct = pointsRequired;
     for (const entry of brandPointsEntries) {
       if (pointsToDeduct <= 0) break;
@@ -387,10 +375,8 @@ export const redeemBankPremiumService = async (
       bankPremium.enrolled_users.push(user._id);
     }
 
-    // 🔹 Generate unique redemption code
+    // 🔹 Redemption entry
     const code = uuidv4().split("-")[0].toUpperCase();
-
-    // 🔹 Add redemption entry
     bankPremium.redemptions.push({
       user: user._id,
       code,
@@ -414,33 +400,30 @@ export const redeemBankPremiumService = async (
     });
     await userHistoryEntry.save();
 
-    // 🔹 Attempt email
+    // 🔹 Attempt email (non-blocking)
     try {
       await sendRedeemSuccessEmail(user.email, code, user.name);
     } catch (emailError) {
       console.error("⚠️ Failed to send redeem success email:", emailError);
     }
 
-    // 🔹 Final Response
+    // ✅ Final trimmed response
     return {
       user: {
         userId: user._id,
         username: user.name,
         remaining_total_brand_points: totalPoints - pointsRequired,
         brandId: brandId,
-        updatedPoints: (user.brandPoints || []).filter((p) =>
-          p.brand instanceof mongoose.Types.ObjectId
-            ? p.brand.toString() === brandId
-            : (p.brand as any)._id?.toString() === brandId
-        ),
       },
       bankPremium: {
         title: bankPremium.title,
-        qty: bankPremium.qty ?? null, // ✅ include qty in response
+        qty: bankPremium.qty ?? null,
         points_required: bankPremium.points_required,
-        enrolled_users: bankPremium.enrolled_users,
-        redemptions: bankPremium.redemptions,
-        brand: bankPremium.brand,
+        brand: {
+          _id: (bankPremium.brand as IBrand)._id,
+          brandName: (bankPremium.brand as IBrand).brandName,
+          logo: (bankPremium.brand as IBrand).logo,
+        },
         active: bankPremium.active,
       },
       receipt: { code, status: "pending" },
@@ -457,6 +440,7 @@ export const redeemBankPremiumService = async (
     );
   }
 };
+
 
 /**
  * Verify redemption code (Admin use).
