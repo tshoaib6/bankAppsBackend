@@ -181,18 +181,22 @@ const deleteCampaign = async (campaignId: string) => {
   return campaign;
 };
 
-// 📥 Get all campaigns (optional brand filter)
-export const getAllCampaigns = async (
-  brandId?: string
-): Promise<ICampaign[]> => {
+export const getAllCampaigns = async (brandId?: string): Promise<ICampaign[]> => {
   try {
     const filter = brandId ? { brand: brandId } : {};
-    return await Campaign.find(filter).populate("brand"); // 👈 include brand if requested
+
+    // Fetch campaigns and populate only necessary brand fields
+    const campaigns = await Campaign.find(filter)
+      .populate("brand", "_id brandName") // ✅ only include _id and brandName
+      .select("-enrolled_users -redemptions"); // ✅ exclude these fields
+
+    return campaigns;
   } catch (error) {
     console.error("Error fetching campaigns from the database:", error);
     throw new Error("Error fetching campaigns");
   }
 };
+
 
 // 🔍 Get all campaigns by a specific brand ID
 const getCampaignsByBrandId = async (brandId: string): Promise<ICampaign[]> => {
