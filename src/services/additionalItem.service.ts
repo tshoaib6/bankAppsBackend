@@ -190,28 +190,26 @@ const deleteAdditionalItem = async (
  */
 export const redeemAdditionalItemService = async (userId: string, itemId: string) => {
   try {
-    // 🔹 Step 1: Fetch the item and populate brand
+    // Step 1: Fetch the item and populate brand
     const item = await AdditionalItem.findById(itemId)
       .populate('brand', 'brandName description logo isActive')
       .exec();
 
     if (!item) throw new Error('Item not found');
 
-    // 🔹 Step 2: Check qty (stock availability) - TypeScript safe
-    const currentQty = item.qty ?? 0; // ensures it's never undefined
-    if (currentQty <= 0) {
-      throw new Error('This item is out of stock.');
-    }
+    // Step 2: Check qty (stock availability)
+    const currentQty = item.qty ?? 0;
+    if (currentQty <= 0) throw new Error('This item is out of stock.');
 
-    // 🔹 Step 3: Validate points requirement
+    // Step 3: Validate points requirement
     const pointsRequired = parseInt(item.points_required, 10);
     if (isNaN(pointsRequired)) throw new Error('Invalid points requirement for this item');
 
-    // 🔹 Step 4: Fetch user
+    // Step 4: Fetch user
     const user = await User.findById(userId).exec();
     if (!user) throw new Error('User not found');
 
-    // 🔹 Step 5: Ensure brand reference
+    // Step 5: Ensure brand reference
     let brandId: string;
     if (item.brand) {
       brandId =
@@ -222,36 +220,35 @@ export const redeemAdditionalItemService = async (userId: string, itemId: string
       throw new Error('Item brand not properly populated or missing');
     }
 
-    // 🔹 Step 6: Find user's brand points entry
+    // Step 6: Find user's brand points entry
     const brandPointsEntry = user.brandPoints.find(
       (entry) =>
         entry.brand.toString() === brandId ||
         (entry.brand?._id && entry.brand._id.toString() === brandId)
     );
 
-    if (!brandPointsEntry)
-      throw new Error('Brand points entry not found for this brand.');
-
+    if (!brandPointsEntry) throw new Error('Brand points entry not found for this brand.');
     if (brandPointsEntry.points < pointsRequired)
       throw new Error('You need to collect more points to redeem this item.');
 
-    // 🔹 Step 7: Deduct points and save user
+    // Step 7: Deduct points and save user
     brandPointsEntry.points -= pointsRequired;
     user.markModified('brandPoints');
     await user.save();
 
-    // 🔹 Step 8: Deduct item qty (inventory control)
+    // Step 8: Deduct item qty
     item.qty = Math.max(0, currentQty - 1);
 
     const now = new Date();
     const redemptionCode = Math.random().toString(36).substring(2, 10).toUpperCase();
 
-    // 🔹 Step 9: Handle redemption logic
+    // Step 9: Handle redemption logic (with count tracking)
     const existingRedemption = item.redemptions.find(
       (r: any) => r.user?.toString() === user._id.toString()
     );
 
     if (existingRedemption) {
+      existingRedemption.count = (existingRedemption.count || 1) + 1;
       existingRedemption.redeemedAt = now;
       existingRedemption.status = 'pending';
       existingRedemption.code = redemptionCode;
@@ -261,12 +258,13 @@ export const redeemAdditionalItemService = async (userId: string, itemId: string
         code: redemptionCode,
         status: 'pending',
         redeemedAt: now,
+        count: 1,
       } as any);
     }
 
     await item.save();
 
-    // 🔹 Step 10: Add to user history
+    // Step 10: Add to user history
     const userHistoryEntry = new UserHistory({
       user_id: user._id,
       date: now,
@@ -278,10 +276,12 @@ export const redeemAdditionalItemService = async (userId: string, itemId: string
       points_earned: 0,
       qrCode: null,
     });
-
     await userHistoryEntry.save();
 
-    // 🔹 Step 11: Return formatted response
+    // Step 11: Return formatted response
+    const userRedemption =
+      item.redemptions.find((r: any) => r.user.toString() === user._id.toString()) ?? null;
+
     return {
       success: true,
       message: 'Item redeemed successfully',
@@ -295,8 +295,9 @@ export const redeemAdditionalItemService = async (userId: string, itemId: string
           id: item._id,
           title: item.title,
           points_required: item.points_required,
-          remaining_qty: item.qty, // ✅ updated after redemption
+          remaining_qty: item.qty,
           redemption_code: redemptionCode,
+          redeemed_count: userRedemption?.count || 1,
           brand: {
             id: brandId,
             name:
@@ -312,6 +313,7 @@ export const redeemAdditionalItemService = async (userId: string, itemId: string
     throw new Error(error.message || 'An error occurred during item redemption');
   }
 };
+
 
 
 

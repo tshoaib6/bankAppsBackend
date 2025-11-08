@@ -6,6 +6,8 @@ import { IBrand } from './brand.model';
     code: string;
     status: 'pending' | 'delivered';
     redeemedAt: Date;
+      count?: number; 
+
   }
 
   export interface IAdditionalItem extends Document {
@@ -26,7 +28,9 @@ import { IBrand } from './brand.model';
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     code: { type: String, required: true },
     status: { type: String, enum: ['pending', 'delivered'], default: 'pending' },
-    redeemedAt: { type: Date, default: Date.now }
+    redeemedAt: { type: Date, default: Date.now },
+    count: { type: Number, default: 1 }, 
+
   });
 
   const AdditionalItemSchema: Schema<IAdditionalItem> = new Schema(
