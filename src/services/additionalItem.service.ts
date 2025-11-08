@@ -370,14 +370,14 @@ export const getAdditionalItemsWithLeaderboard = async (
           ? new Types.ObjectId(item._id)
           : (item._id as Types.ObjectId);
 
+      // 🔥 Aggregate per user redemption count
       const redemptions = await AdditionalItem.aggregate([
         { $match: { _id: itemId } },
         { $unwind: "$redemptions" },
         {
           $group: {
             _id: "$redemptions.user",
-            // ✅ Sum qty if exists; fallback to 1
-            userRedeemCount: { $sum: { $ifNull: ["$redemptions.qty", 1] } },
+            userRedeemCount: { $sum: 1 }, // ✅ Count how many times the same user redeemed this item
             lastRedeemedAt: { $max: "$redemptions.redeemedAt" },
           },
         },
@@ -403,22 +403,22 @@ export const getAdditionalItemsWithLeaderboard = async (
         { $sort: { userRedeemCount: -1 } },
       ]);
 
-      // ✅ Total item redeems across all users
+      // ✅ Calculate total redeems for that item (all users combined)
       const totalItemRedeems = redemptions.reduce(
         (sum, r) => sum + (r.userRedeemCount || 0),
         0
       );
 
-      // ✅ Clean object before returning
+      // ✅ Clean item data before returning
       const itemObj = item.toObject ? item.toObject() : item;
       delete itemObj.enrolled_users;
       delete itemObj.redemptions;
-      delete itemObj.qty; // 🚫 don't send qty to frontend
+      delete itemObj.qty; // 🚫 don’t send qty to frontend
 
       return {
         ...itemObj,
         totalItemRedeems,
-        leaderboard: redemptions, // each entry = user + count
+        leaderboard: redemptions, // Each user with their redemption count
       };
     })
   );
