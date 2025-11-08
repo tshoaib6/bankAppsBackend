@@ -319,7 +319,6 @@ export const redeemAdditionalItemService = async (userId: string, itemId: string
 
 
 
-
 export const getAdditionalItemsWithLeaderboard = async (
   options: GetLeaderboardOptions = {}
 ): Promise<any> => {
@@ -331,11 +330,9 @@ export const getAdditionalItemsWithLeaderboard = async (
     search,
   } = options;
 
-  // ✅ Safe regex escaping
   const escapeRegExp = (text: string) =>
     text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-  // ✅ Build search filter
   const searchFilter =
     search && search.trim()
       ? {
@@ -347,10 +344,8 @@ export const getAdditionalItemsWithLeaderboard = async (
         }
       : {};
 
-  // ✅ Combine filters
   const combinedFilter = { ...filter, ...searchFilter };
 
-  // ✅ Fetch paginated additional items
   const result = await paginate(AdditionalItem as Model<IAdditionalItem>, {
     page,
     limit,
@@ -364,7 +359,6 @@ export const getAdditionalItemsWithLeaderboard = async (
     ],
   });
 
-  // ✅ Compute leaderboard per item
   const dataWithLeaderboard = await Promise.all(
     result.data.map(async (item) => {
       const itemId =
@@ -372,18 +366,14 @@ export const getAdditionalItemsWithLeaderboard = async (
           ? new Types.ObjectId(item._id)
           : (item._id as Types.ObjectId);
 
-      // ✅ Aggregate redemption count per user
       const redemptions = await AdditionalItem.aggregate([
         { $match: { _id: itemId } },
         { $unwind: "$redemptions" },
         {
           $group: {
             _id: "$redemptions.user",
-            // 🔥 Count how many times each user redeemed this item
             userRedeemCount: {
-              $sum: {
-                $cond: [{ $ifNull: ["$redemptions.qty", false] }, "$redemptions.qty", 1],
-              },
+              $sum: { $ifNull: ["$redemptions.count", 1] }, // ✅ Use count field
             },
             lastRedeemedAt: { $max: "$redemptions.redeemedAt" },
           },
@@ -410,22 +400,20 @@ export const getAdditionalItemsWithLeaderboard = async (
         { $sort: { userRedeemCount: -1 } },
       ]);
 
-      // ✅ Total number of redeems for this item
       const totalItemRedeems = redemptions.reduce(
         (sum, r) => sum + (r.userRedeemCount || 0),
         0
       );
 
-      // ✅ Clean response object
       const itemObj = item.toObject ? item.toObject() : item;
       delete itemObj.enrolled_users;
       delete itemObj.redemptions;
-      delete itemObj.qty; // 🚫 don't expose qty
+      delete itemObj.qty;
 
       return {
         ...itemObj,
         totalItemRedeems,
-        leaderboard: redemptions, // Each user's total redeem count
+        leaderboard: redemptions,
       };
     })
   );
@@ -435,6 +423,7 @@ export const getAdditionalItemsWithLeaderboard = async (
     data: dataWithLeaderboard,
   };
 };
+
 
 export {
   createAdditionalItem,
