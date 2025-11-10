@@ -70,7 +70,6 @@ export const sendRedeemSuccessEmail = async (
   try {
     await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error("❌ Error sending redeem success email:", error);
     throw new Error("Failed to send redeem success email");
   }
 };

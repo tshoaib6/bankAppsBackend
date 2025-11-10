@@ -309,7 +309,6 @@ export const redeemAdditionalItemService = async (userId: string, itemId: string
       },
     };
   } catch (error: any) {
-    console.error('Error redeeming additional item:', error);
     throw new Error(error.message || 'An error occurred during item redemption');
   }
 };

@@ -59,7 +59,6 @@ export const register = async (req: Request, res: Response): Promise<any> => {
       user: newUser,
     });
   } catch (error: any) {
-    console.error("Error in user registration:", error);
     // :white_check_mark: Return the actual error message
     return res.status(400).json({
       message: error.message || "Something went wrong, please try again",
@@ -117,7 +116,6 @@ export const register = async (req: Request, res: Response): Promise<any> => {
       },
     });
   } catch (error: any) {
-    console.error("Error in user login:", error.message);
 
     // ✅ Custom auth errors (like OTP resend)
     if (
@@ -180,7 +178,6 @@ export const register = async (req: Request, res: Response): Promise<any> => {
           users.length === 0 ? "No users found" : "Users fetched successfully",
       });
     } catch (error) {
-      console.error("Error fetching users:", error);
       return res
         .status(500)
         .json({ message: "Server error, please try again" });
@@ -214,7 +211,6 @@ export const register = async (req: Request, res: Response): Promise<any> => {
         user: updatedUser,
       });
     } catch (error) {
-      console.error("Error updating user status:", error);
       res.status(500).json({
         message: "Failed to update user status. Please try again later.",
       });
@@ -233,7 +229,6 @@ export const register = async (req: Request, res: Response): Promise<any> => {
         .status(200)
         .json({ message: "User deleted successfully", user: deletedUser });
     } catch (error) {
-      console.error("Error deleting user:", error);
       res
         .status(500)
         .json({ message: "Failed to delete user. Please try again later." });
@@ -258,7 +253,6 @@ export const register = async (req: Request, res: Response): Promise<any> => {
         user: verifiedUser,
       });
     } catch (error) {
-      console.error("Error verifying email:", error);
       res
         .status(500)
         .json({ message: "Failed to verify email. Please try again later." });
@@ -285,7 +279,6 @@ export const register = async (req: Request, res: Response): Promise<any> => {
         users,
       });
     } catch (error) {
-      console.error("Error in getUsersByAddressController:", error);
       res.status(500).json({ error: "Failed to retrieve users by address" });
     }
   };
@@ -312,7 +305,6 @@ export const register = async (req: Request, res: Response): Promise<any> => {
       res.setHeader("Content-Disposition", "attachment; filename=users.csv");
       res.status(200).end(csv);
     } catch (error: any) {
-      console.error("Error exporting users to CSV:", error);
       res.status(500).json({ message: error.message || "Error exporting users" });
     }
   };
@@ -331,7 +323,6 @@ export const sendForgotPasswordOTP = async (req: Request, res: Response) => {
     const msg = await sendForgotPasswordOTPService(email);
     res.status(200).json({ message: msg });
   } catch (error: any) {
-    console.error("Error in sendForgotPasswordOTP:", error);
     res.status(500).json({ message: error.message || "Failed to send OTP" });
   }
 };
@@ -349,7 +340,6 @@ export const resendForgotPasswordOTP = async (req: Request, res: Response) => {
     const msg = await resendForgotPasswordOTPService(email);
     res.status(200).json({ message: msg });
   } catch (error: any) {
-    console.error("Error in resendForgotPasswordOTP:", error);
     res.status(500).json({ message: error.message || "Failed to resend OTP" });
   }
 };
@@ -368,7 +358,6 @@ export const verifyForgotPasswordOTP = async (req: Request, res: Response) => {
 
     return res.status(200).json({ message: msg });
   } catch (error: any) {
-    console.error("Error in verifyForgotPasswordOTP:", error);
     res.status(500).json({ message: error.message || "Failed to verify OTP" });
   }
 };
@@ -394,8 +383,6 @@ export const resetPasswordWithOTP = async (req: Request, res: Response) => {
 
     return res.status(200).json({ message: msg });
   } catch (error: any) {
-    console.error("❌ Error in resetPasswordWithOTP controller");
-    console.error("📛 Error details:", error);
 
     return res
       .status(500)
@@ -428,7 +415,6 @@ export const deleteOwnAccountController = async (
 
     return res.status(200).json(result);
   } catch (error) {
-    console.error("Error in deleteOwnAccountController:", error);
     return res.status(500).json({ success: false, message: "Internal server error" });
   }
 };

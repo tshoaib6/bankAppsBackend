@@ -9,7 +9,6 @@ const createStore = async (storeData: Partial<IStore>): Promise<IStore> => {
     const store = new Store(storeData);
     return await store.save();
   } catch (error) {
-    console.error("Error creating store:", error);
     throw new Error("Failed to create store. Please try again.");
   }
 };
@@ -74,7 +73,6 @@ export const getStores = async (
 
     return { stores, totalCount, totalPages, currentPage };
   } catch (error) {
-    console.error("Error fetching stores:", error);
     throw new Error("Failed to fetch stores. Please try again.");
   }
 };
@@ -86,7 +84,6 @@ const getStoreById = async (storeId: string): Promise<IStore | null> => {
   try {
     return await Store.findById(storeId);
   } catch (error: any) {
-    console.error(`Error fetching store with ID ${storeId}:`, error);
     throw new Error(error.message || "Failed to fetch store. Please try again.");
   }
 };
@@ -105,7 +102,6 @@ const updateStore = async (
     }
     return updatedStore;
   } catch (error: any) {
-    console.error(`Error updating store with ID ${storeId}:`, error);
     throw new Error(error.message || "Failed to update store. Please try again.");
   }
 };
@@ -119,7 +115,6 @@ const deleteStore = async (storeId: string): Promise<IStore | null> => {
     }
     return deletedStore;
   } catch (error: any) {
-    console.error(`Error deleting store with ID ${storeId}:`, error);
     throw new Error(error.message || "Failed to delete store. Please try again.");
   }
 };

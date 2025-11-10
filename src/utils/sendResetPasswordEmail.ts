@@ -45,7 +45,6 @@ const mailOptions = {
   try {
     await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error("❌ Error sending reset password email:", error);
     throw new Error("Failed to send reset password email");
   }
 };

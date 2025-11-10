@@ -13,13 +13,11 @@ export const handleQRCodeScan = async (userId: string, scannedCode: string) => {
     const qrCode = qrCodeDoc as (any & { _id: mongoose.Types.ObjectId });
 
     if (!qrCode) {
-      console.error("❌ QR Code not found");
       throw new Error("QR Code not found");
     }
 
     // Check if QR already used
     if (qrCode.isUsed) {
-      console.error("❌ QR Code already used:", qrCode);
       throw new Error("QR Code has already been used. Please scan a new code");
     }
 
@@ -27,13 +25,11 @@ export const handleQRCodeScan = async (userId: string, scannedCode: string) => {
     const user = await User.findById(userId);
 
     if (!user) {
-      console.error("❌ User not found for ID:", userId);
       throw new Error("User not found");
     }
 
     // Prevent scanning same QR multiple times
     if (user.scanned_qr_codes.includes(qrCode._id.toString())) {
-      console.error("QR Code already scanned by this user:", qrCode._id);
       throw new Error("QR Code has already been used. Please scan a new code");
     }
 
@@ -112,7 +108,6 @@ export const handleQRCodeScan = async (userId: string, scannedCode: string) => {
 
     return result;
   } catch (error) {
-    console.error("🔥 Error in handleQRCodeScan:", error);
     throw error; // rethrow for API error handling
   }
 };

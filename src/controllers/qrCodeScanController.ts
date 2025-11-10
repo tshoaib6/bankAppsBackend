@@ -71,7 +71,6 @@ export const scanQRCode = async (req: Request, res: Response): Promise<any> => {
       scannedQRCode, // includes code, points, and brand
     });
   } catch (error: any) {
-    console.error("Error in QR code scan:", error.message);
 
     // 🔥 Distinguish between error types
     if (error.message === "QR Code not found") {

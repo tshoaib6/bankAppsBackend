@@ -27,7 +27,6 @@ export const createBrand = async (req: Request, res: Response): Promise<any> => 
     const brand = await createBrandService(brandName, description, logo);
     res.status(201).json({ message: 'Brand created successfully', brand });
   } catch (error) {
-    console.error('Error creating brand:', error);
     res.status(500).json({ message: 'Failed to create brand' });
   }
 };
@@ -66,7 +65,6 @@ export const updateBrand = async (req: Request, res: Response): Promise<any> => 
 
     res.status(200).json({ message: 'Brand updated successfully', updatedBrand });
   } catch (error) {
-    console.error('Error updating brand:', error);
     res.status(500).json({ message: 'Failed to update brand' });
   }
 };

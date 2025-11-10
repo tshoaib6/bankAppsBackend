@@ -45,7 +45,6 @@ export const createStore = async (req: Request, res: Response): Promise<any> => 
       message: "Store created successfully",
     });
   } catch (error) {
-    console.error("Error creating store:", error);
     return res.status(500).json({ message: "Server error while creating store" });
   }
 };
@@ -94,7 +93,6 @@ export const getStores = async (req: Request, res: Response): Promise<any> => {
       message: "Stores fetched successfully",
     });
   } catch (error) {
-    console.error("Error fetching stores:", error);
     return res.status(500).json({
       message: "Server error while fetching stores",
       error: error instanceof Error ? error.message : "Unknown error",
@@ -116,7 +114,6 @@ export const getStoreById = async (req: Request, res: Response): Promise<any> =>
 
     return res.status(200).json({ store, message: "Store fetched successfully" });
   } catch (error) {
-    console.error("Error fetching store:", error);
     return res.status(500).json({ message: "Server error while fetching store" });
   }
 };
@@ -144,7 +141,6 @@ export const updateStore = async (req: Request, res: Response): Promise<any> => 
       message: "Store updated successfully",
     });
   } catch (error) {
-    console.error("Error updating store:", error);
     return res.status(500).json({ message: "Server error while updating store" });
   }
 };
@@ -168,7 +164,6 @@ export const deleteStore = async (req: Request, res: Response): Promise<any> => 
 
     return res.status(200).json({ message: "Store deleted successfully" });
   } catch (error) {
-    console.error("Error deleting store:", error);
     return res.status(500).json({ message: "Server error while deleting store" });
   }
 };

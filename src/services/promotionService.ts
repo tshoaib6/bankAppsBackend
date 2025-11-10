@@ -7,7 +7,6 @@ export const createPromotion = async (data: any): Promise<IPromotion> => {
     await promotion.save()
     return promotion
   } catch (error: any) {
-    console.error('Error in createPromotion service:', error.message, error)
     throw new Error('Error creating promotion')
   }
 }
@@ -41,7 +40,6 @@ export const updatePromotion = async (promotionId: string, data: any): Promise<I
   try {
     return await Promotion.findByIdAndUpdate(promotionId, data, { new: true }).populate('brand');
   } catch (error) {
-    console.error('Error updating promotion:', error);
     throw new Error('Error updating promotion');
   }
 };

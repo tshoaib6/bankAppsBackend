@@ -152,7 +152,6 @@ export const getAllBankPremiumsForAdmin = async (): Promise<IBankPremium[]> => {
       })
       .lean(); // ✅ returns plain JS objects, skips Mongoose overhead
   } catch (error) {
-    console.error("Error fetching BankPremiums:", error);
     throw new Error("Error fetching BankPremiums");
   }
 };
@@ -163,7 +162,6 @@ export const getAllBankPremiums = async (): Promise<IBankPremium[]> => {
       "_id title description points_required start_date end_date image_url active qty brand"
     );
   } catch (error) {
-    console.error("Error fetching BankPremiums from the database:", error);
     throw new Error("Error fetching BankPremiums");
   }
 };
@@ -404,7 +402,6 @@ export const redeemBankPremiumService = async (
     try {
       await sendRedeemSuccessEmail(user.email, code, user.name);
     } catch (emailError) {
-      console.error("⚠️ Failed to send redeem success email:", emailError);
     }
 
     // ✅ Final trimmed response
@@ -434,7 +431,6 @@ export const redeemBankPremiumService = async (
       },
     };
   } catch (error: any) {
-    console.error("Error redeeming bank premium service:", error);
     throw new Error(
       error.message || "An error occurred during bank premium redemption"
     );

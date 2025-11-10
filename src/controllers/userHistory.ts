@@ -27,7 +27,6 @@ export const getUserHistory = async (
 
     return res.status(200).json({ userHistory })
   } catch (error) {
-    console.error('Error fetching user history:', error)
     return res
       .status(500)
       .json({ message: 'Server error while fetching user history' })
@@ -65,7 +64,6 @@ export const getUserHistoryById = async (req: Request, res: Response): Promise<a
 
     return res.status(200).json({ userHistory });
   } catch (error) {
-    console.error('Error fetching user history:', error);
     return res.status(500).json({ message: 'Server error while fetching user history' });
   }
 };

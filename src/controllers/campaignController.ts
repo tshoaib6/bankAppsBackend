@@ -50,7 +50,6 @@ export const createCampaign = async (
     )
     return res.status(201).json({ campaign: newCampaign })
   } catch (error) {
-    console.error('Error creating campaign:', error)
     return res
       .status(500)
       .json({ message: 'Server error while creating campaign' })
@@ -96,7 +95,6 @@ export const updateCampaign = async (
     )
     return res.status(200).json({ campaign: updatedCampaign })
   } catch (error) {
-    console.error('Error updating campaign:', error)
     return res
       .status(500)
       .json({ message: 'Server error while updating campaign' })
@@ -123,7 +121,6 @@ export const deleteCampaign = async (
       campaign: campaign
     })
   } catch (error) {
-    console.error('Error deleting campaign:', error)
     return res
       .status(500)
       .json({ message: 'Server error while deleting campaign' })
@@ -142,7 +139,6 @@ export const getAllCampaigns = async (
 
     return res.status(200).json({ campaigns })
   } catch (error) {
-    console.error('Error fetching campaigns:', error)
     return res
       .status(500)
       .json({ message: 'Server error while fetching campaigns' })
@@ -163,7 +159,6 @@ export const getCampaignById = async (
 
     return res.status(200).json(campaignData); // ✅ return directly
   } catch (error) {
-    console.error("Error fetching campaign:", error);
     return res
       .status(500)
       .json({ message: "Server error while fetching campaign" });
@@ -177,7 +172,6 @@ export const getCampaignsByBrandId = async (req: Request, res: Response) => {
     const campaigns = await CampaignService.getCampaignsByBrandId(brandId);
     res.status(200).json({ campaigns });
   } catch (error) {
-    console.error('Error in getCampaignsByBrandId:', error);
     res.status(500).json({ message: 'Failed to fetch campaigns by brand ID' });
   }
 };
@@ -191,7 +185,6 @@ export const getCampaignsWithLeaderboard = async (
     const campaigns = await CampaignService.getCampaignsWithLeaderboard();
     return res.status(200).json(campaigns);
   } catch (error) {
-    console.error("Error fetching campaigns with leaderboard:", error);
     return res.status(500).json({ message: "Server error while fetching campaigns" });
   }
 };

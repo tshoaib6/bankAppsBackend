@@ -82,7 +82,6 @@ export const createBankPremium = async (
       bankPremium: newBankPremium,
     });
   } catch (error: any) {
-    console.error("Error creating BankPremium:", error);
     return res.status(500).json({
       message: "An error occurred while creating BankPremium",
       error: error.message,
@@ -168,7 +167,6 @@ export const updateBankPremium = async (
       bankPremium: updatedBankPremium,
     });
   } catch (error: any) {
-    console.error("Error updating BankPremium:", error);
     return res.status(500).json({
       message: "An error occurred while updating BankPremium",
       error: error.message,
@@ -204,7 +202,6 @@ export const deleteBankPremium = async (
       bankPremium,
     });
   } catch (error: any) {
-    console.error("Error deleting BankPremium:", error);
     return res.status(500).json({
       message: "An error occurred while deleting BankPremium",
       error: error.message,
@@ -232,7 +229,6 @@ export const getAllBankPremiums = async (
       bankPremiums: activeBankPremiums,
     });
   } catch (error: any) {
-    console.error("Error fetching active BankPremiums:", error);
     return res.status(500).json({
       message: "An error occurred while fetching active BankPremiums",
       error: error.message,
@@ -257,7 +253,6 @@ export const getAllBankPremiumsControllerForAdmin = async (
       bankPremiums: activeBankPremiums,
     });
   } catch (error: any) {
-    console.error("Error fetching active BankPremiums:", error);
     return res.status(500).json({
       message: "An error occurred while fetching active BankPremiums",
       error: error.message,
@@ -288,7 +283,6 @@ export const getBankPremiumById = async (
       bankPremium,
     });
   } catch (error: any) {
-    console.error("Error fetching BankPremium:", error);
     return res.status(500).json({
       message: "An error occurred while fetching BankPremium",
       error: error.message,
@@ -386,7 +380,6 @@ export const getBankPremiumById = async (
       ...result,
     });
   } catch (error: any) {
-    console.error("Error redeeming BankPremium:", error);
 
     // 🔹 Known validation/user errors
     const knownErrors = [
@@ -428,7 +421,6 @@ export const verifyBankPremiumCode = async (
 
     return res.status(200).json(result);
   } catch (error: any) {
-    console.error("Error verifying BankPremium code:", error);
     return res.status(500).json({
       success: false,
       message: error.message || "An error occurred while verifying code",
@@ -471,7 +463,6 @@ export const exportRedemptionsCSVController = async (req: Request, res: Response
     res.attachment("redemptions.csv");
     return res.send(csvData);
   } catch (error: any) {
-    console.error("Error exporting redemptions CSV:", error);
     return res.status(500).json({ success: false, message: "Server error while exporting CSV" });
   }
 };

@@ -398,7 +398,6 @@ export const getCampaignDetails = async (req: Request, res: Response): Promise<a
       })),
     });
   } catch (error: any) {
-    console.error('Error fetching campaign details:', error);
     if (error.name === 'JsonWebTokenError') {
       return res.status(401).json({ message: 'Unauthorized: Invalid token' });
     }

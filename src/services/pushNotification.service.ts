@@ -79,7 +79,6 @@ export const sendPushNotificationToCity = async (
       },
     };
   } catch (error) {
-    console.error("FCM send error:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",

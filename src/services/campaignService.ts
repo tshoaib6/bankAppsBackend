@@ -192,7 +192,6 @@ export const getAllCampaigns = async (brandId?: string): Promise<ICampaign[]> =>
 
     return campaigns;
   } catch (error) {
-    console.error("Error fetching campaigns from the database:", error);
     throw new Error("Error fetching campaigns");
   }
 };
@@ -206,7 +205,6 @@ const getCampaignsByBrandId = async (brandId: string): Promise<ICampaign[]> => {
 
     return campaigns;
   } catch (error) {
-    console.error(`Error fetching campaigns for brand ${brandId}:`, error);
     throw new Error("Failed to fetch campaigns by brand ID");
   }
 };

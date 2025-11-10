@@ -96,7 +96,6 @@ BanksBeer Promotion Team`,
   try {
     await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error("Error sending verification email:", error);
     throw new Error("Failed to send verification email");
   }
 };
@@ -139,7 +138,6 @@ BanksBeer Promotion Team`,
   try {
     await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error("Error sending account deletion OTP email:", error);
     throw new Error("Failed to send account deletion OTP email");
   }
 };

@@ -70,7 +70,6 @@ export const createAdditionalItemController = async (
       data: filteredItem, // 👈 cleaned response
     });
   } catch (error: any) {
-    console.error("❌ Error creating Additional Item:", error);
     res.status(500).json({
       success: false,
       message: "An error occurred while creating additional item",
@@ -113,7 +112,6 @@ export const getAllAdditionalItemsController = async (
       data: result,
     });
   } catch (error: any) {
-    console.error("❌ Error fetching additional items:", error);
     return res.status(500).json({
       success: false,
       message: error.message || "Server error while fetching additional items",
@@ -191,7 +189,6 @@ export const updateAdditionalItemController = async (
       data: filteredItem,
     });
   } catch (error: any) {
-    console.error("❌ Error updating Additional Item:", error);
     res.status(500).json({
       success: false,
       message: "Failed to update additional item",
@@ -243,7 +240,6 @@ export const deleteAdditionalItemController = async (
       },
     });
   } catch (error: any) {
-    console.error("❌ Error deleting Additional Item:", error);
     res.status(500).json({
       success: false,
       message: "Failed to delete additional item",
@@ -297,7 +293,6 @@ export const redeemAdditionalItem = async (
     // ✅ Return response from service directly
     return res.status(200).json(result);
   } catch (error: any) {
-    console.error("❌ Error redeeming additional item:", error);
     return res.status(500).json({
       success: false,
       message: error.message || "Server error while redeeming additional item",
@@ -336,7 +331,6 @@ export const getAdditionalItemsLeaderboard = async (
       ...result,
     });
   } catch (error: any) {
-    console.error("❌ Error fetching additional items leaderboard:", error);
     return res.status(500).json({
       success: false,
       message:

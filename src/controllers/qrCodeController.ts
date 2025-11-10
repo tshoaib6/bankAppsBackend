@@ -479,7 +479,6 @@ export const bulkUploadQRCodesOptimized = async (
             errors: result.errors.length,
           });
         } catch (serviceError: any) {
-          console.error("❌ Service error:", serviceError);
           return res.status(500).json({
             message: "Error inserting QR codes.",
             error: serviceError.message,
@@ -488,14 +487,12 @@ export const bulkUploadQRCodesOptimized = async (
       })
       .on("error", (err) => {
         // ⚠️ Handle CSV Read Errors
-        console.error("❌ CSV Read Error:", err);
         return res
           .status(500)
           .json({ message: "Error reading CSV file", error: err.message });
       });
   } catch (error: any) {
     // 🔴 Global Catch
-    console.error("❌ Controller Error:", error);
     return res.status(500).json({
       message: "Server error while uploading QR codes.",
       error: error.message || "Unknown error",

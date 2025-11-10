@@ -22,7 +22,6 @@ export const sendPushNotification = async (req: Request, res: Response):Promise<
       firebaseResponse: result.firebaseResponse, // ✅ Correct key
     });
   } catch (error) {
-    console.error('Controller error:', error);
     return res.status(500).json({
       error: 'Unexpected server error while sending notification',
     });

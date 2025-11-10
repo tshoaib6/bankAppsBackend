@@ -20,7 +20,6 @@ export const sendEmail = async (to: string, subject: string, text: string): Prom
   try {
     await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error('Error sending email:', error);
     throw new Error('Email sending failed.');
   }
 };

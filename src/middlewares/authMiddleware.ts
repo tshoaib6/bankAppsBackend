@@ -61,7 +61,6 @@ export const authMiddleware = (
     };
     next();
   } catch (error) {
-    console.error("JWT verification failed:", error);
     return res.status(400).json({ message: "Invalid or expired token." });
   }
 };

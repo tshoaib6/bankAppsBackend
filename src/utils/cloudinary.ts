@@ -17,7 +17,6 @@ export const uploadToCloudinary = async (fileInput: Buffer | string, folder: str
         { folder },
         (error, result) => {
           if (error) {
-            console.error('Cloudinary upload error:', error);
             reject(error); 
           } else {
             if (result) {
@@ -32,7 +31,6 @@ export const uploadToCloudinary = async (fileInput: Buffer | string, folder: str
       streamifier.createReadStream(fileBuffer).pipe(uploadStream);
     });
   } catch (error) {
-    console.error('Error uploading image to Cloudinary:', error);
     throw new Error('Error uploading image to Cloudinary');
   }
 };

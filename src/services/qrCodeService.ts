@@ -337,7 +337,6 @@ export const bulkInsertQRCodesSkipExisting = async (
     try {
       await QRCode.collection.createIndex({ code: 1 }, { unique: true });
     } catch (indexErr: any) {
-      console.warn("⚠️ Index creation skipped or already exists:", indexErr.message);
     }
 
     // ✅ Match old structure for QRCode documents
@@ -393,9 +392,7 @@ export const bulkInsertQRCodesSkipExisting = async (
           err?.writeErrors?.filter((e: any) => e.code === 11000)?.length || 0;
         skippedCount += dupErrors;
         errors.push(err);
-        console.warn(
-          `⚠️ Batch ${Math.floor(i / CHUNK_SIZE) + 1} failed partially with ${dupErrors} duplicate errors.`
-        );
+      
       }
     }
 
@@ -413,7 +410,6 @@ export const bulkInsertQRCodesSkipExisting = async (
 
     return { insertedCount, skippedCount, errors };
   } catch (error: any) {
-    console.error("❌ Error during optimized bulk insert:", error);
     throw new Error(
       error.message || "Error during optimized QR code insertion"
     );

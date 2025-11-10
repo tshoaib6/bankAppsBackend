@@ -60,7 +60,6 @@ export const registerUser = async (
 
     return newUser;
   } catch (error: any) {
-    console.error("Error in registerUser service:", error);
 
     if (error.message.includes("already registered")) {
       throw new Error("This email is already registered. Please use another email.");
@@ -105,7 +104,7 @@ export const loginUserService = async (email: string, password: string): Promise
 
     return user;
   } catch (error: any) {
-    console.error("Error in loginUserService:", error.message);
+    // console.error("Error in loginUserService:", error.message);
     throw error;
   }
 };
@@ -194,7 +193,6 @@ export const getAllUsers = async (
       currentPage,
     };
   } catch (error) {
-    console.error("Error in getAllUsers service:", error);
     throw new Error("Error fetching users");
   }
 };
@@ -210,7 +208,6 @@ export const updateUserStatusService = async (
   try {
     return await User.findByIdAndUpdate(userId, { isActive }, { new: true });
   } catch (error) {
-    console.error('Error in updateUserStatusService:', error);
     throw new Error('Error updating user status');
   }
 };
@@ -224,7 +221,6 @@ export const deleteUserService = async (
   try {
     return await User.findByIdAndDelete(userId);
   } catch (error) {
-    console.error('Error in deleteUserService:', error);
     throw new Error('Error deleting user');
   }
 };
@@ -254,7 +250,6 @@ export const verifyEmailService = async (
 
     return user;
   } catch (error) {
-    console.error('Error in verifyEmailService:', error);
     throw new Error('Error verifying email');
   }
 };
@@ -276,7 +271,6 @@ export const getUsersByAddress = async (
         user.fcmToken.trim().length > 0
     );
   } catch (error) {
-    console.error('Error in getUsersByAddress service:', error);
     throw new Error('Error retrieving users by address');
   }
 };
@@ -333,7 +327,6 @@ await sendResetPasswordEmail(email, otp, user.name);
 
     return "OTP sent to your email";
   } catch (error) {
-    console.error("Error in sendForgotPasswordOTPService:", error);
     throw new Error("Error sending OTP");
   }
 };
@@ -359,7 +352,6 @@ export const resendForgotPasswordOTPService = async (
 
     return "New OTP has been sent";
   } catch (error) {
-    console.error("Error in resendForgotPasswordOTPService:", error);
     throw new Error("Error resending OTP");
   }
 };
@@ -386,7 +378,6 @@ export const verifyForgotPasswordOTPService = async (
 
     return "OTP verified successfully";
   } catch (error) {
-    console.error("Error in verifyForgotPasswordOTPService:", error);
     throw new Error("Error verifying OTP");
   }
 };
@@ -411,7 +402,6 @@ export const resetPasswordWithOTPService = async (
 
     return "Password reset successful";
   } catch (error) {
-    console.error("Error in resetPasswordWithOTPService:", error);
     throw new Error("Error resetting password");
   }
 };
@@ -439,7 +429,6 @@ export const deleteOwnAccountService = async (
     await User.findByIdAndDelete(userId);
     return { success: true, message: "Account deleted successfully" };
   } catch (error) {
-    console.error("Error in deleteOwnAccountService:", error);
     throw new Error("Error deleting account");
   }
 };
@@ -467,7 +456,6 @@ export const sendDeleteAccountOTPService = async (
 
     return { success: true, message: "OTP sent to your email address" };
   } catch (error) {
-    console.error("Error in sendDeleteAccountOTPService:", error);
     throw new Error("Failed to send OTP for account deletion");
   }
 };
@@ -497,7 +485,6 @@ export const verifyDeleteAccountOTPService = async (
 
     return { success: true, message: "Account deleted successfully" };
   } catch (error) {
-    console.error("Error in verifyDeleteAccountOTPService:", error);
     throw new Error("Failed to verify OTP or delete account");
   }
 };

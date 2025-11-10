@@ -19,6 +19,5 @@ export const logUserActivity = async (
     });
     await historyEntry.save();
   } catch (error) {
-    console.error('Error logging user activity:', error);
   }
 };
