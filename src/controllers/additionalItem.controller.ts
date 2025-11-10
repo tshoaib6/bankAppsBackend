@@ -152,9 +152,10 @@ export const updateAdditionalItemController = async (
   res: Response
 ): Promise<any> => {
   try {
-    const { itemId } = req.params; // 👈 FIXED PARAM NAME
+    const { itemId } = req.params;
     const updates = { ...req.body };
 
+    // ✅ Upload new image if provided
     if (req.file) {
       const imageUrl = await uploadToCloudinary(req.file.buffer, "additional_items");
       updates.image_url = imageUrl;
@@ -169,10 +170,25 @@ export const updateAdditionalItemController = async (
       });
     }
 
+    // ✅ Exclude unwanted fields from response
+    const {
+      description,
+      enrolled_users,
+      redemptions,
+      start_date,
+      end_date,
+      createdAt,
+      updatedAt,
+            image_url,
+
+      ...filteredItem
+    } = updatedItem.toObject();
+
+    // ✅ Send filtered response
     res.status(200).json({
       success: true,
       message: "Additional item updated successfully",
-      data: updatedItem,
+      data: filteredItem,
     });
   } catch (error: any) {
     console.error("❌ Error updating Additional Item:", error);
@@ -183,6 +199,7 @@ export const updateAdditionalItemController = async (
     });
   }
 };
+
 
 
 // ✅ Delete an Additional Item
