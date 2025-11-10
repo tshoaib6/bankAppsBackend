@@ -208,7 +208,7 @@ export const deleteAdditionalItemController = async (
   res: Response
 ): Promise<any> => {
   try {
-    const { itemId } = req.params; // 👈 FIXED: must match route param
+    const { itemId } = req.params;
 
     const deletedItem = await deleteAdditionalItem(itemId);
 
@@ -219,10 +219,28 @@ export const deleteAdditionalItemController = async (
       });
     }
 
+    // ✅ Keep only minimal and useful fields in response
+    const {
+      _id,
+      title,
+      brand,
+      qty,
+      points_required,
+      active
+    } = deletedItem.toObject();
+
+    // ✅ Respond with trimmed data
     res.status(200).json({
       success: true,
       message: "Additional item deleted successfully",
-      data: deletedItem,
+      data: {
+        _id,
+        title,
+        brand,
+        qty,
+        points_required,
+        active
+      },
     });
   } catch (error: any) {
     console.error("❌ Error deleting Additional Item:", error);
@@ -233,6 +251,7 @@ export const deleteAdditionalItemController = async (
     });
   }
 };
+
 
 
 export const redeemAdditionalItem = async (
