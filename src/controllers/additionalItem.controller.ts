@@ -174,7 +174,6 @@ export const updateAdditionalItemController = async (
       redemptions,
       createdAt,
       updatedAt,
-            image_url,
 
       ...filteredItem
     } = updatedItem.toObject();
