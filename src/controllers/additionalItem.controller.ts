@@ -170,11 +170,8 @@ export const updateAdditionalItemController = async (
 
     // ✅ Exclude unwanted fields from response
     const {
-      description,
       enrolled_users,
       redemptions,
-      start_date,
-      end_date,
       createdAt,
       updatedAt,
             image_url,
