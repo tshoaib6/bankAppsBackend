@@ -116,11 +116,11 @@ const getAdditionalItemById = async (
   itemId: string
 ): Promise<IAdditionalItem> => {
   const additionalItem = await AdditionalItem.findById(itemId)
-    .select("-enrolled_users -redemptions") // ❌ exclude fields
-    .populate("brand"); // ✅ only populate brand
+    .select("-enrolled_users -redemptions") // exclude unwanted fields
+    .populate("brand", "brandName _id"); // ✅ only include brandName and _id
 
   if (!additionalItem) throw new Error("Additional item not found");
-  
+
   return additionalItem;
 };
 
