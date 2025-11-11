@@ -64,21 +64,20 @@ const escapeRegExp = (text: string): string =>
   text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 // ✅ Get all Additional Items
 const getAllAdditionalItems = async (
-  options: GetAllAdditionalItemsOptions
+  options: GetAllAdditionalItemsOptions & { showAll?: boolean }
 ): Promise<any> => {
-  const { page = 1, limit = 10, sort = { createdAt: -1 }, search, filter = {} } = options;
+  const { page = 1, limit = 10, sort = { createdAt: -1 }, search, filter = {}, showAll } = options;
 
   // ✅ Build optimized search filter
-  const query: any = {
-    ...filter,
-    status: "active", // ✅ Only get items with active status
-  };
+  const query: any = { ...filter };
+
+  // Only filter by status if showAll is false
+  if (!showAll) {
+    query.active = true; // show only active items
+  }
 
   if (search && search.trim() !== "") {
-    // Escape special regex characters
     const safeSearch = escapeRegExp(search.trim());
-
-    // Use regex only on indexed or commonly searched fields
     query.$or = [
       { itemName: { $regex: safeSearch, $options: "i" } },
       { description: { $regex: safeSearch, $options: "i" } },
@@ -86,21 +85,16 @@ const getAllAdditionalItems = async (
     ];
   }
 
-  // ✅ Fetch paginated data
   const result = await paginate(AdditionalItem, {
     page,
     limit,
     sort,
     filter: query,
     populate: [
-      {
-        path: "brand",
-        select: "_id brandName", // Only what is needed
-      } as any,
+      { path: "brand", select: "_id brandName" } as any,
     ],
   });
 
-  // ✅ Remove sensitive fields
   const cleanedData = result.data.map((item) => {
     const obj = item.toObject();
     delete obj.enrolled_users;
@@ -113,6 +107,7 @@ const getAllAdditionalItems = async (
     data: cleanedData,
   };
 };
+
 
 // ✅ Get an Additional Item by ID
 const getAdditionalItemById = async (

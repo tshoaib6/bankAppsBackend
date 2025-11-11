@@ -89,22 +89,28 @@ export const getAllAdditionalItemsController = async (
   try {
     const { page, limit, sortBy, sortOrder, search, ...filters } = req.query;
 
-    // ✅ Build sort object dynamically
+    // ✅ Decode token to get user role
+    const token = req.header("Authorization")?.replace("Bearer ", "");
+    let userRole = "user"; // default
+    if (token) {
+      const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
+      userRole = decoded.userRole || "user";
+    }
+
     const sort: Record<string, 1 | -1> =
       typeof sortBy === "string"
         ? { [sortBy]: sortOrder === "asc" ? 1 : -1 }
         : { createdAt: -1 };
 
-    // ✅ Prepare options to send to service layer
     const options = {
       page: Number(page) || 1,
       limit: Number(limit) || 10,
       sort,
       search: typeof search === "string" ? search : undefined,
-      filter: filters, // optional additional filters
+      filter: filters,
+      showAll: userRole === "admin", // ✅ admin sees all, user sees only active
     };
 
-    // ✅ Call service layer
     const result = await getAllAdditionalItems(options);
 
     return res.status(200).json({
@@ -119,6 +125,7 @@ export const getAllAdditionalItemsController = async (
     });
   }
 };
+
 
 
 

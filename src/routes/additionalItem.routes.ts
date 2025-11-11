@@ -7,7 +7,7 @@ import {
   getAllAdditionalItemsController,
   redeemAdditionalItem,
   getAdditionalItemsLeaderboard,
-  updateRedemptionStatusController,
+  updateAdditionalItemStatusController,
 } from "../controllers/additionalItem.controller";
 import { upload } from "../middlewares/multer";
 
