@@ -69,7 +69,10 @@ const getAllAdditionalItems = async (
   const { page = 1, limit = 10, sort = { createdAt: -1 }, search, filter = {} } = options;
 
   // ✅ Build optimized search filter
-  const query: any = { ...filter };
+  const query: any = {
+    ...filter,
+    status: "active", // ✅ Only get items with active status
+  };
 
   if (search && search.trim() !== "") {
     // Escape special regex characters
@@ -177,6 +180,19 @@ const deleteAdditionalItem = async (
   const deletedItem = await AdditionalItem.findByIdAndDelete(itemId);
   if (!deletedItem) throw new Error("Additional item not found");
   return deletedItem;
+};
+
+export const updateAdditionalItemStatus = async (
+  itemId: string,
+  newStatus: boolean
+): Promise<IAdditionalItem | null> => {
+  const updatedItem = await AdditionalItem.findByIdAndUpdate(
+    itemId,
+    { active: newStatus },
+    { new: true }
+  );
+
+  return updatedItem;
 };
 
 
@@ -430,5 +446,4 @@ export {
   getAdditionalItemById,
   updateAdditionalItem,
   deleteAdditionalItem,
-  
 };

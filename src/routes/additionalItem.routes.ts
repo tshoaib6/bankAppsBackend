@@ -7,6 +7,7 @@ import {
   getAllAdditionalItemsController,
   redeemAdditionalItem,
   getAdditionalItemsLeaderboard,
+  updateRedemptionStatusController,
 } from "../controllers/additionalItem.controller";
 import { upload } from "../middlewares/multer";
 
@@ -19,6 +20,7 @@ router.get("/getAdditionalItemById/:itemId", getAdditionalItemByIdController);
 router.get("/getAllAdditionalItems", getAllAdditionalItemsController);
 router.post("/redeemAdditionalItemRedeem/:itemId", redeemAdditionalItem);
 router.get("/additional-items-leadboard", getAdditionalItemsLeaderboard);
+router.patch("/updateAdditionalItemStatus/:itemId", updateAdditionalItemStatusController);
 
 
 

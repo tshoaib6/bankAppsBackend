@@ -8,6 +8,7 @@ import {
   deleteAdditionalItem,
   redeemAdditionalItemService,
   getAdditionalItemsWithLeaderboard,
+  updateAdditionalItemStatus,
 } from "../services/additionalItem.service";
 import { uploadToCloudinary } from "../utils/cloudinary";
 
@@ -244,6 +245,43 @@ export const deleteAdditionalItemController = async (
   }
 };
 
+export const updateAdditionalItemStatusController = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  try {
+    const { itemId } = req.params;
+    const { active } = req.body; // boolean: true or false
+
+    if (active === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: "Active status is required (true or false)",
+      });
+    }
+
+    const updatedItem = await updateAdditionalItemStatus(itemId, active);
+
+    if (!updatedItem) {
+      return res.status(404).json({
+        success: false,
+        message: "Additional item not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Item status updated successfully`,
+      data: updatedItem,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update item status",
+      error: error.message,
+    });
+  }
+};
 
 
 export const redeemAdditionalItem = async (
