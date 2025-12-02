@@ -7,6 +7,7 @@ import {
   getCampaignById,
   getCampaignsByBrandId,
   getCampaignsWithLeaderboard,
+  downloadCampaignRedeemsCSV,
 } from "../controllers/campaignController";
 import { upload } from "../middlewares/multer";
 const router = express.Router();
@@ -24,6 +25,8 @@ router.get("/getCampaignsById/:campaignId", getCampaignById);
 router.get('/getCampaignByBrandId/:brandId', getCampaignsByBrandId);
 
 router.get("/campaign-with-user-history", getCampaignsWithLeaderboard);
+
+router.get("/campaign/:campaignId/redeems/export", downloadCampaignRedeemsCSV);
 
 
 export default router;

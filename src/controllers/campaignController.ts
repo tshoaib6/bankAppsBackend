@@ -1,7 +1,8 @@
 import { Request, Response } from 'express'
 import jwt from 'jsonwebtoken'
-import CampaignService from '../services/campaignService'
+import CampaignService, { getCampaignRedemptionsCSVStream, ICsvRow } from '../services/campaignService'
 import { uploadToCloudinary } from '../utils/cloudinary'
+import { stringify } from "csv-stringify";
 
 export const createCampaign = async (
   req: Request,
@@ -189,4 +190,52 @@ export const getCampaignsWithLeaderboard = async (
   }
 };
 
+export const downloadCampaignRedeemsCSV = async (req: Request, res: Response) => {
+  try {
+    const { campaignId } = req.params;
+    if (!campaignId) {
+      return res.status(400).json({ message: "campaignId required" });
+    }
 
+    // Set headers for CSV download
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=campaign_${campaignId}_redeems.csv`
+    );
+
+    // Create CSV stringifier
+    const csvStringifier = stringify({
+      header: true,
+      columns: ["campaignId", "campaignName", "userId", "username", "email", "redeemedAt"],
+    });
+
+    // Pipe CSV to response
+    csvStringifier.pipe(res);
+
+    // Get async generator stream from service
+    const stream: AsyncGenerator<ICsvRow> = await getCampaignRedemptionsCSVStream(campaignId);
+
+    // Write each row to CSV
+    for await (const row of stream) {
+      csvStringifier.write({
+        campaignId: row.campaignId,
+        campaignName: row.campaignName,
+        userId: row.userId,
+        username: row.username,
+        email: row.email,
+        redeemedAt: row.redeemedAt,
+      });
+    }
+
+    // End CSV stream
+    csvStringifier.end();
+  } catch (error) {
+    console.error("CSV Export Error:", error);
+    if (!res.headersSent) {
+      res.status(500).json({ message: "Failed to generate CSV", error });
+    } else {
+      res.end();
+    }
+  }
+};
