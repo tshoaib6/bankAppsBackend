@@ -1,5 +1,4 @@
 import Campaign, { ICampaign } from "../models/campaign.model";
-import User from "../models/user.model";
 import UserHistory from "../models/userHistory.model"; // adjust path if needed
 
 // 🚀 Create campaign (now accepts brandId)
@@ -262,50 +261,6 @@ export const getCampaignsWithLeaderboard = async () => {
   );
 
   return campaignData;
-};
-export interface ICsvRow {
-  campaignId: string;
-  campaignName: string;
-  userId: string;
-  username: string;
-  email: string;
-  redeemedAt: string;
-}
-
-export const getCampaignRedemptionsCSVStream = async (
-  campaignId: string
-): Promise<AsyncGenerator<ICsvRow>> => {
-  const campaign = await Campaign.findById(campaignId)
-    .select("title redemptions")
-    .lean();
-
-  // ❌ type narrowing
-  if (!campaign) throw new Error("Campaign not found");
-
-  // ✅ Create a typed constant so TypeScript knows it’s not null
-  const campaignNotNull: ICampaign & { _id: any } = campaign;
-
-  async function* generator(): AsyncGenerator<ICsvRow> {
-    for (const redemption of campaignNotNull.redemptions ?? []) {
-      const user = await User.findById(redemption.user)
-        .select("name email")
-        .lean();
-      if (!user) continue;
-
-      for (let i = 0; i < redemption.count; i++) {
-        yield {
-          campaignId: campaignNotNull._id.toString(),
-          campaignName: campaignNotNull.title,
-          userId: user._id.toString(),
-          username: user.name,
-          email: user.email ?? "",
-          redeemedAt: redemption.lastRedeemedAt.toISOString(),
-        };
-      }
-    }
-  }
-
-  return generator();
 };
 
 export default {
